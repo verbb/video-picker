@@ -14,7 +14,7 @@ class Install extends Migration
     public function safeUp(): bool
     {
         // Ensure that the Auth module kicks off setting up tables
-        Auth::$plugin->migrator->up();
+        Auth::getInstance()->migrator->up();
 
         $this->createTables();
         $this->createIndexes();
@@ -28,7 +28,7 @@ class Install extends Migration
         $this->dropTables();
 
         // Delete all tokens for this plugin
-        Auth::$plugin->getTokens()->deleteTokensByOwner('video-picker');
+        Auth::getInstance()->getTokens()->deleteTokensByOwner('video-picker');
 
         return true;
     }

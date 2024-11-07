@@ -9,10 +9,10 @@ use verbb\videopicker\web\assets\field\VideoPickerAsset;
 
 use Craft;
 
-use yii\log\Logger;
+use verbb\base\LogTrait;
+use verbb\base\helpers\Plugin;
 
 use verbb\auth\Auth;
-use verbb\base\BaseHelper;
 
 use nystudio107\pluginvite\services\VitePluginService;
 
@@ -21,28 +21,40 @@ trait PluginTrait
     // Static Properties
     // =========================================================================
 
-    public static VideoPicker $plugin;
+    public static ?VideoPicker $plugin = null;
 
 
-    // Public Methods
+    // Traits
     // =========================================================================
 
-    public static function log(string $message, array $attributes = []): void
+    use LogTrait;
+
+
+    // Static Methods
+    // =========================================================================
+
+    public static function config(): array
     {
-        if ($attributes) {
-            $message = Craft::t('video-picker', $message, $attributes);
-        }
+        Plugin::bootstrapPlugin('video-picker');
 
-        Craft::getLogger()->log($message, Logger::LEVEL_INFO, 'video-picker');
-    }
-
-    public static function error(string $message, array $attributes = []): void
-    {
-        if ($attributes) {
-            $message = Craft::t('video-picker', $message, $attributes);
-        }
-
-        Craft::getLogger()->log($message, Logger::LEVEL_ERROR, 'video-picker');
+        return [
+            'components' => [
+                'service' => Service::class,
+                'sources' => Sources::class,
+                'videos' => Videos::class,
+                'vite' => [
+                    'class' => VitePluginService::class,
+                    'assetClass' => VideoPickerAsset::class,
+                    'useDevServer' => true,
+                    'devServerPublic' => 'http://localhost:4035/',
+                    'errorEntry' => 'js/main.js',
+                    'cacheKeySuffix' => '',
+                    'devServerInternal' => 'http://localhost:4035/',
+                    'checkDevServer' => true,
+                    'includeReactRefreshShim' => false,
+                ],
+            ],
+        ];
     }
 
 
@@ -68,37 +80,4 @@ trait PluginTrait
     {
         return $this->get('vite');
     }
-
-
-    // Private Methods
-    // =========================================================================
-
-    private function _setPluginComponents(): void
-    {
-        $this->setComponents([
-            'service' => Service::class,
-            'sources' => Sources::class,
-            'videos' => Videos::class,
-            'vite' => [
-                'class' => VitePluginService::class,
-                'assetClass' => VideoPickerAsset::class,
-                'useDevServer' => true,
-                'devServerPublic' => 'http://localhost:4035/',
-                'errorEntry' => 'js/main.js',
-                'cacheKeySuffix' => '',
-                'devServerInternal' => 'http://localhost:4035/',
-                'checkDevServer' => true,
-                'includeReactRefreshShim' => false,
-            ],
-        ]);
-
-        Auth::registerModule();
-        BaseHelper::registerModule();
-    }
-
-    private function _setLogging(): void
-    {
-        BaseHelper::setFileLogging('video-picker');
-    }
-
 }

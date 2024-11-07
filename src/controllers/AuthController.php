@@ -46,7 +46,7 @@ class AuthController extends Controller
             // Keep track of which source instance is for, so we can fetch it in the callback
             Session::set('sourceHandle', $sourceHandle);
 
-            return Auth::$plugin->getOAuth()->connect('video-picker', $source);
+            return Auth::getInstance()->getOAuth()->connect('video-picker', $source);
         } catch (Throwable $e) {
             VideoPicker::error('Unable to authorize connect “{source}”: “{message}” {file}:{line}', [
                 'source' => $sourceHandle,
@@ -83,7 +83,7 @@ class AuthController extends Controller
 
         try {
             // Fetch the access token from the source and create a Token for us to use
-            $token = Auth::$plugin->getOAuth()->callback('video-picker', $source);
+            $token = Auth::getInstance()->getOAuth()->callback('video-picker', $source);
 
             if (!$token) {
                 Session::setError('video-picker', Craft::t('video-picker', 'Unable to fetch token.'), true);
@@ -93,7 +93,7 @@ class AuthController extends Controller
 
             // Save the token to the Auth plugin, with a reference to this source
             $token->reference = $source->id;
-            Auth::$plugin->getTokens()->upsertToken($token);
+            Auth::getInstance()->getTokens()->upsertToken($token);
         } catch (Throwable $e) {
             $error = Craft::t('video-picker', 'Unable to process callback for “{source}”: “{message}” {file}:{line}', [
                 'source' => $sourceHandle,
@@ -124,7 +124,7 @@ class AuthController extends Controller
         }
 
         // Delete all tokens for this source
-        Auth::$plugin->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
+        Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
 
         return $this->asModelSuccess($source, Craft::t('video-picker', '{provider} disconnected.', ['provider' => $source->providerName]), 'source');
     }
