@@ -1,0 +1,26 @@
+{% extends 'video-picker/_layouts' %}
+
+{% import '_includes/forms' as forms %}
+{% import 'verbb-base/_macros' as macros %}
+
+{% requireAdmin %}
+
+{% set crumbs = [
+    { label: 'Video Picker' | t('video-picker'), url: url('video-picker') },
+    { label: 'Settings' | t('app'), url: url('video-picker/settings') },
+] %}
+
+{% set navItems = {
+    general: { label: 'General Settings' | t('video-picker'), url: url('video-picker/settings') },
+} %}
+
+{% set title = 'Settings' | t('video-picker') %}
+{% set docTitle = navItems[selectedNavItem].label ~ ' - ' ~ title %}
+
+{% block sidebar %}
+    {% include '_includes/nav' with {
+        label: title,
+        items: navItems,
+        selectedItem: selectedNavItem,
+    } only %}
+{% endblock %}

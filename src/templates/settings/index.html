@@ -1,0 +1,52 @@
+{% extends 'video-picker/_layouts/settings' %}
+
+{% import '_includes/forms' as forms %}
+{% import 'verbb-base/_macros' as macros %}
+
+{% set fullPageForm = true %}
+{% set selectedNavItem = 'general' %}
+
+{% block blockContent %}
+
+<input type="hidden" name="action" value="plugins/save-plugin-settings">
+<input type="hidden" name="pluginHandle" value="video-picker">
+
+{% namespace 'settings' %}
+
+{{ forms.textField({
+    label: 'Plugin Name' | t('app'),
+    instructions: 'Plugin name for the end user.' | t('video-picker'),
+    id: 'pluginName',
+    name: 'pluginName',
+    value: settings.pluginName,
+    first: true,
+    autofocus: true,
+    required: true,
+    errors: settings.getErrors('pluginName'),
+    warning: macros.configWarning('pluginName', 'video-picker'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable CP Section' | t('video-picker'),
+    instructions: 'Whether to enable Video Picker in the main sidebar navigation.' | t('video-picker'),
+    id: 'hasCpSection',
+    name: 'hasCpSection',
+    on: settings.hasCpSection,
+    errors: settings.getErrors('hasCpSection'),
+    warning: macros.configWarning('hasCpSection', 'video-picker'),
+}) }}
+
+{{ forms.textField({
+    label: 'Videos Per Page' | t('video-picker'),
+    instructions: 'How many videos should be shown per-page when browsing videos.' | t('video-picker'),
+    id: 'videosPerPage',
+    name: 'videosPerPage',
+    value: settings.videosPerPage,
+    required: true,
+    errors: settings.getErrors('videosPerPage'),
+    warning: macros.configWarning('videosPerPage', 'video-picker'),
+}) }}
+
+{% endnamespace %}
+
+{% endblock %}

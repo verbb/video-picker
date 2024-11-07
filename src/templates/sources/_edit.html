@@ -1,0 +1,203 @@
+{% extends 'video-picker/_layouts' %}
+{% import '_includes/forms' as forms %}
+{% import 'verbb-base/_macros' as macros %}
+
+{% set crumbs = [
+    { label: craft.videoPicker.getPluginName() | t('video-picker'), url: url('video-picker') },
+    { label: 'Sources' | t('video-picker'), url: url('video-picker/sources') }
+] %}
+
+{% set fullPageForm = true %}
+{% set selectedSubnavItem = 'sources' %}
+
+{% set saveShortcutRedirect = 'video-picker/sources/{handle}' %}
+
+{% block actionButton %}
+
+<div class="btngroup">
+    <input type="submit" class="btn submit" value="{{ 'Save' | t('app') }}">
+
+    <div class="btn submit menubtn"></div>
+    <div class="menu">
+        <ul>
+            <li>
+                <a class="formsubmit" data-redirect="{{ saveShortcutRedirect | hash }}">
+                    {{ forms.optionShortcutLabel('S') }}
+                    {{ 'Save and continue editing' | t('app') }}
+                </a>
+            </li>
+        </ul>
+
+        <hr>
+        <ul>
+            <li><a class="formsubmit error" data-action="video-picker/sources/delete" data-confirm="{{ 'Are you sure you want to delete this source?' | t('video-picker') }}" data-redirect="{{ 'video-picker/sources#' | hash }}">{{ 'Delete' | t('app') }}</a></li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}
+
+{% set tabs = {
+    source: { label: 'Source' | t('video-picker'), url: '#source' },
+    provider: { label: 'Provider' | t('video-picker'), url: '#provider' },
+} %}
+
+{% block content %}
+
+{# Show an error when connecting to OAuth, instead of just in logs #}
+{% set message = craft.app.session.getFlash('video-picker:callback-error') %}
+
+{% if message %}
+    <div class="vp-pane vp-pane-error code error" style="margin-bottom: 24px;">{{ message }}</div>
+{% endif %}
+
+<input type="hidden" name="action" value="video-picker/sources/save">
+{% if source.id %}<input type="hidden" name="sourceId" value="{{ source.id }}">{% endif %}
+{{ redirectInput('video-picker/sources') }}
+
+<div id="source">
+    {{ forms.textField({
+        first: true,
+        label: 'Name' | t('app'),
+        instructions: 'What this source will be called in the control panel.' | t('video-picker'),
+        id: 'name',
+        name: 'name',
+        value: (source is defined ? source.name : null),
+        errors: (source is defined ? source.getErrors('name') : null),
+        autofocus: true,
+        required: true,
+    }) }}
+
+    {{ forms.textField({
+        label: 'Handle' | t('app'),
+        instructions: 'How you’ll refer to this source in your templates.' | t('video-picker'),
+        id: 'handle',
+        name: 'handle',
+        class: 'code',
+        value: (source is defined ? source.handle : null),
+        errors: (source is defined ? source.getErrors('handle') : null),
+        required: true,
+    }) }}
+</div>
+
+<div id="provider" class="hidden">
+    {% for sourceType in sourceTypes %}
+        {% set isCurrent = (sourceType == className(source)) %}
+
+        <div class="source-settings-{{ sourceType | id }} {% if not isCurrent %}hidden{% endif %}">
+            {% namespace 'types[' ~ sourceType ~ ']' %}
+                {% if isCurrent %}
+                    {{ source.getSettingsHtml() | raw }}
+                {% else %}
+                    {{ sourceInstances[sourceType].getSettingsHtml() | raw }}
+                {% endif %}
+            {% endnamespace %}
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block details %}
+
+<div class="meta">
+    {% if sourceOptions | length %}
+        {{ forms.selectField({
+            label: 'Provider' | t('video-picker'),
+            name: 'type',
+            options: sourceOptions,
+            value: className(source),
+            toggle: true,
+            targetPrefix: '.source-settings-',
+            required: true,
+        }) }}
+    {% endif %}
+
+    {{ forms.lightswitchField({
+        label: 'Enabled' | t('video-picker'),
+        name: 'enabled',
+        on: source.enabled,
+    }) }}
+
+    <div class="field lightswitch-field">
+        {% if source.isConfigured %}
+            <div class="heading">
+                <span class="status on"></span>{{ 'Provider Configured' | t('video-picker') }}
+            </div>
+        {% else %}
+            <div class="heading">
+                <span class="status"></span><span class="light">{{ 'Provider not configured' | t('video-picker') }}</span>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if source.isConnected %}
+        <div class="field lightswitch-field vp-connect">
+            <div class="heading">
+                <span class="status on"></span>{{ 'Connected' | t('video-picker') }}
+            </div>
+
+            <div class="input ltr">
+                <a class="btn small formsubmit" data-action="video-picker/auth/disconnect" data-param="source" data-value="{{ source.handle }}" data-redirect="{{ saveShortcutRedirect | hash }}">{{ 'Disconnect' | t('video-picker') }}</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="field lightswitch-field vp-connect">
+            <div class="heading">
+                <span class="status"></span><span class="light">{{ 'Not Connected' | t('video-picker') }}</span>
+            </div>
+
+            <div class="input ltr">
+                <a class="btn small formsubmit" data-action="video-picker/auth/connect" data-param="source" data-value="{{ source.handle }}" data-redirect="{{ 'video-picker/sources/' ~ source.handle | hash }}">{{ 'Connect' | t('video-picker') }}</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<hr>
+
+{% if source.id %}
+    <div class="meta read-only">
+        {% if source.id %}
+            <div class="data">
+                <h5 class="heading">{{ 'ID' | t('video-picker') }}</h5>
+                <div class="value">{{ source.id }}</div>
+            </div>
+        {% endif %}
+
+        <div class="data">
+            <h5 class="heading">{{ 'Date Created' | t('video-picker') }}</h5>
+            <div class="value">{{ source.dateCreated | date('short') }} {{ source.dateCreated | time('short') }}</div>
+        </div>
+
+        <div class="data">
+            <h5 class="heading">{{ 'Date Updated' | t('video-picker') }}</h5>
+            <div class="value">{{ source.dateUpdated | date('short') }} {{ source.dateUpdated | time('short') }}</div>
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}
+
+{% js %}
+
+// Add event listeners to all form inputs, to detect a change. Show a message to save when changed.
+$(document).ready(function() {
+    var html = '<div class="heading"><span class="warning with-icon">{{ 'Save this source to connect.' | t('video-picker') }}</span></div>';
+    
+    $('#main-form').find('input, select, textarea').on('input', function() {
+        $('.vp-connect').html(html);
+    });
+
+    $('#main-form').find('.lightswitch').on('change', function() {
+        $('.vp-connect').html(html);
+    });
+});
+
+{% if source is not defined or not source.handle %}
+    new Craft.HandleGenerator("#{{ 'name' | namespaceInputId }}", "#{{ 'handle' | namespaceInputId }}");
+
+    $('#main-form input').trigger('input');
+{% endif %}
+
+{% endjs %}

@@ -1,0 +1,23 @@
+{% do view.registerTranslations('video-picker', [
+    'No videos available.',
+    '{num, number} {num, plural, =1{year} other{years}} ago',
+    '{num, number} {num, plural, =1{month} other{months}} ago',
+    '{num, number} {num, plural, =1{day} other{days}} ago',
+    '{num, number} {num, plural, =1{hour} other{hours}} ago',
+    '{num, number} {num, plural, =1{minute} other{minutes}} ago',
+    '{num, number} {num, plural, =1{second} other{seconds}} ago',
+    'just now',
+    'Search {source} videos…',
+    'Load More',
+    'Refresh',
+    'Select',
+    'Enter a video URL',
+    'Browse videos…',
+    '{plays} plays',
+    'Refresh',
+    'Remove',
+]) %}
+
+<div class="vp-input-component">
+    <video-picker-input></video-picker-input>
+</div>

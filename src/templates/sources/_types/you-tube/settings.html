@@ -1,0 +1,14 @@
+{% import '_includes/forms' as forms %}
+{% import 'verbb-base/_macros' as macros %}
+
+{% include 'video-picker/sources/_oauth' %}
+
+{{ forms.booleanMenuField({
+    label: 'Proxy Redirect URI' | t('video-picker'),
+    instructions: 'Whether to proxy the redirect URI through Verbb‘s servers. This should **only** be used for local testing. See [docs](https://verbb.io/craft-plugins/video-picker/docs/feature-tour/providers#local-testing-proxy) for more.' | t('video-picker') | md,
+    name: 'proxyRedirect',
+    includeEnvVars: true,
+    value: source.proxyRedirect ?? false,
+    warning: macros.configWarning("sources.#{source.handle}.proxyRedirect", 'video-picker'),
+    errors: source.getErrors('proxyRedirect'),
+}) }}

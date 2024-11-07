@@ -1,0 +1,42 @@
+{% import '_includes/forms' as forms %}
+{% import 'verbb-base/_macros' as macros %}
+
+{% set name = source.providerName %}
+{% set handle = source.providerHandle | lower %}
+
+{% set instructions %}
+To connect to {name}, follow our <a href="https://verbb.io/craft-plugins/video-picker/docs/providers/{handle}" target="_blank" rel="noopener">{name} provider guide</a>.
+{% endset %}
+
+<div class="vp-settings-block">
+    {{ instructions | t('video-picker', { name: name, handle: handle }) | md }}
+</div>
+
+{{ forms.textField({
+    readonly: true,
+    label: 'Redirect URI' | t('video-picker'),
+    instructions: 'Use this URI when setting up your {name} app.' | t('video-picker', { name: name }),
+    value: source.getRedirectUri(),
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Client ID' | t('video-picker'),
+    instructions: 'Enter your {name} Client ID key here.' | t('video-picker', { name: name }),
+    name: 'clientId',
+    required: true,
+    suggestEnvVars: true,
+    value: source.clientId ?? '',
+    warning: macros.configWarning("sources.#{source.handle}.clientId", 'video-picker'),
+    errors: source.getErrors('clientId'),
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Client Secret' | t('video-picker'),
+    instructions: 'Enter your {name} Client Secret here.' | t('video-picker', { name: name }),
+    name: 'clientSecret',
+    required: true,
+    suggestEnvVars: true,
+    value: source.clientSecret ?? '',
+    warning: macros.configWarning("sources.#{source.handle}.clientSecret", 'video-picker'),
+    errors: source.getErrors('clientSecret'),
+}) }}

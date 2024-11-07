@@ -1,0 +1,47 @@
+{% import '_includes/forms' as forms %}
+
+<h2>{{ 'Video Picker' | t('video-picker') }}</h2>
+
+<h3>{{ 'Video Cache' | t('video-picker') }}</h3>
+
+{{ 'Video Picker will cache the data for a video‘s URL indefinitely for performance. Use this utility to clear a video‘s data.' | t('video-picker') | md | raw }}
+
+<form class="utility" method="post" accept-charset="UTF-8">
+    {{ actionInput('video-picker/plugin/clear-video-cache') }}
+    {{ redirectInput('utilities/video-picker') }}
+    {{ csrfInput() }}
+
+    {{ forms.textField({
+        first: true,
+        name: 'videoUrl',
+        placeholder: 'Enter a video URL' | t('video-picker'),
+    }) }}
+
+    <input type="submit" class="btn submit" value="{{ 'Clear Video Cache' | t('video-picker')  }}">
+</form>
+
+<hr>
+
+<h3>{{ 'Source Cache' | t('video-picker') }}</h3>
+
+{{ 'When browsing a source‘s videos, Video Picker will cache all the available folders for the provider. You can clear the cached data here.' | t('video-picker') | md | raw }}
+
+<form class="utility" method="post" accept-charset="UTF-8">
+    {{ actionInput('video-picker/plugin/clear-source-cache') }}
+    {{ redirectInput('utilities/video-picker') }}
+    {{ csrfInput() }}
+
+    {% set sources = [] %}
+    {% for source in craft.videoPicker.getAllSources() %}
+        {% set sources = [{ value: source.id, label: source.name | e }] | merge(sources) %}
+    {% endfor %}
+
+    <div class="flex">
+        {{ forms.select({
+            name: 'sourceId',
+            options: sources,
+        }) }}
+
+        <input type="submit" class="btn submit" value="{{ 'Clear Source Cache' | t('video-picker') }}">
+    </div>
+</form>

@@ -1,0 +1,45 @@
+{
+    "name": "verbb/video-picker",
+    "description": "A slick field to pick videos with. Supports YouTube, Vimeo and more.",
+    "type": "craft-plugin",
+    "version": "1.0.0",
+    "keywords": [
+        "craft",
+        "cms",
+        "craftcms",
+        "craft-plugin",
+        "video-picker"
+    ],
+    "support": {
+        "email": "support@verbb.io",
+        "issues": "https://github.com/verbb/video-picker/issues?state=open",
+        "source": "https://github.com/verbb/video-picker",
+        "docs": "https://github.com/verbb/video-picker",
+        "rss": "https://github.com/verbb/video-picker/commits/v2.atom"
+    },
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Verbb",
+            "homepage": "https://verbb.io"
+        }
+    ],
+    "require": {
+        "php": "^8.0.2",
+        "craftcms/cms": "^4.0.0",
+        "nystudio107/craft-plugin-vite": "^4.0.0",
+        "verbb/auth": "^1.0.0",
+        "verbb/base": "^2.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "verbb\\videopicker\\": "src/"
+        }
+    },
+    "extra": {
+        "name": "Video Picker",
+        "handle": "video-picker",
+        "changelogUrl": "https://raw.githubusercontent.com/verbb/video-picker/craft-4/CHANGELOG.md",
+        "class": "verbb\\videopicker\\VideoPicker"
+    }
+}

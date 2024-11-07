@@ -1,0 +1,47 @@
+[
+    {
+        "title": "Get Started",
+        "collapsable": false,
+        "children": [
+            "get-started/installation-setup",
+            "get-started/requirements",
+            "get-started/configuration"
+        ]
+    },
+    {
+        "title": "Feature Tour",
+        "collapsable": false,
+        "children": [
+            "feature-tour/sources",
+            "feature-tour/videos",
+            "feature-tour/cache"
+        ]
+    },
+    {
+        "title": "Providers",
+        "collapsable": false,
+        "children": [
+            "providers/vimeo",
+            "providers/youtube"
+        ]
+    },
+    {
+        "title": "Template Guides",
+        "collapsable": false,
+        "children": [
+            "template-guides/available-variables",
+            "template-guides/rendering-videos"
+        ]
+    },
+    {
+        "title": "Developers",
+        "collapsable": false,
+        "children": [
+            "developers/source",
+            "developers/source-provider",
+            "developers/video",
+            "developers/events",
+            "developers/graphql"
+        ]
+    }
+]

@@ -1,0 +1,14 @@
+{
+  "field/src/js/video-picker.css": {
+    "file": "assets/video-picker-ccddbb85.css",
+    "src": "field/src/js/video-picker.css"
+  },
+  "field/src/js/video-picker.js": {
+    "file": "assets/video-picker-c32fe101.js",
+    "src": "field/src/js/video-picker.js",
+    "isEntry": true,
+    "css": [
+      "assets/video-picker-ccddbb85.css"
+    ]
+  }
+}
