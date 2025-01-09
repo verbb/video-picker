@@ -57,5 +57,20 @@ class VideoPickerVariable
 
         return null;
     }
+
+    public function getEmbedUrl(string $url, array $params = []): ?string
+    {
+        return VideoPicker::$plugin->getVideos()->getEmbedUrl($url, $params);
+    }
+
+    public function getEmbedHtml(string $url, array $params = []): string
+    {
+        return VideoPicker::$plugin->getVideos()->getEmbedHtml($url, $params);
+    }
+
+    public function getEmbedData(string $url): array
+    {
+        return VideoPicker::$plugin->getVideos()->getEmbedData($url);
+    }
     
 }

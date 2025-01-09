@@ -11,6 +11,13 @@ return [
         'pluginName' => 'Video Picker',
         'hasCpSection' => true,
         'videosPerPage' => 12,
+
+        // Embed settings
+        'resolveHiResEmbedImage' => false,
+        'embedClientSettings' => [],
+        'embedHeaders' => [],
+        'embedDetectorsSettings' => [],
+        'embedAllowedDomains' => [],
     ]
 ];
 ```
@@ -19,6 +26,11 @@ return [
 - `pluginName` - If you wish to customise the plugin name.
 - `hasCpSection` - Whether to have the plugin pages appear on the main CP sidebar menu.
 - `videosPerPage` - How many videos should be shown per-page when using the video explorer.
+- `resolveHiResEmbedImage` - Whether the embed helpers should determine the most hi-resolution image available. Do note that there's performance implications for this, as it requires fetching every available image for the embed data and comparing them.
+- `embedClientSettings` - Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers.
+- `embedHeaders` - Define any [headers](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers.
+- `embedDetectorsSettings` - Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to the detectors for embed helpers.
+- `embedAllowedDomains` - Define any allowed domain names for embed helpers. Any embed links that are added _not_ in this list will fail to be saved. Leave empty to allow any domain. Include just the TLD with no `http://`, `https://` or `www`.
 
 ## Control Panel
 You can also manage configuration settings through the Control Panel by visiting Settings → Video Picker.
