@@ -19,6 +19,9 @@ Follow these steps to configure YouTube for Video Picker.
     1. Under the **Authorized redirect URIs**, click **Add URI** and enter the value from the **Redirect URI** field in Video Picker.
     1. Then click the **Create** button.
 1. Once created, a popup will appear with your OAuth credentials. Copy the **Client ID** and **Client Secret** values and paste into the fields in Video Picker.
+1. Go to the **APIs & Services** → **Library** section.
+1. Enable the following APIs:
+    - YouTube Data API v3
 
 ## Local Testing Proxy
 Google requires your Craft install to be on a public domain with SSL enabled. However, you can test out functionality by using the **Proxy Redirect URI** setting. What this does is modify the URL for the redirect to Verbb servers, to redirect back to your install.

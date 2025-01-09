@@ -30,7 +30,8 @@
         "collapsable": false,
         "children": [
             "template-guides/available-variables",
-            "template-guides/rendering-videos"
+            "template-guides/rendering-videos",
+            "template-guides/embedding-videos"
         ]
     },
     {

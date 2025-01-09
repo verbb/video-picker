@@ -27,6 +27,7 @@
     "require": {
         "php": "^8.2",
         "craftcms/cms": "^5.0.0",
+        "embed/embed": "^3.0.0 || ^4.0.0",
         "nystudio107/craft-plugin-vite": "^5.0.0",
         "verbb/auth": "^2.0.0",
         "verbb/base": "^3.0.0"
