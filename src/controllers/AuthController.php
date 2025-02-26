@@ -4,6 +4,7 @@ namespace verbb\videopicker\controllers;
 use verbb\videopicker\VideoPicker;
 
 use Craft;
+use craft\helpers\Db;
 use craft\web\Controller;
 
 use yii\web\Response;
@@ -125,6 +126,9 @@ class AuthController extends Controller
 
         // Delete all tokens for this source
         Auth::$plugin->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
+
+        // Clear any caches for the source
+        Db::update('{{%video_picker_sources}}', ['cache' => null], ['id' => $source->id]);
 
         return $this->asModelSuccess($source, Craft::t('video-picker', '{provider} disconnected.', ['provider' => $source->providerName]), 'source');
     }
