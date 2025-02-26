@@ -18,6 +18,8 @@ use Throwable;
 use verbb\auth\Auth;
 use verbb\auth\providers\Google as GoogleProvider;
 
+use GuzzleHttp\Exception\RequestException;
+
 class YouTube extends OAuthSource
 {
     // Static Methods
@@ -297,24 +299,33 @@ class YouTube extends OAuthSource
 
     private function _getCollectionsPlaylists(array $params = []): array
     {
-        $data = $this->request('GET', 'youtube/v3/playlists', [
-            'query' => [
-                'part' => 'snippet',
-                'mine' => 'true',
-                'maxResults' => 50,
-            ],
-        ]);
-
         $collections = [];
 
-        foreach (($data['items'] ?? []) as $item) {
-            $collection = [];
-            $collection['id'] = $item['id'];
-            $collection['title'] = $item['snippet']['title'];
-            $collection['totalVideos'] = 0;
-            $collection['url'] = 'title';
+        try {
+            $data = $this->request('GET', 'youtube/v3/playlists', [
+                'query' => [
+                    'part' => 'snippet',
+                    'mine' => 'true',
+                    'maxResults' => 50,
+                ],
+            ]);
 
-            $collections[] = $collection;
+            foreach (($data['items'] ?? []) as $item) {
+                $collection = [];
+                $collection['id'] = $item['id'];
+                $collection['title'] = $item['snippet']['title'];
+                $collection['totalVideos'] = 0;
+                $collection['url'] = 'title';
+
+                $collections[] = $collection;
+            }
+        } catch (Throwable $e) {
+            // A fatal error will be thrown for an account with no playlists yet...
+            if ($e instanceof RequestException && $e->getResponse()) {
+                if ($e->getResponse()->getStatusCode() !== 404) {
+                    throw $e;
+                }
+            }
         }
 
         return $collections;
