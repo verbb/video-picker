@@ -487,8 +487,8 @@ export default {
 }
 
 .vp-videos-refresh-btn svg {
-    width: 100%;
-    height: 100%;
+    width: 20px;
+    height: 20px;
     fill: #3f4d5a;
     padding: 3px;
 }
