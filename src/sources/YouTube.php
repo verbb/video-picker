@@ -8,6 +8,7 @@ use verbb\videopicker\models\Collection;
 use verbb\videopicker\models\Section;
 use verbb\videopicker\models\Video;
 
+use Craft;
 use craft\helpers\App;
 use craft\helpers\ArrayHelper;
 
@@ -17,6 +18,8 @@ use Throwable;
 
 use verbb\auth\Auth;
 use verbb\auth\providers\Google as GoogleProvider;
+
+use GuzzleHttp\Exception\RequestException;
 
 class YouTube extends OAuthSource
 {
@@ -94,7 +97,7 @@ class YouTube extends OAuthSource
 
     public function getVideoById(string $id): ?Video
     {
-        $items = $this->request('GET', 'youtube/v3/videos', [
+        $items = $this->cachedRequest('GET', 'youtube/v3/videos', [
             'query' => [
                 'part' => 'snippet,statistics,contentDetails,status',
                 'id' => $id,
@@ -162,7 +165,7 @@ class YouTube extends OAuthSource
         $params['part'] = 'id,snippet';
         $params['playlistId'] = ArrayHelper::remove($params, 'id');
 
-        $response = $this->request('GET', 'youtube/v3/playlistItems', [
+        $response = $this->cachedRequest('GET', 'youtube/v3/playlistItems', [
             'query' => $this->_queryFromParams($params),
         ]);
 
@@ -180,7 +183,7 @@ class YouTube extends OAuthSource
         $params['part'] = 'snippet,statistics,contentDetails,status';
         $params['myRating'] = 'like';
 
-        $response = $this->request('GET', 'youtube/v3/videos', [
+        $response = $this->cachedRequest('GET', 'youtube/v3/videos', [
             'query' => $this->_queryFromParams($params),
         ]);
 
@@ -225,7 +228,7 @@ class YouTube extends OAuthSource
         $params['part'] = 'id,snippet';
         $params['playlistId'] = $uploadsPlaylistId;
 
-        $response = $this->request('GET', 'youtube/v3/playlistItems', [
+        $response = $this->cachedRequest('GET', 'youtube/v3/playlistItems', [
             'query' => $this->_queryFromParams($params),
         ]);
 
@@ -246,7 +249,7 @@ class YouTube extends OAuthSource
     {
         $videos = [];
 
-        $videosResponse = $this->request('GET', 'youtube/v3/videos', [
+        $videosResponse = $this->cachedRequest('GET', 'youtube/v3/videos', [
             'query' => [
                 'part' => 'snippet,statistics,contentDetails,status',
                 'id' => implode(',', $videoIds),
@@ -297,24 +300,33 @@ class YouTube extends OAuthSource
 
     private function _getCollectionsPlaylists(array $params = []): array
     {
-        $data = $this->request('GET', 'youtube/v3/playlists', [
-            'query' => [
-                'part' => 'snippet',
-                'mine' => 'true',
-                'maxResults' => 50,
-            ],
-        ]);
-
         $collections = [];
 
-        foreach (($data['items'] ?? []) as $item) {
-            $collection = [];
-            $collection['id'] = $item['id'];
-            $collection['title'] = $item['snippet']['title'];
-            $collection['totalVideos'] = 0;
-            $collection['url'] = 'title';
+        try {
+            $data = $this->cachedRequest('GET', 'youtube/v3/playlists', [
+                'query' => [
+                    'part' => 'snippet',
+                    'mine' => 'true',
+                    'maxResults' => 50,
+                ],
+            ]);
 
-            $collections[] = $collection;
+            foreach (($data['items'] ?? []) as $item) {
+                $collection = [];
+                $collection['id'] = $item['id'];
+                $collection['title'] = $item['snippet']['title'];
+                $collection['totalVideos'] = 0;
+                $collection['url'] = 'title';
+
+                $collections[] = $collection;
+            }
+        } catch (Throwable $e) {
+            // A fatal error will be thrown for an account with no playlists yet...
+            if ($e instanceof RequestException && $e->getResponse()) {
+                if ($e->getResponse()->getStatusCode() !== 404) {
+                    throw $e;
+                }
+            }
         }
 
         return $collections;
@@ -343,7 +355,7 @@ class YouTube extends OAuthSource
 
     private function _getSpecialPlaylists(): array
     {
-        $channelsResponse = $this->request('GET', 'youtube/v3/channels', [
+        $channelsResponse = $this->cachedRequest('GET', 'youtube/v3/channels', [
             'query' => [
                 'part' => 'contentDetails',
                 'mine' => 'true',
@@ -353,7 +365,7 @@ class YouTube extends OAuthSource
         if (isset($channelsResponse['items'][0])) {
             $channel = $channelsResponse['items'][0];
 
-            return $channel['contentDetails']['relatedPlaylists'];
+            return $channel['contentDetails']['relatedPlaylists'] ?? [];
         }
 
         return [];

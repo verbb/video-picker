@@ -19,6 +19,8 @@ use DateTime;
 use Exception;
 use Throwable;
 
+use yii\caching\TagDependency;
+
 use GuzzleHttp\Exception\RequestException;
 
 abstract class Source extends SavableComponent implements SourceInterface
@@ -139,6 +141,9 @@ abstract class Source extends SavableComponent implements SourceInterface
     {
         if ($clearCache) {
             $this->cache = [];
+
+            // Clear the data cache as well for locally cached items
+            TagDependency::invalidate(Craft::$app->getCache(), $this->_getLocalCacheTag());
         }
 
         // Use the cache of explorer data, if available
@@ -228,6 +233,22 @@ abstract class Source extends SavableComponent implements SourceInterface
         return Html::tag('iframe', null, $attributes);
     }
 
+    public function cachedRequest(string $method = 'GET', string $uri = '', array $options = [])
+    {
+        // Add a source-level cache layer around requests
+        $cacheKey = md5(strtolower(Json::encode([$method, $uri, $options])));
+
+        if ($cachedData = $this->_getLocalCache($cacheKey)) {
+            return $cachedData;
+        }
+
+        $data = $this->request($method, $uri, $options);
+
+        $this->_setLocalCache($cacheKey, $data);
+
+        return $data;
+    }
+
 
     // Protected Methods
     // =========================================================================
@@ -235,5 +256,24 @@ abstract class Source extends SavableComponent implements SourceInterface
     protected function fetchExplorerSections(): array
     {
         return [];
+    }
+
+
+    // Private Methods
+    // =========================================================================
+
+    private function _getLocalCache(string $cacheKey): mixed
+    {
+        return Craft::$app->getCache()->get($cacheKey);
+    }
+
+    private function _setLocalCache(string $cacheKey, array $data): void
+    {
+        Craft::$app->getCache()->set($cacheKey, $data, 0, new TagDependency(['tags' => $this->_getLocalCacheTag()]));
+    }
+
+    private function _getLocalCacheTag(): string
+    {
+        return implode('__', ['video-picker', $this->handle]);
     }
 }

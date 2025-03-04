@@ -62,7 +62,7 @@ class Vimeo extends OAuthSource
 
     public function getVideoById(string $id): ?Video
     {
-        $data = $this->request('GET', 'videos/' . $id, [
+        $data = $this->cachedRequest('GET', 'videos/' . $id, [
             'query' => [
                 'fields' => 'created_time,description,duration,height,link,name,pictures,pictures,privacy,stats,uri,user,width,download,review_link,files'
             ],
@@ -206,7 +206,7 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'created_time,description,duration,height,link,name,pictures,pictures,privacy,stats,uri,user,width,download,review_link,files';
 
-        $data = $this->request('GET', $uri, [
+        $data = $this->cachedRequest('GET', $uri, [
             'query' => $query,
         ]);
 
@@ -265,7 +265,7 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'name,uri';
 
-        $data = $this->request('GET', 'me/folders', [
+        $data = $this->cachedRequest('GET', 'me/folders', [
             'query' => $query,
         ]);
 
@@ -288,7 +288,7 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'name,uri,stats';
 
-        $data = $this->request('GET', 'me/albums', [
+        $data = $this->cachedRequest('GET', 'me/albums', [
             'query' => $query,
         ]);
 
@@ -311,7 +311,7 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'name,uri';
 
-        $data = $this->request('GET', 'me/channels', [
+        $data = $this->cachedRequest('GET', 'me/channels', [
             'query' => $query,
         ]);
 

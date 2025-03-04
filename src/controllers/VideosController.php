@@ -53,13 +53,13 @@ class VideosController extends Controller
 
         $videos = [];
 
-        foreach ($videosResponse['videos'] as $video) {
+        foreach (($videosResponse['videos'] ?? []) as $video) {
             $videos[] = $video->getVideoData();
         }
 
         return $this->asJson([
             'videos' => $videos,
-            'nextPage' => $videosResponse['nextPage'],
+            'nextPage' => $videosResponse['nextPage'] ?? null,
         ]);
     }
 
