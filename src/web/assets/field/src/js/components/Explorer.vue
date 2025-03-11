@@ -323,6 +323,11 @@ export default {
 
             data.options.nextPage = this.nextPage;
 
+            // If loading more videos for search, override the method
+            if (data.options.q) {
+                data.method = 'search';
+            }
+
             Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
                 .then((response) => {
                     this.videos = this.videos.concat(response.data.videos);
