@@ -9,12 +9,12 @@
                 @input="fetchVideo()"
             >
 
-            <button class="vp-explorer-btn" @click.prevent="openExplorer">
+            <button v-if="hasSources" class="vp-explorer-btn" @click.prevent="openExplorer">
                 {{ t('video-picker', 'Browse videos…') }}
             </button>
         </div>
 
-        <div class="vp-single-video-container">
+        <div v-if="hasSources" class="vp-single-video-container">
             <template v-if="loadingVideo">
                 <div class="vp-loading" style="width: 1.5rem; height: 1.5rem;"></div>
             </template>
@@ -66,6 +66,10 @@
             </template>
         </div>
 
+        <div v-else style="margin-top: 0.5rem;">
+            <span class="warning with-icon" v-html="settings.sourceWarning"></span>
+        </div>
+
         <explorer v-if="showExplorer" :video="currentVideo" @closed="onExplorerClosed" />
         <preview v-if="showPreview" :video="previewVideo" @closed="onPreviewClosed" />
     </div>
@@ -110,6 +114,10 @@ export default {
     computed: {
         settings() {
             return this.$root.settings;
+        },
+
+        hasSources() {
+            return this.settings.sourceCount > 0;
         },
 
         formattedPlays() {
@@ -221,6 +229,10 @@ export default {
     },
 
     methods: {
+        getUrl(url, options = {}) {
+            return Craft.getUrl(url, options);
+        },
+
         openExplorer() {
             this.showExplorer = true;
         },
@@ -253,6 +265,10 @@ export default {
         },
 
         fetchVideo(refresh) {
+            if (!this.hasSources) {
+                return;
+            }
+
             this.loadingVideo = true;
             this.currentVideo = null;
 
