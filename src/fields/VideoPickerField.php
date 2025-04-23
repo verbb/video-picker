@@ -92,7 +92,7 @@ class VideoPickerField extends Field
             return $value;
         }
 
-        if ($value && is_string($value) && filter_var($value, FILTER_VALIDATE_URL)) {
+        if ($value && is_string($value) && filter_var(trim($value), FILTER_VALIDATE_URL)) {
             $video = VideoPicker::$plugin->getVideos()->getVideoByUrl($value);
 
             if ($video) {
