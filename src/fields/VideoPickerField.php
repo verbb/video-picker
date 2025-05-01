@@ -19,8 +19,10 @@ use craft\helpers\Db;
 use craft\helpers\Html;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
+use craft\helpers\UrlHelper;
 
 use yii\db\Schema;
+use yii\helpers\Markdown;
 
 use Throwable;
 
@@ -45,11 +47,6 @@ class VideoPickerField extends Field
     {
         $view = Craft::$app->getView();
 
-        // We need at least some sources to continue
-        if (!VideoPicker::$plugin->getSources()->getAllEnabledSources()) {
-            return Html::tag('span', Craft::t('video-picker', 'Provide at least one enabled source to continue.'), ['class' => 'warning with-icon']);
-        }
-
         $id = Html::id($this->handle);
 
         Plugin::registerAsset('field/src/js/video-picker.js');
@@ -67,6 +64,10 @@ class VideoPickerField extends Field
             'inputName' => $view->namespaceInputName($id),
             'fieldId' => $this->id,
             'value' => $value,
+            'sourceCount' => count(VideoPicker::$plugin->getSources()->getAllEnabledSources()),
+            'sourceWarning' => Markdown::processParagraph(Craft::t('video-picker', 'Provide at least one enabled [source]({link}) to browse videos and fetch video data.', [
+                'link' => UrlHelper::cpUrl('video-picker/sources'),
+            ])),
         ]) . ');';
 
         // Wait for VideoPicker JS to be loaded, either through an event listener, or by a flag.
@@ -91,7 +92,7 @@ class VideoPickerField extends Field
             return $value;
         }
 
-        if ($value && is_string($value) && filter_var($value, FILTER_VALIDATE_URL)) {
+        if ($value && is_string($value) && filter_var(trim($value), FILTER_VALIDATE_URL)) {
             $video = VideoPicker::$plugin->getVideos()->getVideoByUrl($value);
 
             if ($video) {

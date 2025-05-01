@@ -18,6 +18,8 @@ return [
         'embedHeaders' => [],
         'embedDetectorsSettings' => [],
         'embedAllowedDomains' => [],
+
+        'sources' => [],
     ]
 ];
 ```
@@ -31,6 +33,39 @@ return [
 - `embedHeaders` - Define any [headers](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers.
 - `embedDetectorsSettings` - Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to the detectors for embed helpers.
 - `embedAllowedDomains` - Define any allowed domain names for embed helpers. Any embed links that are added _not_ in this list will fail to be saved. Leave empty to allow any domain. Include just the TLD with no `http://`, `https://` or `www`.
+
+### Sources
+Supply your client configurations as per the below. The `key` for each item should be the source `handle`.
+
+```php
+return [
+    '*' => [
+        // ...
+        'sources' => [
+            'vimeo' => [
+                'enabled' => true,
+                'clientId' => '••••••••••••••••••••••••••••',
+                'clientSecret' => '••••••••••••••••••••••••••••',
+
+                // Add in any additional OAuth scopes
+                'scopes' => [
+                    'video_files',
+                ],
+
+                // Add in any additional OAuth authorization options, used when redirecting
+                // to the provider to start the OAuth authorization process
+                'authorizationOptions' => [
+                    'extra' => 'value',
+                ],
+            ],
+            'youTube' => [
+                'clientId' => '••••••••••••••••••••••••••••',
+                'clientSecret' => '••••••••••••••••••••••••••••',
+            ],
+        ],
+    ],
+];
+```
 
 ## Control Panel
 You can also manage configuration settings through the Control Panel by visiting Settings → Video Picker.
