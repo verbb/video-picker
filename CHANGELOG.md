@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.2 - 2025-05-01
+
+### Changed
+- Fields can now enter video URLs even when no sources exist yet.
+
+### Fixed
+- Fix video URLs not being trimmed correctly for whitespace.
+- Fix an error when viewing paginated videos while searching.
+
 ## 2.0.1 - 2025-03-04
 
 ### Changed
