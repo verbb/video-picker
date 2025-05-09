@@ -20,9 +20,9 @@ class VideosUtility extends Utility
         return 'video-picker';
     }
 
-    public static function iconPath(): ?string
+    public static function icon(): ?string
     {
-        return Craft::getAlias('@vendor/verbb/video-picker/src/icon-mask.svg');
+        return '@verbb/videopicker/icon-mask.svg';
     }
 
     public static function contentHtml(): string

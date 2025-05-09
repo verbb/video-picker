@@ -39,6 +39,11 @@ class VideoPickerField extends Field
         return Craft::t('video-picker', 'Video Picker');
     }
 
+    public static function icon(): string
+    {
+        return '@verbb/videopicker/icon-mask.svg';
+    }
+
 
     // Public Methods
     // =========================================================================
