@@ -236,7 +236,7 @@ abstract class Source extends SavableComponent implements SourceInterface
     public function cachedRequest(string $method = 'GET', string $uri = '', array $options = [])
     {
         // Add a source-level cache layer around requests
-        $cacheKey = md5(strtolower(Json::encode([$method, $uri, $options])));
+        $cacheKey = md5(strtolower(Json::encode([$this->handle, $method, $uri, $options])));
 
         if ($cachedData = $this->_getLocalCache($cacheKey)) {
             return $cachedData;
