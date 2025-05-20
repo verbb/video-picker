@@ -270,20 +270,25 @@ class YouTube extends OAuthSource
     {
         $video = new Video();
         $video->raw = $data;
-        $video->authorName = $data['snippet']['channelTitle'];
-        $video->authorUrl = 'http://youtube.com/channel/' . $data['snippet']['channelId'];
-        $video->date = new DateTime($data['snippet']['publishedAt']);
-        $video->description = $data['snippet']['description'];
+        $video->authorName = $data['snippet']['channelTitle'] ?? null;
+        $video->authorUrl = 'http://youtube.com/channel/' . ($data['snippet']['channelId'] ?? '');
+        $video->date = new DateTime($data['snippet']['publishedAt'] ?? '');
+        $video->description = $data['snippet']['description'] ?? null;
         $video->sourceHandle = $this->handle;
-        $video->id = $data['id'];
-        $video->plays = $data['statistics']['viewCount'];
-        $video->title = $data['snippet']['title'];
+        $video->id = $data['id'] ?? null;
+        $video->plays = $data['statistics']['viewCount'] ?? null;
+        $video->title = $data['snippet']['title'] ?? null;
         $video->url = 'https://youtu.be/' . $video->id;
 
-        $interval = new DateInterval($data['contentDetails']['duration']);
-        $video->duration = (new DateTime('@0'))->add($interval)->getTimestamp();
+        $duration = $data['contentDetails']['duration'] ?? null;
 
-        if (!empty($data['status']['privacyStatus']) && $data['status']['privacyStatus'] === 'private') {
+        if ($duration) {
+            if ($interval = new DateInterval($duration)) {
+                $video->duration = (new DateTime('@0'))->add($interval)->getTimestamp();
+            }
+        }
+
+        if (($data['status']['privacyStatus'] ?? '') === 'private') {
             $video->private = true;
         }
 
@@ -313,8 +318,8 @@ class YouTube extends OAuthSource
 
             foreach (($data['items'] ?? []) as $item) {
                 $collection = [];
-                $collection['id'] = $item['id'];
-                $collection['title'] = $item['snippet']['title'];
+                $collection['id'] = $item['id'] ?? '';
+                $collection['title'] = $item['snippet']['title'] ?? '';
                 $collection['totalVideos'] = 0;
                 $collection['url'] = 'title';
 

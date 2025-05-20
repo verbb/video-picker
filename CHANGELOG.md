@@ -25,6 +25,13 @@
 ### Changed
 - Now requires Craft 5.0+.
 
+## 1.0.3 - 2025-05-20
+
+### Fixed
+- Fix local cache not working for multiple sources.
+- Fix some errors when processing Vimeo videos.
+- Fix some errors when processing YouTube videos.
+
 ## 1.0.2 - 2025-05-01
 
 ### Changed
