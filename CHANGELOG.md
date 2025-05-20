@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.3 - 2025-05-20
+
+### Fixed
+- Fix local cache not working for multiple sources.
+- Fix some errors when processing Vimeo videos.
+- Fix some errors when processing YouTube videos.
+- Fix Utility and Video Picker field icons.
+
 ## 2.0.2 - 2025-05-01
 
 ### Changed
