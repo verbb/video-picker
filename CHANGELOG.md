@@ -33,6 +33,11 @@
 ### Changed
 - Now requires Craft 5.0+.
 
+## 1.0.4 - 2025-07-18
+
+### Changed
+- Update English translations.
+
 ## 1.0.3 - 2025-05-20
 
 ### Fixed

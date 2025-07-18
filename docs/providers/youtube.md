@@ -39,3 +39,12 @@ https://proxy.verbb.io?return=http://my-site.test/video-picker/auth/callback
 ```
 
 Here, it routes the request through to our Verbb servers, which forwards on the request to the URL in the `return` parameter (which would be your local project).
+
+
+## Troubleshooting
+
+```
+Access blocked: ddev.site has not completed the Google verification process.
+```
+
+In your Google API Console project, navigate to **Audience** and under the **Test Users** section, click the **Add Users** button. Add in the email address of the Google Account you're using to login to YouTube with when trying to connect.
