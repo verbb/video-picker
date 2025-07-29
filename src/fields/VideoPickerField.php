@@ -11,10 +11,13 @@ use verbb\videopicker\records\Video as VideoRecord;
 use Craft;
 use craft\base\ElementInterface;
 use craft\base\Field;
+use craft\base\PreviewableFieldInterface;
+use craft\base\ThumbableFieldInterface;
 use craft\gql\GqlEntityRegistry;
 use craft\gql\TypeLoader;
 use craft\gql\types\DateTime;
 use craft\helpers\ArrayHelper;
+use craft\helpers\Cp;
 use craft\helpers\Db;
 use craft\helpers\Html;
 use craft\helpers\Json;
@@ -29,7 +32,7 @@ use Throwable;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\ObjectType;
 
-class VideoPickerField extends Field
+class VideoPickerField extends Field implements ThumbableFieldInterface, PreviewableFieldInterface
 {
     // Static Methods
     // =========================================================================
@@ -47,6 +50,43 @@ class VideoPickerField extends Field
 
     // Public Methods
     // =========================================================================
+
+    public function getPreviewHtml(mixed $value, ElementInterface $element): string
+    {
+        if (!$value) {
+            return '';
+        }
+
+        $content = array_filter([
+            $value->getSource()->name ?? '',
+            $value->url,
+        ]);
+
+        return implode(' - ', $content);
+    }
+
+    public function getThumbHtml(mixed $value, ElementInterface $element, int $size): ?string
+    {
+        if (!$value) {
+            return '';
+        }
+
+        $videoData = $value->getVideoData();
+
+        $thumbUrl = $videoData['thumbnail'] ?? '';
+
+        if (!$thumbUrl) {
+            return '';
+        } 
+
+        return Html::tag('div', '', [
+            'class' => 'thumb',
+            'data' => [
+                'sizes' => sprintf('calc(%srem/16)', $size),
+                'srcset' => sprintf('%s %sw, %s %sw', $thumbUrl, $size, null, $size * 2),
+            ],
+        ]);
+    }
 
     public function getInputHtml(mixed $value, ?ElementInterface $element = null): string
     {
