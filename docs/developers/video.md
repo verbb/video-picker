@@ -10,6 +10,7 @@ Attribute | Description
 `sourceHandle` | A handle identifying the video source, e.g., "YouTube" or "Vimeo".
 `date` | The date the video was published or created (`DateTime` object).
 `duration` | Duration of the video in seconds.
+`duration8601` | Duration of the video in ISO8601 format.
 `plays` | The number of times the video has been played.
 `authorName` | The name of the video's author.
 `authorUrl` | URL to the author’s profile or channel.
@@ -28,6 +29,7 @@ Method | Description
 --- | ---
 `getSource()` | Returns the [Source](docs:developers/source) for the video.
 `getFormattedDuration()` | Returns a human-readable format of the duration (e.g., `01:23:15`).
+`getDuration8601()` | Returns the duration of the video in ISO8601 format.
 `getThumbnail($width = 600)` | Retrieves the URL for the closest available thumbnail to the specified width.
 `getEmbedHtml($options = [])` | Returns the HTML embed code for the video, with optional customization parameters.
 `getEmbedUrl($options = [])` | Retrieves the direct URL to embed the video with optional customization parameters.

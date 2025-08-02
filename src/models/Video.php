@@ -61,6 +61,7 @@ class Video extends Model
         $video['thumbnail'] = $this->getThumbnail();
         $video['embedHtml'] = $this->getEmbedHtml(['autoplay' => true]);
         $video['duration'] = $this->getFormattedDuration();
+        $video['duration8601'] = $this->getDuration8601();
 
         return $video;
     }
@@ -81,6 +82,25 @@ class Video extends Model
         }
 
         return sprintf("%02d:%02d", $minutes, $seconds);
+    }
+
+    public function getDuration8601(): string
+    {
+        $hours = intdiv($this->duration, 3600);
+        $minutes = intdiv($this->duration % 3600, 60);
+        $seconds = $this->duration % 60;
+
+        $iso8601 = 'PT';
+
+        if ($hours > 0) {
+            $iso8601 .= sprintf('%dH', $hours);
+        }
+
+        if ($minutes > 0) {
+            $iso8601 .= sprintf('%dM', $minutes);
+        }
+
+        return $iso8601 . sprintf('%dS', $seconds);
     }
 
     public function getThumbnail(int $width = 600): ?string
