@@ -1,0 +1,15 @@
+{% import '_includes/forms' as forms %}
+
+{{ forms.lightswitchField({
+    label: 'Show Explorer' | t('video-picker'),
+    instructions: 'Whether to show the video explorer ("Browse videos") button.' | t('video-picker'),
+    name: 'showExplorer',
+    on: field.showExplorer,
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Show Preview' | t('video-picker'),
+    instructions: 'Whether to show the preview of a chosen video.' | t('video-picker'),
+    name: 'showPreview',
+    on: field.showPreview,
+}) }}
