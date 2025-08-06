@@ -48,6 +48,13 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
     }
 
 
+    // Properties
+    // =========================================================================
+
+    public bool $showExplorer = true;
+    public bool $showPreview = true;
+
+
     // Public Methods
     // =========================================================================
 
@@ -109,6 +116,8 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             'inputName' => $view->namespaceInputName($id),
             'fieldId' => $this->id,
             'value' => $value,
+            'showExplorer' => $this->showExplorer,
+            'showPreview' => $this->showPreview,
             'sourceCount' => count(VideoPicker::$plugin->getSources()->getAllEnabledSources()),
             'sourceWarning' => Markdown::processParagraph(Craft::t('video-picker', 'Provide at least one enabled [source]({link}) to browse videos and fetch video data.', [
                 'link' => UrlHelper::cpUrl('video-picker/sources'),

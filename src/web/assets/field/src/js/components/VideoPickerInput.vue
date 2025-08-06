@@ -9,7 +9,7 @@
                 @input="fetchVideo()"
             >
 
-            <button v-if="hasSources" class="vp-explorer-btn" @click.prevent="openExplorer">
+            <button v-if="hasSources && enableExplorer" class="vp-explorer-btn" @click.prevent="openExplorer">
                 {{ t('video-picker', 'Browse videos…') }}
             </button>
         </div>
@@ -25,7 +25,7 @@
                 </div>
             </div>
 
-            <template v-else-if="currentVideo">
+            <template v-else-if="currentVideo && enablePreview">
                 <div class="vp-single-video-thumb">
                     <video-thumb
                         :url="currentVideo.thumbnail"
@@ -70,8 +70,8 @@
             <span class="warning with-icon" v-html="settings.sourceWarning"></span>
         </div>
 
-        <explorer v-if="showExplorer" :video="currentVideo" @closed="onExplorerClosed" />
-        <preview v-if="showPreview" :video="previewVideo" @closed="onPreviewClosed" />
+        <explorer v-if="showExplorer && enableExplorer" :video="currentVideo" @closed="onExplorerClosed" />
+        <preview v-if="showPreview && enablePreview" :video="previewVideo" @closed="onPreviewClosed" />
     </div>
 </template>
 
@@ -104,6 +104,8 @@ export default {
             loadingVideo: false,
             videoError: null,
             videoUrl: null,
+            enableExplorer: true,
+            enablePreview: true,
             showExplorer: false,
             showPreview: false,
             previewVideo: null,
@@ -216,6 +218,8 @@ export default {
     },
 
     created() {
+        this.enableExplorer = this.settings.showExplorer;
+        this.enablePreview = this.settings.showPreview;
         this.currentVideo = this.settings.value;
         this.videoUrl = this.currentVideo?.url ?? null;
 
