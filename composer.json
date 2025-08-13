@@ -2,7 +2,7 @@
     "name": "verbb/video-picker",
     "description": "A slick field to pick videos with. Supports YouTube, Vimeo and more.",
     "type": "craft-plugin",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "keywords": [
         "craft",
         "cms",
