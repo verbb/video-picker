@@ -38,6 +38,12 @@
 ### Changed
 - Now requires Craft 5.0+.
 
+## 1.0.5 - 2025-08-12
+
+### Added
+- Add “Show Explorer” and “Show Preview” field settings.
+- Add `duration8601` to video data.
+
 ## 1.0.4 - 2025-07-18
 
 ### Changed
