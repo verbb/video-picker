@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.5 - 2025-08-13
+
+### Added
+- Add “Show Explorer” and “Show Preview” field settings.
+- Add `duration8601` to video data.
+- Add the ability to use Video Picker Videos in element cards (thumbnails and URLs).
+
 ## 2.0.4 - 2025-07-18
 
 ### Changed
