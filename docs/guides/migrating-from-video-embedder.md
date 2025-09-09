@@ -5,8 +5,10 @@ If your existing site uses [Video Embedder](https://github.com/verbb/craft-video
 While Video Embedder doesn't have a field for picking videos, it does use Twig tags to embed videos. Fortunately, these are widely compatible with Video Picker. Take a look at our [Embedding Videos](docs:template-guides/embedding-videos) page.
 
 ```twig
+{# Video Embedder #}
 {% set embed = craft.videoEmbedder.getEmbedUrl('https://www.youtube.com/watch?v=jfKfPfyJRdk') %}
 
+{# Video Picker #}
 {% set embed = craft.videoPicker.getEmbedUrl('https://www.youtube.com/watch?v=jfKfPfyJRdk') %}
 ```
 
