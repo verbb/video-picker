@@ -6,7 +6,7 @@ The first step is to change your (Video Embedder) Video fields to Video Picker. 
 
 After switching the type of your fields, you'll then need to create new Sources for your video provider. While Video Embedder didn't require a source configured for your videos, Video Picker does, in order to get accurate metadata on your videos.
 
-Navigate to Video Picker > Sources in the Craft control panel to setup the sources for your YouTube or Vimeo videos (or both)>
+Navigate to Video Picker > Sources in the Craft control panel to setup the sources for your YouTube or Vimeo videos (or both).
 
 ## Content migration
 There's no need to migrate your content for this field change, as Video Embedder Videos and Video Picker use the same data format. So long as you've switched field types, and setup your sources, you should be ready to go with Video Picker.
