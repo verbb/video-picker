@@ -1,4 +1,4 @@
-<p align="center"><img src="https://verbb.imgix.net/plugins/video-picker/video-picker-icon.svg" width="100" height="100" alt="Video Picker icon"></p>
+<p align="center"><img src="https://assets.verbb.io/plugins/video-picker/video-picker-icon.svg" width="100" height="100" alt="Video Picker icon"></p>
 <h1 align="center">Video Picker for Craft CMS</h1>
 
 Video Picker is a Craft CMS plugin that provides a rich experience when dealing with videos. Either enter the URL to a video, or browse an entire linked account's videos, and see a preview of it in the control panel.
