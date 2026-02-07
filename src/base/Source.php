@@ -123,6 +123,11 @@ abstract class Source extends SavableComponent implements SourceInterface
         return ProviderHelper::getIcon(static::$providerHandle);
     }
 
+    public function getCpEditUrl(): ?string
+    {
+        return UrlHelper::cpUrl('video-picker/sources/' . $this->handle);
+    }
+
     public function isConnected(): bool
     {
         return false;
