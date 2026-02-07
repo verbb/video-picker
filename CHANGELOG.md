@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.6 - 2026-02-07
+
+### Added
+- Add “EU/UK Browsing” setting for Vimeo, due to region restrictions on browsing videos.
+
+### Fixed
+- Fix a redirect error when connecting to a source in the control panel.
+- Fix an error when creating a new source.
+
 ## 2.0.5 - 2025-08-13
 
 ### Added
