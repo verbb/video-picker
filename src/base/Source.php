@@ -50,11 +50,6 @@ abstract class Source extends SavableComponent implements SourceInterface
         }
     }
 
-    public static function supportsSearch(): bool
-    {
-        return true;
-    }
-
 
     // Properties
     // =========================================================================
@@ -128,6 +123,11 @@ abstract class Source extends SavableComponent implements SourceInterface
         return UrlHelper::cpUrl('video-picker/sources/' . $this->handle);
     }
 
+    public function supportsSearch(): bool
+    {
+        return true;
+    }
+
     public function isConnected(): bool
     {
         return false;
@@ -140,6 +140,16 @@ abstract class Source extends SavableComponent implements SourceInterface
         return Craft::$app->getView()->renderTemplate('video-picker/sources/_types/' . $handle . '/settings', [
             'source' => $this,
         ]);
+    }
+
+    public function getExplorerData(bool $clearCache = false): array
+    {
+        return [
+            'name' => $this->name,
+            'handle' => $this->handle,
+            'supportsSearch' => $this->supportsSearch(),
+            'sections' => $this->getExplorerSections($clearCache),
+        ];
     }
 
     public function getExplorerSections(bool $clearCache = false): array

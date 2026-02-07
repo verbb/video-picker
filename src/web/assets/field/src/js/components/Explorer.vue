@@ -48,7 +48,7 @@
                 </div>
 
                 <div ref="main" class="main" @scroll="onScroll">
-                    <div v-if="currentSource" class="vp-videos-search-wrapper">
+                    <div v-if="currentSource && supportsSearch" class="vp-videos-search-wrapper">
                         <input
                             v-model="query"
                             type="search"
@@ -187,6 +187,14 @@ export default {
                     this.fetchVideos();
                 }
             },
+        },
+
+        supportsSearch() {
+            if (this.currentSource) {
+                return this.currentSource.supportsSearch;
+            }
+
+            return true;
         },
 
         debouncedSearch() {

@@ -29,11 +29,7 @@ class VideosController extends Controller
         $data = [];
 
         foreach ($sources as $source) {
-            $data[] = [
-                'name' => $source->name,
-                'handle' => $source->handle,
-                'sections' => $source->getExplorerSections($refresh),
-            ];
+            $data[] = $source->getExplorerData($refresh);
         }
 
         return $this->asJson($data);

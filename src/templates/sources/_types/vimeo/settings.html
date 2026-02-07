@@ -3,3 +3,11 @@
 
 {% include 'video-picker/sources/_oauth' %}
 
+{{ forms.lightswitchField({
+    label: 'EU/UK Browsing' | t('video-picker'),
+    instructions: 'Whether your users are based in the EU/UK for browsing. Vimeo [restricts]({url}) certain browsing for EU/UK customers.' | t('video-picker', { url: 'https://help.vimeo.com/hc/en-us/articles/30298226209169-Changes-to-Vimeo-com-in-the-EU-and-UK' }) | md,
+    name: 'euRestricted',
+    on: source.euRestricted,
+    warning: macros.configWarning("sources.#{source.handle}.euRestricted", 'video-picker'),
+    errors: source.getErrors('euRestricted'),
+}) }}

@@ -32,9 +32,16 @@ class Vimeo extends OAuthSource
 
     public static string $providerHandle = 'vimeo';
 
+    public bool $euRestricted = false;
+
 
     // Public Methods
     // =========================================================================
+
+    public function supportsSearch(): bool
+    {
+        return !$this->euRestricted;
+    }
 
     public function getDefaultScopes(): array
     {
@@ -138,22 +145,25 @@ class Vimeo extends OAuthSource
             ]);
         }
 
-        // Channels
-        $collections = [];
+        // Channels - check if they are disabled for some users (UK/EU)
+        // https://help.vimeo.com/hc/en-us/articles/30298226209169-Changes-to-Vimeo-com-in-the-EU-and-UK
+        if (!$this->euRestricted) {
+            $collections = [];
 
-        foreach ($this->_getCollectionsChannels() as $channel) {
-            $collections[] = new Collection([
-                'name' => $channel['title'],
-                'method' => 'channel',
-                'options' => ['id' => $channel['id']],
-            ]);
-        }
+            foreach ($this->_getCollectionsChannels() as $channel) {
+                $collections[] = new Collection([
+                    'name' => $channel['title'],
+                    'method' => 'channel',
+                    'options' => ['id' => $channel['id']],
+                ]);
+            }
 
-        if ($collections) {
-            $sections[] = new Section([
-                'name' => 'Channels',
-                'collections' => $collections,
-            ]);
+            if ($collections) {
+                $sections[] = new Section([
+                    'name' => 'Channels',
+                    'collections' => $collections,
+                ]);
+            }
         }
 
         return $sections;
