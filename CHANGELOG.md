@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.7 - 2026-02-13
+
+### Fixed
+- Fix refreshing video’s not clearing local cache data.
+
 ## 2.0.6 - 2026-02-07
 
 ### Added
