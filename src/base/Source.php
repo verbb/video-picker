@@ -264,6 +264,11 @@ abstract class Source extends SavableComponent implements SourceInterface
         return $data;
     }
 
+    public function clearLocalCache(): void
+    {
+        TagDependency::invalidate(Craft::$app->getCache(), $this->_getLocalCacheTag());
+    }
+
 
     // Protected Methods
     // =========================================================================

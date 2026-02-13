@@ -41,6 +41,14 @@ class Videos extends Component
         if ($record) {
             if ($clearCache) {
                 $record->delete();
+
+                // Also clear this source's local cache so the next fetch hits the provider
+                foreach (VideoPicker::$plugin->getSources()->getAllEnabledSources() as $source) {
+                    if ($source->getVideoIdFromUrl($videoUrl)) {
+                        $source->clearLocalCache();
+                        break;
+                    }
+                }
             } else {
                 // Handle emoji's in video content
                 return new Video(Json::decode(StringHelper::shortcodesToEmoji($record->data)));
