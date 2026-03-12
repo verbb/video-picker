@@ -110,8 +110,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             $value = $video;
         }
 
-        // Create the VideoPicker Input Vue component
-        $js = 'new Craft.VideoPicker.Input(' . Json::encode([
+        $componentSettings = [
             'inputId' => $view->namespaceInputId($id),
             'inputName' => $view->namespaceInputName($id),
             'fieldId' => $this->id,
@@ -122,15 +121,11 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             'sourceWarning' => Markdown::processParagraph(Craft::t('video-picker', 'Provide at least one enabled [source]({link}) to browse videos and fetch video data.', [
                 'link' => UrlHelper::cpUrl('video-picker/sources'),
             ])),
-        ]) . ');';
+        ];
 
-        // Wait for VideoPicker JS to be loaded, either through an event listener, or by a flag.
-        // This covers if this script is run before, or after the VideoPicker JS has loaded
-        $view->registerJs('document.addEventListener("vite-script-loaded", function(e) {' .
-            'if (e.detail.path === "field/src/js/video-picker.js") {' . $js . '}' .
-        '}); if (Craft.VideoPickerReady) {' . $js . '}');
-
-        return $view->renderTemplate('video-picker/_field/input');
+        return $view->renderTemplate('video-picker/_field/input', [
+            'componentSettings' => Json::encode($componentSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        ]);
     }
 
     public function getSettingsHtml(): ?string
