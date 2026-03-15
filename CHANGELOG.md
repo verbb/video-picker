@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.8 - 2026-03-15
+
+### Changed
+- Refactor Video Picker field bootstrapping to DOM auto-mount.
+
 ## 2.0.7 - 2026-02-13
 
 ### Fixed
