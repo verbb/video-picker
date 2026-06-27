@@ -49,8 +49,7 @@
         "title": "Guides",
         "collapsable": false,
         "children": [
-            "guides/migrating-from-dukt-videos",
-            "guides/migrating-from-video-embedder"
+            "guides/migrations-upgrades/index"
         ]
     }
 ]
