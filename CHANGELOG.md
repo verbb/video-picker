@@ -69,6 +69,11 @@
 ### Changed
 - Now requires Craft 5.0+.
 
+## 1.0.7 - 2026-07-15
+
+### Added
+- Add guides to docs.
+
 ## 1.0.6 - 2026-05-03
 
 ### Changed
