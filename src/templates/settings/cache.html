@@ -1,0 +1,56 @@
+{% extends 'video-picker/_layouts/settings' %}
+
+{% import '_includes/forms' as forms %}
+{% import 'verbb-base/_macros' as macros %}
+
+{% set fullPageForm = true %}
+{% set selectedNavItem = 'cache' %}
+
+{% block blockContent %}
+
+<input type="hidden" name="action" value="video-picker/plugin/save-settings">
+<input type="hidden" name="settingsScreen" value="cache">
+{{ redirectInput('video-picker/settings/cache') }}
+
+{% namespace 'settings' %}
+
+{{ forms.textField({
+    first: true,
+    label: 'Provider Cache Duration' | t('video-picker'),
+    instructions: 'How long (in seconds) to cache provider API responses such as playlists and video lists. Minimum 60.' | t('video-picker'),
+    id: 'providerCacheDuration',
+    name: 'providerCacheDuration',
+    value: settings.providerCacheDuration,
+    size: 10,
+    unit: 'seconds' | t('app'),
+    errors: settings.getErrors('providerCacheDuration'),
+    warning: macros.configWarning('providerCacheDuration', 'video-picker'),
+}) }}
+
+{{ forms.textField({
+    label: 'Provider Search Cache Duration' | t('video-picker'),
+    instructions: 'How long (in seconds) to cache provider search results. Prefer a shorter value than the main provider cache. Minimum 60.' | t('video-picker'),
+    id: 'providerSearchCacheDuration',
+    name: 'providerSearchCacheDuration',
+    value: settings.providerSearchCacheDuration,
+    size: 10,
+    unit: 'seconds' | t('app'),
+    errors: settings.getErrors('providerSearchCacheDuration'),
+    warning: macros.configWarning('providerSearchCacheDuration', 'video-picker'),
+}) }}
+
+{{ forms.textField({
+    label: 'Embed Cache Duration' | t('video-picker'),
+    instructions: 'How long (in seconds) to cache generic Twig embed helper crawls. Minimum 60.' | t('video-picker'),
+    id: 'embedCacheDuration',
+    name: 'embedCacheDuration',
+    value: settings.embedCacheDuration,
+    size: 10,
+    unit: 'seconds' | t('app'),
+    errors: settings.getErrors('embedCacheDuration'),
+    warning: macros.configWarning('embedCacheDuration', 'video-picker'),
+}) }}
+
+{% endnamespace %}
+
+{% endblock %}

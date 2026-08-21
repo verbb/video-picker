@@ -1,0 +1,51 @@
+{% extends 'video-picker/_layouts/settings' %}
+
+{% import '_includes/forms' as forms %}
+{% import 'verbb-base/_macros' as macros %}
+
+{% set fullPageForm = true %}
+{% set selectedNavItem = 'embed' %}
+
+{% block blockContent %}
+
+<input type="hidden" name="action" value="video-picker/plugin/save-settings">
+<input type="hidden" name="settingsScreen" value="embed">
+{{ redirectInput('video-picker/settings/embed') }}
+
+{% namespace 'settings' %}
+
+{{ forms.lightswitchField({
+    first: true,
+    label: 'Resolve Hi-Res Embed Image' | t('video-picker'),
+    instructions: 'Whether embed helpers should pick the highest-resolution image available. This can be slow — every candidate image is fetched and compared.' | t('video-picker'),
+    id: 'resolveHiResEmbedImage',
+    name: 'resolveHiResEmbedImage',
+    on: settings.resolveHiResEmbedImage,
+    errors: settings.getErrors('resolveHiResEmbedImage'),
+    warning: macros.configWarning('resolveHiResEmbedImage', 'video-picker'),
+}) }}
+
+{{ forms.editableTableField({
+    label: 'Embed Allowed Domains' | t('video-picker'),
+    instructions: 'Hosts allowed for Twig embed helpers. Leave empty to allow any public host. Use the domain only (no `http://`, `https://`, or `www`) — e.g. `youtube.com`, `vimeo.com`.' | t('video-picker'),
+    id: 'embedAllowedDomains',
+    name: 'embedAllowedDomains',
+    cols: {
+        domain: {
+            type: 'singleline',
+            heading: 'Domain' | t('video-picker'),
+            info: 'e.g. youtube.com' | t('video-picker'),
+        },
+    },
+    rows: settings.embedAllowedDomainRows,
+    addRowLabel: 'Add a domain' | t('video-picker'),
+    allowAdd: true,
+    allowDelete: true,
+    allowReorder: true,
+    errors: settings.getErrors('embedAllowedDomains'),
+    warning: macros.configWarning('embedAllowedDomains', 'video-picker'),
+}) }}
+
+{% endnamespace %}
+
+{% endblock %}

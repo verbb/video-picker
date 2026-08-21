@@ -118,6 +118,8 @@ class VideoPicker extends Plugin
             $event->rules['video-picker/sources/new'] = 'video-picker/sources/edit';
             $event->rules['video-picker/sources/<handle:{handle}>'] = 'video-picker/sources/edit';
             $event->rules['video-picker/settings'] = 'video-picker/plugin/settings';
+            $event->rules['video-picker/settings/cache'] = 'video-picker/plugin/settings-cache';
+            $event->rules['video-picker/settings/embed'] = 'video-picker/plugin/settings-embed';
 
             if (Craft::$app->getConfig()->getGeneral()->headlessMode || !Craft::$app->getConfig()->getGeneral()->cpTrigger) {
                 $event->rules['video-picker/auth/callback'] = 'video-picker/auth/callback';

@@ -8,8 +8,9 @@
 
 {% block blockContent %}
 
-<input type="hidden" name="action" value="plugins/save-plugin-settings">
-<input type="hidden" name="pluginHandle" value="video-picker">
+<input type="hidden" name="action" value="video-picker/plugin/save-settings">
+<input type="hidden" name="settingsScreen" value="general">
+{{ redirectInput('video-picker/settings') }}
 
 {% namespace 'settings' %}
 
@@ -42,6 +43,7 @@
     id: 'videosPerPage',
     name: 'videosPerPage',
     value: settings.videosPerPage,
+    size: 5,
     required: true,
     errors: settings.getErrors('videosPerPage'),
     warning: macros.configWarning('videosPerPage', 'video-picker'),

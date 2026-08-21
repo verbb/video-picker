@@ -12,6 +12,11 @@ return [
         'hasCpSection' => true,
         'videosPerPage' => 12,
 
+        // Provider / embed application-cache TTLs (seconds; minimum 60)
+        'providerCacheDuration' => 3600,
+        'providerSearchCacheDuration' => 900,
+        'embedCacheDuration' => 3600,
+
         // Embed settings
         'resolveHiResEmbedImage' => false,
         'embedClientSettings' => [],
@@ -28,10 +33,13 @@ return [
 - `pluginName` - If you wish to customise the plugin name.
 - `hasCpSection` - Whether to have the plugin pages appear on the main CP sidebar menu.
 - `videosPerPage` - How many videos should be shown per-page when using the video explorer.
+- `providerCacheDuration` - How long (seconds) to cache provider API responses such as playlists and video lists.
+- `providerSearchCacheDuration` - How long (seconds) to cache provider search results (typically shorter than `providerCacheDuration`).
+- `embedCacheDuration` - How long (seconds) to cache generic Twig embed helper crawls.
 - `resolveHiResEmbedImage` - Whether the embed helpers should determine the most hi-resolution image available. Do note that there's performance implications for this, as it requires fetching every available image for the embed data and comparing them.
-- `embedClientSettings` - Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers.
-- `embedHeaders` - Define any [headers](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers.
-- `embedDetectorsSettings` - Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to the detectors for embed helpers.
+- `embedClientSettings` - Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers. **Config file only.**
+- `embedHeaders` - Define any [headers](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers. **Config file only.**
+- `embedDetectorsSettings` - Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to the detectors for embed helpers. **Config file only.**
 - `embedAllowedDomains` - Define any allowed domain names for embed helpers. Any embed links that are added _not_ in this list will fail to be saved. Leave empty to allow any domain. Include just the TLD with no `http://`, `https://` or `www`.
 
 ### Sources
@@ -68,4 +76,4 @@ return [
 ```
 
 ## Control Panel
-You can also manage configuration settings through the Control Panel by visiting Settings → Video Picker.
+You can also manage most configuration settings through the Control Panel by visiting Settings → Video Picker — **General Settings**, **Cache Settings** (TTLs), and **Embed Settings** (hi-res images, allowed domains). Advanced embed client / header / detector arrays remain config-file only.

@@ -26,11 +26,35 @@ class Settings extends Model
     public array $embedClientSettings = [];
     public array $embedHeaders = [];
     public array $embedDetectorsSettings = [];
+
+    /** @var string[] Host allowlist for Twig embed helpers (empty = any public host). */
     public array $embedAllowedDomains = [];
 
 
     // Public Methods
     // =========================================================================
+
+    public function setAttributes($values, $safeOnly = true): void
+    {
+        if (array_key_exists('embedAllowedDomains', $values)) {
+            $values['embedAllowedDomains'] = self::normalizeDomainList($values['embedAllowedDomains']);
+        }
+
+        parent::setAttributes($values, $safeOnly);
+    }
+
+    /**
+     * Editable-table rows for the CP settings form.
+     *
+     * @return array<int, array{domain: string}>
+     */
+    public function getEmbedAllowedDomainRows(): array
+    {
+        return array_map(
+            static fn(string $domain): array => ['domain' => $domain],
+            $this->embedAllowedDomains,
+        );
+    }
 
     public function defineRules(): array
     {
@@ -55,5 +79,52 @@ class Settings extends Model
         ];
 
         return array_replace_recursive($defaults, $this->embedClientConfig);
+    }
+
+
+    // Private Methods
+    // =========================================================================
+
+    /**
+     * @return string[]
+     */
+    private static function normalizeDomainList(mixed $value): array
+    {
+        if ($value === null || $value === '' || $value === []) {
+            return [];
+        }
+
+        if (is_string($value)) {
+            $value = preg_split('/[\r\n,]+/', $value) ?: [];
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $domains = [];
+
+        foreach ($value as $row) {
+            if (is_string($row)) {
+                $domain = trim($row);
+            } elseif (is_array($row)) {
+                $domain = trim((string)($row['domain'] ?? $row[0] ?? ''));
+            } else {
+                continue;
+            }
+
+            // CP/docs: host only — strip accidental scheme / www.
+            $domain = preg_replace('#^https?://#i', '', $domain) ?? $domain;
+            $domain = preg_replace('#^www\.#i', '', $domain) ?? $domain;
+            $domain = strtolower(rtrim($domain, '/.'));
+
+            if ($domain === '') {
+                continue;
+            }
+
+            $domains[] = $domain;
+        }
+
+        return array_values(array_unique($domains));
     }
 }

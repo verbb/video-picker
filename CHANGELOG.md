@@ -5,6 +5,7 @@
 ### Added
 - Add field setting for optional input placeholder text when no video is selected.
 - Add source setting **Available Fields** to control what fields can browse the source.
+- Expose provider/search/embed cache durations, hi-res embed image toggle, and embed allowed domains in plugin settings (advanced embed client arrays stay config-only).
 
 ### Changed
 - Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).
