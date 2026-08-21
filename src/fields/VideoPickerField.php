@@ -4,7 +4,6 @@ namespace verbb\videopicker\fields;
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\gql\types\ArrayType;
 use verbb\videopicker\helpers\Plugin;
-use verbb\videopicker\helpers\Videos;
 use verbb\videopicker\models\Video;
 use verbb\videopicker\records\Video as VideoRecord;
 
@@ -55,11 +54,6 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
     public bool $showPreview = true;
     /** Shown in the empty URL control (e.g. “Enter a video URL”). */
     public ?string $placeholder = null;
-    /**
-     * Allowed sources for this field (`*` = all, uid list, or empty = none).
-     * Null means unset (legacy) and is treated as all enabled sources.
-     */
-    public mixed $sources = null;
 
 
     // Public Methods
@@ -127,13 +121,13 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
         $sourceCount = count($fieldSources);
         $hasGlobalSources = count(VideoPicker::$plugin->getSources()->getAllEnabledSources()) > 0;
 
-        // Distinguish “no sources configured in the plugin” vs “this field selected none”.
+        // Distinguish “no sources configured in the plugin” vs “none available for this field”.
         if (!$hasGlobalSources) {
             $sourceWarning = Craft::t('video-picker', 'Provide at least one enabled [source]({link}) to browse videos and fetch video data.', [
                 'link' => UrlHelper::cpUrl('video-picker/sources'),
             ]);
         } elseif ($sourceCount === 0) {
-            $sourceWarning = Craft::t('video-picker', 'This field has no sources selected. Choose at least one under the field’s Available Sources setting.');
+            $sourceWarning = Craft::t('video-picker', 'No sources are available for this field. On each source, set Available Fields to All (or include this field).');
         } else {
             $sourceWarning = '';
         }
@@ -161,11 +155,8 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
 
     public function getSettingsHtml(): ?string
     {
-        $sources = VideoPicker::$plugin->getSources()->getAllEnabledSources();
-
         return Craft::$app->getView()->renderTemplate('video-picker/_field/settings', [
             'field' => $this,
-            'sources' => $sources,
         ]);
     }
 
@@ -176,7 +167,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
         }
 
         if ($value && is_string($value) && filter_var(trim($value), FILTER_VALIDATE_URL)) {
-            // Hard-limit: only resolve URLs against sources allowed for this field.
+            // Only resolve against sources that allow this field (source Available Fields).
             $video = VideoPicker::$plugin->getVideos()->getVideoByUrl($value, false, $this);
 
             if ($video) {

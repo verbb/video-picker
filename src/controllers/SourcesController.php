@@ -3,6 +3,7 @@ namespace verbb\videopicker\controllers;
 
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\base\SourceInterface;
+use verbb\videopicker\fields\VideoPickerField;
 
 use Craft;
 use craft\helpers\ArrayHelper;
@@ -88,6 +89,7 @@ class SourcesController extends Controller
             'sourceOptions' => $sourceOptions,
             'sourceInstances' => $sourceInstances,
             'sourceTypes' => $allSourceTypes,
+            'fieldOptions' => $this->_videoPickerFieldOptions(),
         ]);
     }
 
@@ -107,12 +109,19 @@ class SourcesController extends Controller
             }
         }
 
+        // Available Fields lives on the source (not the field) so prod can grant fields without PC.
+        $fields = $this->request->getBodyParam('fields');
+        if ($fields === null || $fields === '') {
+            $fields = '*';
+        }
+
         $source = $sourcesService->createSource([
             'id' => $sourceId,
             'type' => $type,
             'name' => $this->request->getParam('name'),
             'handle' => $this->request->getParam('handle'),
             'enabled' => (bool)$this->request->getParam('enabled'),
+            'fields' => $fields,
             'settings' => $this->request->getParam("types.$type"),
         ]);
 
@@ -144,5 +153,31 @@ class SourcesController extends Controller
         VideoPicker::$plugin->getSources()->deleteSourceById($sourceId);
 
         return $this->asSuccess();
+    }
+
+    // Private Methods
+    // =========================================================================
+
+    /**
+     * @return array{label: string, value: string}[]
+     */
+    private function _videoPickerFieldOptions(): array
+    {
+        $options = [];
+
+        foreach (Craft::$app->getFields()->getAllFields() as $field) {
+            if (!$field instanceof VideoPickerField || !$field->uid) {
+                continue;
+            }
+
+            $options[] = [
+                'label' => $field->name . ' (' . $field->handle . ')',
+                'value' => $field->uid,
+            ];
+        }
+
+        ArrayHelper::multisort($options, 'label');
+
+        return $options;
     }
 }

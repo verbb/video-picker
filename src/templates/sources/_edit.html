@@ -40,6 +40,7 @@
 {% set tabs = {
     source: { label: 'Source' | t('video-picker'), url: '#source' },
     provider: { label: 'Provider' | t('video-picker'), url: '#provider' },
+    fields: { label: 'Fields' | t('video-picker'), url: '#fields' },
 } %}
 
 {% block content %}
@@ -94,6 +95,27 @@
             {% endnamespace %}
         </div>
     {% endfor %}
+</div>
+
+<div id="fields" class="hidden">
+    {% if not fieldOptions | length %}
+        {{ forms.checkboxSelectField({
+            first: true,
+            label: 'Available Fields' | t('video-picker'),
+            instructions: 'Select which Video Picker fields may use this source.' | t('video-picker'),
+            warning: 'Create a Video Picker field first to limit this source to specific fields.' | t('video-picker'),
+        }) }}
+    {% else %}
+        {{ forms.checkboxSelectField({
+            first: true,
+            label: 'Available Fields' | t('video-picker'),
+            instructions: 'Select which Video Picker fields may use this source.' | t('video-picker'),
+            name: 'fields',
+            options: fieldOptions,
+            values: source.fields ?? '*',
+            showAllOption: true,
+        }) }}
+    {% endif %}
 </div>
 
 {% endblock %}

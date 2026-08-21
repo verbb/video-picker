@@ -5,6 +5,7 @@ use verbb\videopicker\VideoPicker;
 use verbb\videopicker\models\Video;
 
 use Craft;
+use craft\base\Field;
 use craft\base\SavableComponent;
 use craft\helpers\Db;
 use craft\helpers\Html;
@@ -14,6 +15,7 @@ use craft\helpers\UrlHelper;
 use craft\validators\HandleValidator;
 
 use verbb\auth\helpers\Provider as ProviderHelper;
+use verbb\videopicker\fields\VideoPickerField;
 
 use DateTime;
 use Exception;
@@ -61,6 +63,12 @@ abstract class Source extends SavableComponent implements SourceInterface
     public array $cache = [];
     public ?string $uid = null;
 
+    /**
+     * Fields this source is available on.
+     * `*` / null = all Video Picker fields; `[]` = none; otherwise field UIDs.
+     */
+    public mixed $fields = '*';
+
     // Set via config files
     public array $authorizationOptions = [];
     public array $scopes = [];
@@ -74,6 +82,14 @@ abstract class Source extends SavableComponent implements SourceInterface
 
     // Public Methods
     // =========================================================================
+
+    public function settingsAttributes(): array
+    {
+        $attributes = parent::settingsAttributes();
+        $attributes[] = 'fields';
+
+        return $attributes;
+    }
 
     public function defineRules(): array
     {
@@ -96,6 +112,32 @@ abstract class Source extends SavableComponent implements SourceInterface
         ];
 
         return $rules;
+    }
+
+    /**
+     * Whether this source may be used by the given Video Picker field.
+     */
+    public function isAvailableForField(?Field $field): bool
+    {
+        if (!$field instanceof VideoPickerField) {
+            return true;
+        }
+
+        $fields = $this->fields;
+
+        if ($fields === null || $fields === '*') {
+            return true;
+        }
+
+        if ($fields === '' || $fields === []) {
+            return false;
+        }
+
+        if (!is_array($fields) || !$field->uid) {
+            return true;
+        }
+
+        return in_array($field->uid, $fields, true);
     }
 
     public function getProviderName(): string

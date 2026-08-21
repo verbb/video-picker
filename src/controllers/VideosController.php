@@ -104,7 +104,7 @@ class VideosController extends Controller
     // =========================================================================
 
     /**
-     * Field AJAX must always scope to a real VideoPickerField (Available Sources hard limit).
+     * Field AJAX must always scope to a real Video Picker field (source Available Fields).
      */
     private function _getVideoPickerField(): VideoPickerField
     {

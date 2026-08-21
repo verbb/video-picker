@@ -116,10 +116,10 @@ class Sources extends Component
     }
 
     /**
-     * Enabled sources allowed for a Video Picker field.
+     * Enabled sources available for a Video Picker field.
      *
-     * Field setting `sources`: `*` / null → all enabled (null keeps legacy fields open);
-     * `''` / `[]` → none; otherwise a list of source UIDs.
+     * Each source’s `fields` setting: `*` / null → all fields; `[]` → none;
+     * otherwise a list of field UIDs.
      *
      * @return SourceInterface[]
      */
@@ -131,23 +131,10 @@ class Sources extends Component
             return $allSources;
         }
 
-        // Unset (pre-setting fields) or All → every enabled source.
-        if ($field->sources === null || $field->sources === '*') {
-            return $allSources;
-        }
-
-        if ($field->sources === '' || $field->sources === []) {
-            return [];
-        }
-
-        if (!is_array($field->sources)) {
-            return $allSources;
-        }
-
         $sources = [];
 
         foreach ($allSources as $source) {
-            if (in_array($source->uid, $field->sources, true)) {
+            if ($source->isAvailableForField($field)) {
                 $sources[] = $source;
             }
         }
@@ -252,6 +239,9 @@ class Sources extends Component
         if (!$source->id) {
             $source->id = $sourceRecord->id;
         }
+
+        // Clear request memo so Available Fields changes apply immediately.
+        $this->_sources = null;
 
         // Fire an 'afterSaveSource' event
         if ($this->hasEventHandlers(self::EVENT_AFTER_SAVE_SOURCE)) {

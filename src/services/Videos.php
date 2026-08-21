@@ -41,7 +41,7 @@ class Videos extends Component
     // =========================================================================
 
     /**
-     * @param Field|null $field When a VideoPickerField, only match against that field’s allowed sources.
+     * @param Field|null $field When a VideoPickerField, only match sources that allow that field.
      */
     public function getVideoByUrl(string $videoUrl, bool $clearCache = false, ?Field $field = null): ?Video
     {
