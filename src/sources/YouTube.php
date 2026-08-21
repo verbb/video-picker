@@ -204,7 +204,7 @@ class YouTube extends OAuthSource
         $params['part'] = 'id';
         $params['type'] = 'video';
 
-        $response = $this->request('GET', 'youtube/v3/search', [
+        $response = $this->cachedRequest('GET', 'youtube/v3/search', [
             'query' => $this->_queryFromParams($params, true),
         ]);
 

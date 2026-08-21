@@ -12,6 +12,7 @@
 ### Fixed
 - Cached video rows are shared by URL across same-provider sources; field scoping gates on provider URL match and rebinds `sourceHandle` to an allowed source (no longer rejects when another YouTube/Vimeo source originally fetched the row).
 - Explorer search no longer mutates collection options — leaving search or switching collections clears `q` / search pagination so YouTube playlist browse cannot send `q` + `pageToken` together (#6).
+- YouTube search uses `cachedRequest` so `providerSearchCacheDuration` applies (was uncached via `request()`).
 - Require `videoPicker-sources` for source CP actions; OAuth `connect`/`disconnect` require that permission + POST (only `callback` stays anonymous).
 - Field video AJAX requires a valid `fieldId` so source Available Fields scoping cannot be bypassed.
 - Enforce `embedAllowedDomains` (when set), block private/loopback hosts, cache generic embed crawls, and bound hi-res image fetches.
