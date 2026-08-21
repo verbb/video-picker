@@ -347,10 +347,16 @@ class YouTube extends OAuthSource
             ArrayHelper::remove($params, 'q');
         }
 
-        return array_merge([
+        // Drop pagination / page-size keys so callers cannot override the clamp (D02).
+        ArrayHelper::remove($params, 'maxResults');
+        ArrayHelper::remove($params, 'pageToken');
+        ArrayHelper::remove($params, 'per_page');
+        ArrayHelper::remove($params, 'page');
+
+        return array_merge($params, [
             'maxResults' => $this->getVideosPerPage(),
             'pageToken' => $page,
-        ], $params);
+        ]);
     }
 
     private function _getSpecialPlaylistId(string $type)

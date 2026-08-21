@@ -347,10 +347,16 @@ class Vimeo extends OAuthSource
     {
         $page = ArrayHelper::remove($params, 'nextPage') ?? 1;
 
-        return array_merge([
+        // Drop pagination / page-size keys so callers cannot override the clamp (D02).
+        ArrayHelper::remove($params, 'per_page');
+        ArrayHelper::remove($params, 'page');
+        ArrayHelper::remove($params, 'maxResults');
+        ArrayHelper::remove($params, 'pageToken');
+
+        return array_merge($params, [
             'full_response' => 1,
             'page' => $page,
             'per_page' => $this->getVideosPerPage(),
-        ], $params);
+        ]);
     }
 }

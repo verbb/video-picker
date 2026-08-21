@@ -233,6 +233,9 @@ abstract class Source extends SavableComponent implements SourceInterface
 
     public function getVideos(string $method, array $options = []): array
     {
+        // Explorer AJAX can send arbitrary option bags — only keep known keys, then
+        // providers still force page size after merge (D02).
+        $options = $this->filterVideoRequestOptions($options);
         $methodName = 'fetchVideos' . ucwords($method);
 
         if (method_exists($this, $methodName)) {
@@ -240,6 +243,20 @@ abstract class Source extends SavableComponent implements SourceInterface
         }
 
         return [];
+    }
+
+    /**
+     * Keys clients may pass into get-videos (collection id, search, pagination).
+     * Provider-specific API knobs (maxResults, part, etc.) are never client-set.
+     *
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    protected function filterVideoRequestOptions(array $options): array
+    {
+        $allowed = array_flip(['id', 'q', 'nextPage']);
+
+        return array_intersect_key($options, $allowed);
     }
 
     public function getVideoById(string $id): ?Video
