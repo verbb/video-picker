@@ -107,8 +107,8 @@ export class VideoPickerInput {
         // Nameless on purpose — Craft FormObserver uses jQuery serialize, which
         // ignores ElementInternals / form-associated custom elements.
         this.urlInput = document.createElement('pk-input') as PkInputElement;
-        this.urlInput.id = this.settings.inputId;
         this.urlInput.setAttribute('placeholder', this.placeholder);
+        this.associateCraftFieldLabel();
 
         // Display only — posted value stays on the SSR hidden unless it actually differs.
         const displayUrl = this.valueInput.value || this.videoUrl || '';
@@ -154,6 +154,39 @@ export class VideoPickerInput {
         }
 
         return Craft.t('video-picker', 'Enter a video URL');
+    }
+
+    /**
+     * Wire Craft’s field <label> to pk-input.
+     * `label[for]` must match the host id (click-to-focus). The shadow <input> also
+     * needs aria-label — pk-input does not forward host labelling into its textbox,
+     * so without this the accessible name falls back to the placeholder.
+     */
+    private associateCraftFieldLabel(): void {
+        const field = this.root.closest('.field');
+        const label = field?.querySelector<HTMLLabelElement>('.heading label');
+        const forId = label?.getAttribute('for') || this.settings.inputId;
+
+        if (forId) {
+            this.urlInput.id = forId;
+        }
+
+        const name = label?.textContent?.replace(/\s+/g, ' ').trim();
+        if (!name) {
+            return;
+        }
+
+        const applyName = (): void => {
+            this.urlInput.setAttribute('aria-label', name);
+            this.urlInput.shadowRoot
+                ?.querySelector('input')
+                ?.setAttribute('aria-label', name);
+        };
+
+        applyName();
+        void customElements.whenDefined('pk-input').then(() => {
+            requestAnimationFrame(applyName);
+        });
     }
 
     /**

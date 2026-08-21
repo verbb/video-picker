@@ -14,6 +14,7 @@
 - Explorer / preview dialogs now response properly on tablet/mobile.
 - Play control is a real always-visible button (field preview is tabbable; explorer uses `P` on the focused card so the listbox keeps one tab stop).
 - Preview dialog exposes an accessible name (video title, or “Video preview”) even with `without-header`.
+- URL `pk-input` picks up the Craft field label (host id matches `label[for]`; shadow textbox gets `aria-label`) instead of using the placeholder as its accessible name.
 
 ## 2.0.10 - 2026-07-15
 

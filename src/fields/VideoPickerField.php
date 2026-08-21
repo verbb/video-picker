@@ -106,8 +106,6 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
     {
         $view = Craft::$app->getView();
 
-        $id = Html::id($this->handle);
-
         Plugin::registerFieldAssets();
 
         if ($value) {
@@ -139,8 +137,10 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             $sourceWarning = '';
         }
 
+        // Control id: unsuffixed handle id. CustomField’s namespaceInputs rewrites
+        // label[for]; JS syncs pk-input to that for (see associateCraftFieldLabel).
         $componentSettings = [
-            'inputId' => $view->namespaceInputId($id),
+            'inputId' => $this->getInputId(),
             'inputName' => $inputName,
             'fieldId' => $this->id,
             'value' => $value,
