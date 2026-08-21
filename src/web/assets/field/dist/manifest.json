@@ -16,7 +16,7 @@
     ]
   },
   "field/src/js/video-picker.ts": {
-    "file": "assets/video-picker-CpFcSIFP.js",
+    "file": "assets/video-picker-DRkZtmvb.js",
     "name": "video-picker",
     "src": "field/src/js/video-picker.ts",
     "isEntry": true,
@@ -24,7 +24,7 @@
       "_videoPickerPkComponents-BdbnA876.js"
     ],
     "css": [
-      "assets/video-picker-C6aAvYBG.css"
+      "assets/video-picker-Bbpt_-o6.css"
     ]
   }
 }

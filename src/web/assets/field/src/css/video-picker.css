@@ -9,6 +9,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--pk-spacing-4, 1rem);
+    /* Narrow field / slideout widths — stack the preview card (see @container below). */
+    container-type: inline-size;
+    container-name: vp-field;
 }
 
 .vp-input-row {
@@ -120,6 +123,44 @@
     --pk-btn-height: 23px;
     --pk-btn-icon-size: 13px;
     color: var(--pk-color-gray-550, #596775);
+}
+
+/* Stack thumb above meta when the field column is tight (slideouts, half-width layouts). */
+@container vp-field (max-width: 32rem) {
+    .vp-single-video-container {
+        flex-direction: column;
+        flex-wrap: wrap;
+    }
+
+    .vp-single-video-thumb {
+        max-width: min(12rem, 100%);
+        width: 100%;
+    }
+
+    .vp-single-video-meta {
+        max-width: none;
+        width: 100%;
+        /* Clear absolute refresh/remove sitting on the card’s top-end. */
+        padding-inline-end: 1.75rem;
+    }
+}
+
+/* Fallback when container queries aren’t available (Craft mobile viewport). */
+@media (max-width: 767px) {
+    .vp-single-video-container {
+        flex-direction: column;
+    }
+
+    .vp-single-video-thumb {
+        max-width: min(12rem, 100%);
+        width: 100%;
+    }
+
+    .vp-single-video-meta {
+        max-width: none;
+        width: 100%;
+        padding-inline-end: 1.75rem;
+    }
 }
 
 /* Explorer / preview dialog sizing.

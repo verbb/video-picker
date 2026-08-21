@@ -16,6 +16,7 @@
 - Preview dialog exposes an accessible name (video title, or “Video preview”) even with `without-header`.
 - URL `pk-input` picks up the Craft field label (host id matches `label[for]`; shadow textbox gets `aria-label`) instead of using the placeholder as its accessible name.
 - Loading and error states announce to assistive tech (`aria-busy` on the field; `role="alert"` / `role="status"` in the explorer).
+- Selected-video preview stacks thumb above meta in narrow field columns (container query) and on Craft mobile.
 
 ## 2.0.10 - 2026-07-15
 
