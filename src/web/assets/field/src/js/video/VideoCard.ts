@@ -64,6 +64,43 @@ export const createVideoThumb = (
     return thumb;
 };
 
+/** Keep one tab stop in the grid; selected (or first) card is the roving target. */
+export const syncVideoCardSelection = (
+    cards: NodeListOf<Element> | HTMLElement[],
+    selectedId: string | number | null | undefined,
+): void => {
+    const list = [...cards] as HTMLElement[];
+    let focusIndex = list.findIndex(
+        (card) => card.getAttribute('aria-selected') === 'true',
+    );
+
+    list.forEach((card) => {
+        const id = card.dataset.videoId ?? '';
+        const selected = selectedId != null && id !== '' && String(selectedId) === String(id);
+        card.setAttribute('aria-selected', selected ? 'true' : 'false');
+        card.querySelector('.vp-video-thumb')?.classList.toggle('is-selected', selected);
+
+        if (selected) {
+            focusIndex = list.indexOf(card);
+        }
+    });
+
+    if (focusIndex < 0) {
+        focusIndex = 0;
+    }
+
+    list.forEach((card, index) => {
+        card.tabIndex = index === focusIndex ? 0 : -1;
+    });
+};
+
+const columnCount = (grid: HTMLElement): number => {
+    const raw = getComputedStyle(grid).gridTemplateColumns;
+    const count = raw.split(/\s+/).filter(Boolean).length;
+
+    return count > 0 ? count : 1;
+};
+
 export const createVideoCard = (
     video: VideoData,
     selected: boolean,
@@ -71,6 +108,17 @@ export const createVideoCard = (
 ): HTMLElement => {
     const card = document.createElement('div');
     card.className = 'vp-video-card';
+    card.setAttribute('role', 'option');
+    card.setAttribute('aria-selected', selected ? 'true' : 'false');
+    // Roving tabindex is finalized by the grid after all cards mount.
+    card.tabIndex = -1;
+
+    if (video.id != null) {
+        card.dataset.videoId = String(video.id);
+    }
+
+    const label = (video.title ?? '').trim() || Craft.t('video-picker', 'Video');
+    card.setAttribute('aria-label', label);
 
     const thumb = createVideoThumb(video, {
         selected,
@@ -97,6 +145,25 @@ export const createVideoCard = (
     card.addEventListener('click', () => handlers.onSelect(video));
     card.addEventListener('dblclick', () => handlers.onUse(video));
 
+    card.addEventListener('keydown', (event: KeyboardEvent) => {
+        if (event.key === ' ' || event.key === 'Spacebar') {
+            event.preventDefault();
+            handlers.onSelect(video);
+            return;
+        }
+
+        // Enter selects; when already selected, commit (keyboard stand-in for double-click).
+        if (event.key === 'Enter') {
+            event.preventDefault();
+
+            if (card.getAttribute('aria-selected') === 'true') {
+                handlers.onUse(video);
+            } else {
+                handlers.onSelect(video);
+            }
+        }
+    });
+
     return card;
 };
 
@@ -117,11 +184,77 @@ export const createVideoGrid = (
 
     const grid = document.createElement('div');
     grid.className = 'vp-video-cards';
+    grid.setAttribute('role', 'listbox');
+    grid.setAttribute('aria-label', Craft.t('video-picker', 'Videos'));
+    // Single-select listbox — Space/Enter select; footer Select (or Enter again) commits.
+    grid.setAttribute('aria-multiselectable', 'false');
 
     for (const video of videos) {
         const selected = selectedId != null && video.id != null && String(selectedId) === String(video.id);
         grid.appendChild(createVideoCard(video, selected, handlers));
     }
+
+    const cards = () => [...grid.querySelectorAll<HTMLElement>('.vp-video-card')];
+
+    syncVideoCardSelection(grid.querySelectorAll('.vp-video-card'), selectedId);
+
+    // Arrow keys move focus (and selection) across the visual grid columns.
+    grid.addEventListener('keydown', (event: KeyboardEvent) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement) || !target.classList.contains('vp-video-card')) {
+            return;
+        }
+
+        const list = cards();
+        const index = list.indexOf(target);
+        if (index < 0) {
+            return;
+        }
+
+        const cols = columnCount(grid);
+        let next = -1;
+
+        switch (event.key) {
+            case 'ArrowRight':
+                next = Math.min(list.length - 1, index + 1);
+                break;
+            case 'ArrowLeft':
+                next = Math.max(0, index - 1);
+                break;
+            case 'ArrowDown':
+                next = Math.min(list.length - 1, index + cols);
+                break;
+            case 'ArrowUp':
+                next = Math.max(0, index - cols);
+                break;
+            case 'Home':
+                next = 0;
+                break;
+            case 'End':
+                next = list.length - 1;
+                break;
+            default:
+                return;
+        }
+
+        if (next === index) {
+            return;
+        }
+
+        event.preventDefault();
+        const videoId = list[next].dataset.videoId;
+        const video = videos.find((item) => videoId != null && String(item.id) === String(videoId));
+
+        if (video) {
+            // Move selection with focus so Tab → Select commits the focused card.
+            handlers.onSelect(video);
+            list[next].focus();
+        } else {
+            list[next].tabIndex = 0;
+            target.tabIndex = -1;
+            list[next].focus();
+        }
+    });
 
     return grid;
 };

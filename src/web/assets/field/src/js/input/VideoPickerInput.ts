@@ -444,6 +444,7 @@ export class VideoPickerInput {
 
         const data: Record<string, unknown> = {
             url: this.videoUrl,
+            fieldId: this.settings.fieldId,
         };
 
         if (refresh) {

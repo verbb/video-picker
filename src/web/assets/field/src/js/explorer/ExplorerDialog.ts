@@ -1,7 +1,7 @@
 import { formatErrorHtml } from '../utils/ajaxErrors.js';
 import { createCollectionIcon } from '../utils/collectionIcons.js';
 import { debounce } from '../utils/formatVideo.js';
-import { createVideoGrid, type VideoData } from '../video/VideoCard.js';
+import { createVideoGrid, syncVideoCardSelection, type VideoData } from '../video/VideoCard.js';
 
 type PkDialogElement = HTMLElement & { open: boolean };
 type PkSelectElement = HTMLElement & { value: string };
@@ -281,6 +281,7 @@ export class ExplorerDialog {
             source: this.currentSource.handle,
             method: this.currentCollection?.method ?? null,
             options: this.collectionOptions(),
+            fieldId: this.options.fieldId,
         };
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
@@ -313,10 +314,12 @@ export class ExplorerDialog {
             source: string;
             method: string | null;
             options: Record<string, unknown>;
+            fieldId?: number | null;
         } = {
             source: this.currentSource.handle,
             method: this.currentCollection?.method ?? null,
             options,
+            fieldId: this.options.fieldId,
         };
 
         // Search pagination must keep method=search when q is present (BEFORE quirk).
@@ -334,12 +337,15 @@ export class ExplorerDialog {
             })
             .finally(() => {
                 this.loadingMore = false;
-                // Full re-render would snap scroll to top — keep the user’s place (BEFORE).
+                // Full re-render replaces the grid (and kills focus). Capture before
+                // rebuild so keyboard nav can continue on the same / selected card.
+                const restoreId = this.captureFocusedVideoId();
                 const scrollTop = this.mainEl?.scrollTop ?? 0;
                 this.render();
                 if (this.mainEl) {
                     this.mainEl.scrollTop = scrollTop;
                 }
+                this.restoreVideoCardFocus(restoreId);
             });
     }
 
@@ -360,6 +366,7 @@ export class ExplorerDialog {
             source: this.currentSource.handle,
             method: 'search',
             options,
+            fieldId: this.options.fieldId,
         };
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
@@ -552,18 +559,37 @@ export class ExplorerDialog {
         this.currentVideo = video;
         this.footerSelect.toggleAttribute('disabled', !this.canSelect());
 
-        this.bodyEl.querySelectorAll('.vp-video-thumb').forEach((el) => {
-            el.classList.remove('is-selected');
-        });
+        syncVideoCardSelection(
+            this.bodyEl.querySelectorAll('.vp-video-card'),
+            video.id ?? null,
+        );
+    }
 
-        const cards = this.bodyEl.querySelectorAll('.vp-video-card');
-        cards.forEach((card, index) => {
-            const match = this.videos[index];
+    /** Prefer the focused card; fall back to the current selection (Load More / spinner). */
+    private captureFocusedVideoId(): string | null {
+        const active = document.activeElement;
 
-            if (match && String(match.id) === String(video.id)) {
-                card.querySelector('.vp-video-thumb')?.classList.add('is-selected');
+        if (active instanceof HTMLElement) {
+            const card = active.closest('.vp-video-card');
+
+            if (card instanceof HTMLElement && card.dataset.videoId) {
+                return card.dataset.videoId;
             }
-        });
+        }
+
+        return this.currentVideo?.id != null ? String(this.currentVideo.id) : null;
+    }
+
+    private restoreVideoCardFocus(videoId: string | null): void {
+        if (videoId == null || videoId === '') {
+            return;
+        }
+
+        const card = this.bodyEl.querySelector(
+            `.vp-video-card[data-video-id="${CSS.escape(videoId)}"]`,
+        ) as HTMLElement | null;
+
+        card?.focus({ preventScroll: true });
     }
 
     private buildMain(): HTMLElement {

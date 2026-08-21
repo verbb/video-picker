@@ -262,6 +262,14 @@
     cursor: pointer;
 }
 
+/* Craft CP uses `body :focus-visible { box-shadow: var(--focus-ring) }` — kill that
+   so the red thumb ring remains the only focus/selection cue. */
+.vp-video-card:focus,
+.vp-video-card:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
 .vp-video-card-container {
     display: flex;
     flex-wrap: nowrap;
@@ -306,7 +314,8 @@
 }
 
 .vp-video-thumb.is-selected,
-.vp-video-card:hover .vp-video-thumb {
+.vp-video-card:hover .vp-video-thumb,
+.vp-video-card:focus-visible .vp-video-thumb {
     box-shadow: var(--pk-color-danger, rgba(239, 68, 68, 0.8)) 0 0 0 3px;
     transition: box-shadow 0.2s ease;
 }
