@@ -24,13 +24,7 @@ export class PreviewDialog {
         this.dialog.classList.add('vp-preview-dialog');
         this.dialog.setAttribute('without-header', '');
         this.dialog.setAttribute('without-body-padding', '');
-        this.dialog.setAttribute('size', 'wide');
-        // Match BEFORE's ~66% viewport modal sizing via kit CSS vars.
-        this.dialog.style.setProperty('--pk-dialog-width', '66vw');
-        this.dialog.style.setProperty('--pk-dialog-max-width', '66vw');
-        this.dialog.style.setProperty('--pk-dialog-height', '66vh');
-        this.dialog.style.setProperty('--pk-dialog-min-width', '600px');
-        this.dialog.style.setProperty('--pk-dialog-min-height', '400px');
+        // Sizing lives in CSS (`.vp-preview-dialog`) so mins can cap to the viewport.
 
         const body = document.createElement('div');
         body.className = 'vp-preview-body';

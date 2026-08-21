@@ -122,6 +122,19 @@
     color: var(--pk-color-gray-550, #596775);
 }
 
+/* Explorer / preview dialog sizing.
+ * Kit panel uses `width: min(100%, var(--pk-dialog-width…))` but honors a hard
+ * `--pk-dialog-min-width`. Cap mins to the viewport so 600px never overflows
+ * Craft mobile / narrow CP. */
+.vp-explorer-dialog,
+.vp-preview-dialog {
+    --pk-dialog-width: 66vw;
+    --pk-dialog-max-width: 66vw;
+    --pk-dialog-height: 66vh;
+    --pk-dialog-min-width: min(600px, calc(100vw - 2rem));
+    --pk-dialog-min-height: min(400px, calc(100vh - 2rem));
+}
+
 /* Explorer dialog ---------------------------------------------------------- */
 
 /* Refresh sits left; Cancel/Select stay end-aligned (BEFORE `.buttons.left` / `.right`). */
@@ -252,6 +265,47 @@
     width: 100%;
     gap: var(--pk-spacing-4, 1rem);
     grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Craft mobile / narrow CP — fill the viewport and stack explorer chrome so the
+ * fixed 14rem sidebar does not force horizontal overflow inside the fitted dialog. */
+@media (max-width: 767px) {
+    .vp-explorer-dialog,
+    .vp-preview-dialog {
+        --pk-dialog-width: calc(100vw - 2rem);
+        --pk-dialog-max-width: calc(100vw - 2rem);
+        --pk-dialog-height: calc(100vh - 2rem);
+        --pk-dialog-min-width: 0;
+        --pk-dialog-min-height: 0;
+    }
+
+    .vp-explorer-body,
+    .vp-preview-body,
+    .vp-explorer {
+        min-height: 0;
+    }
+
+    .vp-explorer {
+        flex-direction: column;
+    }
+
+    .vp-explorer-sidebar {
+        width: auto;
+        flex: 0 0 auto;
+        max-height: 11rem;
+        border-right: none;
+        border-bottom: 1px solid var(--pk-color-border, rgba(96, 125, 159, 0.25));
+    }
+
+    .vp-video-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .vp-video-cards {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .vp-hint-text {

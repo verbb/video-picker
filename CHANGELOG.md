@@ -8,6 +8,7 @@
 
 ### Fixed
 - Explorer video cards are keyboard-operable (listbox/option, roving tabindex, arrow keys, Enter/Space).
+- Explorer / preview dialogs no longer force a 600×400px minimum — mins cap to the viewport, and below 767px the dialog fills the screen with a stacked explorer layout.
 
 ### Changed
 - Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).

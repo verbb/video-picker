@@ -79,12 +79,7 @@ export class ExplorerDialog {
         this.dialog.classList.add('vp-explorer-dialog');
         this.dialog.setAttribute('label', Craft.t('video-picker', 'Browse videos…'));
         this.dialog.setAttribute('without-body-padding', '');
-        this.dialog.setAttribute('size', 'wide');
-        this.dialog.style.setProperty('--pk-dialog-width', '66vw');
-        this.dialog.style.setProperty('--pk-dialog-max-width', '66vw');
-        this.dialog.style.setProperty('--pk-dialog-height', '66vh');
-        this.dialog.style.setProperty('--pk-dialog-min-width', '600px');
-        this.dialog.style.setProperty('--pk-dialog-min-height', '400px');
+        // Sizing lives in CSS (`.vp-explorer-dialog`) so mins can cap to the viewport.
 
         this.bodyEl = document.createElement('div');
         this.bodyEl.className = 'vp-explorer-body';
