@@ -18,6 +18,17 @@ class SourcesController extends Controller
     // Public Methods
     // =========================================================================
 
+    public function beforeAction($action): bool
+    {
+        if (!parent::beforeAction($action)) {
+            return false;
+        }
+
+        $this->requirePermission('videoPicker-sources');
+
+        return true;
+    }
+
     public function actionIndex(): Response
     {
         $sources = VideoPicker::$plugin->getSources()->getAllSources();

@@ -97,7 +97,8 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             'class' => 'thumb',
             'data' => [
                 'sizes' => sprintf('calc(%srem/16)', $size),
-                'srcset' => sprintf('%s %sw, %s %sw', $thumbUrl, $size, null, $size * 2),
+                // Single candidate — we only have one thumbnail URL (was emitting an empty 2x).
+                'srcset' => sprintf('%s %sw', $thumbUrl, $size),
             ],
         ]);
     }

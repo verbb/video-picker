@@ -6,10 +6,36 @@
 - Add field setting for optional input placeholder text when no video is selected.
 - Add field setting to limit Available Sources (Icon Picker–style checkbox select). Browse, URL paste, and save only resolve against the selected sources (`*` / unset = all enabled).
 
+### Fixed
+- Require `videoPicker-sources` for source CP actions; OAuth `connect`/`disconnect` require that permission + POST (only `callback` stays anonymous).
+- Field video AJAX requires a valid `fieldId` (Available Sources no longer fails open when `fieldId` is omitted/spoofed).
+- Enforce `embedAllowedDomains` (when set), block private/loopback hosts, cache generic embed crawls, and bound hi-res image fetches.
+- Provider `cachedRequest` uses bounded TTLs, account/config-aware keys, and treats empty responses as cacheable.
+- Field `normalizeValue` memoizes video URL lookups per request.
+- Explorer cold-open hydrates collections for one source at a time (others use DB cache until selected).
+- Unique index on `video_picker_videos.videoUrl` (migration dedupes existing rows).
+- Provider video errors return JSON errors instead of a partial 200 payload.
+- Source delete removes OAuth tokens and tagged application cache.
+- Vimeo responses no longer request/store `download` / `review_link` / `files` in `raw`.
+- GraphQL `ArrayType` serialization returns `toArray()` results correctly.
+- Element thumb `srcset` no longer emits an empty 2× candidate.
+
 ### Changed
 - Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).
 
 ### Fixed
+- Require `videoPicker-sources` for source CP actions; OAuth `connect`/`disconnect` require that permission + POST (only `callback` stays anonymous).
+- Field video AJAX requires a valid `fieldId` (Available Sources no longer fails open when `fieldId` is omitted/spoofed).
+- Enforce `embedAllowedDomains` (when set), block private/loopback hosts, cache generic embed crawls, and bound hi-res image fetches.
+- Provider `cachedRequest` uses bounded TTLs, account/config-aware keys, and treats empty responses as cacheable.
+- Field `normalizeValue` memoizes video URL lookups per request.
+- Explorer cold-open hydrates collections for one source at a time (others use DB cache until selected).
+- Unique index on `video_picker_videos.videoUrl` (migration dedupes existing rows).
+- Provider video errors return JSON errors instead of a partial 200 payload.
+- Source delete removes OAuth tokens and tagged application cache.
+- Vimeo responses no longer request/store `download` / `review_link` / `files` in `raw`.
+- GraphQL `ArrayType` serialization returns `toArray()` results correctly.
+- Element thumb `srcset` no longer emits an empty 2× candidate.
 - Explorer video cards are keyboard-operable (listbox/option, arrow keys, Enter/Space).
 - Explorer / preview dialogs now response properly on tablet/mobile.
 - Play control is a real button (explorer: always-visible disc + `P` on the focused card; field preview: full-thumb hit target with glyph on hover/focus only so the thumbnail stays clean).

@@ -254,27 +254,73 @@ export class ExplorerDialog {
 
         if (refresh) {
             data.refresh = true;
+            // Refresh only the active source’s sections (others stay lightweight).
+            if (this.currentSource?.handle) {
+                data.hydrate = this.currentSource.handle;
+            }
         }
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-sources', { data })
-            .then((response: { data: Source[] }) => {
+            .then(async (response: { data: Source[] }) => {
                 this.sources = response.data ?? [];
                 this.loadingSources = false;
 
-                if (this.sources.length) {
-                    this.currentSource = this.sources[0];
-                    this.setCollection(this.currentSource?.sections?.[0]?.collections?.[0] ?? null);
-                    // Clear sources spinner before videos fetch so render shows the explorer chrome.
-                    this.fetchVideos();
-                } else {
+                if (!this.sources.length) {
                     this.render();
+                    return;
                 }
+
+                // Prefer the previously selected source if it still exists.
+                const previousHandle = this.currentSource?.handle;
+                this.currentSource =
+                    this.sources.find((s) => s.handle === previousHandle) ?? this.sources[0];
+
+                await this.ensureSourceSections(this.currentSource);
+                this.setCollection(this.currentSource?.sections?.[0]?.collections?.[0] ?? null);
+                this.fetchVideos();
             })
             .catch((error: unknown) => {
                 this.sourcesError = formatErrorHtml(error);
                 this.loadingSources = false;
                 this.render();
             });
+    }
+
+    /**
+     * get-sources only hydrates the first (or requested) source. When switching,
+     * fetch that source’s sections without re-fetching every provider.
+     */
+    private async ensureSourceSections(source: Source | null, refresh = false): Promise<void> {
+        if (!source) {
+            return;
+        }
+
+        if (!refresh && (source.sections?.length ?? 0) > 0) {
+            return;
+        }
+
+        const data: Record<string, unknown> = {
+            fieldId: this.options.fieldId,
+            hydrate: source.handle,
+        };
+
+        if (refresh) {
+            data.refresh = true;
+        }
+
+        const response = await Craft.sendActionRequest('POST', 'video-picker/videos/get-sources', {
+            data,
+        });
+        const list = (response.data ?? []) as Source[];
+        const hydrated = list.find((s) => s.handle === source.handle);
+
+        if (!hydrated) {
+            return;
+        }
+
+        // Merge into the in-memory source list so the select stays consistent.
+        this.sources = this.sources.map((s) => (s.handle === hydrated.handle ? hydrated : s));
+        this.currentSource = hydrated;
     }
 
     private fetchVideos(): void {
@@ -537,9 +583,11 @@ export class ExplorerDialog {
             }
 
             this.currentSource = next;
-            this.setCollection(next.sections?.[0]?.collections?.[0] ?? null);
-            this.reset();
-            this.fetchVideos();
+            void this.ensureSourceSections(next).then(() => {
+                this.setCollection(this.currentSource?.sections?.[0]?.collections?.[0] ?? null);
+                this.reset();
+                this.fetchVideos();
+            });
         });
 
         selectWrap.appendChild(select);

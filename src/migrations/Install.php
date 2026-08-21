@@ -68,7 +68,7 @@ class Install extends Migration
         $this->createIndex(null, '{{%video_picker_sources}}', ['handle'], true);
 
         $this->createIndex(null, '{{%video_picker_videos}}', ['videoId'], false);
-        $this->createIndex(null, '{{%video_picker_videos}}', ['videoUrl'], false);
+        $this->createIndex(null, '{{%video_picker_videos}}', ['videoUrl'], true);
     }
 
     public function dropTables(): void

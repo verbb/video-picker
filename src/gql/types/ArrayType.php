@@ -4,6 +4,7 @@ namespace verbb\videopicker\gql\types;
 use craft\gql\GqlEntityRegistry;
 
 use GraphQL\Type\Definition\ScalarType;
+use GraphQL\Language\AST\Node;
 
 class ArrayType extends ScalarType
 {
@@ -26,11 +27,15 @@ class ArrayType extends ScalarType
 
     public function serialize($value)
     {
-        if (!is_array($value)) {
-            $value->toArray();
+        if (is_array($value)) {
+            return $value;
         }
 
-        return $value;
+        if (is_object($value) && method_exists($value, 'toArray')) {
+            return $value->toArray();
+        }
+
+        return null;
     }
 
     public function parseValue($value)

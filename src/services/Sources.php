@@ -21,6 +21,8 @@ use craft\helpers\Json;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
 
+use verbb\auth\Auth;
+
 use Exception;
 use Throwable;
 
@@ -312,9 +314,22 @@ class Sources extends Component
             ]));
         }
 
-        Craft::$app->getDb()->createCommand()
-            ->delete('{{%video_picker_sources}}', ['id' => $source->id])
-            ->execute();
+        $transaction = Craft::$app->getDb()->beginTransaction();
+
+        try {
+            // Drop OAuth tokens + tagged provider cache before the row goes away.
+            Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
+            $source->clearLocalCache();
+
+            Craft::$app->getDb()->createCommand()
+                ->delete('{{%video_picker_sources}}', ['id' => $source->id])
+                ->execute();
+
+            $transaction->commit();
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
 
         // Fire an 'afterDeleteSource' event
         if ($this->hasEventHandlers(self::EVENT_AFTER_DELETE_SOURCE)) {

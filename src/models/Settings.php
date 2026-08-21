@@ -12,6 +12,15 @@ class Settings extends Model
     public bool $hasCpSection = true;
     public int $videosPerPage = 12;
 
+    /** Application-cache TTL (seconds) for provider API responses. */
+    public int $providerCacheDuration = 3600;
+
+    /** Shorter TTL for search / high-cardinality provider requests. */
+    public int $providerSearchCacheDuration = 900;
+
+    /** Application-cache TTL for Twig generic embed crawls. */
+    public int $embedCacheDuration = 3600;
+
     public bool $resolveHiResEmbedImage = false;
     public array $embedClientConfig = [];
     public array $embedClientSettings = [];
@@ -28,7 +37,12 @@ class Settings extends Model
         $rules = parent::defineRules();
 
         $rules[] = [['pluginName', 'videosPerPage'], 'required'];
-        $rules[] = [['videosPerPage'], 'number', 'integerOnly' => true, 'min' => 1];
+        $rules[] = [['videosPerPage'], 'number', 'integerOnly' => true, 'min' => 1, 'max' => 50];
+        $rules[] = [[
+            'providerCacheDuration',
+            'providerSearchCacheDuration',
+            'embedCacheDuration',
+        ], 'number', 'integerOnly' => true, 'min' => 60];
 
         return $rules;
     }

@@ -133,6 +133,14 @@ abstract class Source extends SavableComponent implements SourceInterface
         return false;
     }
 
+    /**
+     * Non-OAuth / missing sources default to not configured so CP templates stay safe.
+     */
+    public function isConfigured(): bool
+    {
+        return false;
+    }
+
     public function getSettingsHtml(): ?string
     {
         $handle = StringHelper::toKebabCase(static::$providerHandle);
@@ -142,13 +150,20 @@ abstract class Source extends SavableComponent implements SourceInterface
         ]);
     }
 
-    public function getExplorerData(bool $clearCache = false): array
+    /**
+     * @param bool $includeSections When true, may hit the provider to refresh collections.
+     *                            When false, return the persisted explorer cache only (no provider I/O).
+     */
+    public function getExplorerData(bool $clearCache = false, bool $includeSections = true): array
     {
         return [
             'name' => $this->name,
             'handle' => $this->handle,
             'supportsSearch' => $this->supportsSearch(),
-            'sections' => $this->getExplorerSections($clearCache),
+            // Lazy explorer: skip provider collection discovery unless this source is hydrated.
+            'sections' => $includeSections
+                ? $this->getExplorerSections($clearCache)
+                : ($this->cache ?: []),
         ];
     }
 
@@ -214,7 +229,8 @@ abstract class Source extends SavableComponent implements SourceInterface
 
     public function getVideosPerPage(): int
     {
-        return VideoPicker::$plugin->getSettings()->videosPerPage;
+        // Clamp so callers / settings cannot mint oversized provider pages.
+        return max(1, min(50, (int)VideoPicker::$plugin->getSettings()->videosPerPage));
     }
 
     public function getEmbedUrlFormat(): string
@@ -250,16 +266,20 @@ abstract class Source extends SavableComponent implements SourceInterface
 
     public function cachedRequest(string $method = 'GET', string $uri = '', array $options = [])
     {
-        // Add a source-level cache layer around requests
-        $cacheKey = md5(strtolower(Json::encode([$this->handle, $method, $uri, $options])));
+        // Preserve URI/options case — only normalize the HTTP method (avoids search/ID collisions).
+        $method = strtoupper($method);
+        $cacheKey = $this->_buildLocalCacheKey($method, $uri, $options);
 
-        if ($cachedData = $this->_getLocalCache($cacheKey)) {
+        // `false` is a miss; empty arrays are valid cached payloads.
+        $cachedData = $this->_getLocalCache($cacheKey);
+
+        if ($cachedData !== false) {
             return $cachedData;
         }
 
         $data = $this->request($method, $uri, $options);
 
-        $this->_setLocalCache($cacheKey, $data);
+        $this->_setLocalCache($cacheKey, $data, $this->_cacheDurationForRequest($uri, $options));
 
         return $data;
     }
@@ -282,18 +302,70 @@ abstract class Source extends SavableComponent implements SourceInterface
     // Private Methods
     // =========================================================================
 
+    private function _buildLocalCacheKey(string $method, string $uri, array $options): string
+    {
+        // Include source identity so reconnecting the same handle to another account
+        // cannot reuse the previous account’s cached private collections/videos.
+        $identity = [
+            $this->uid ?: $this->handle,
+            (string)$this->id,
+            $this->_accountCacheGeneration(),
+            $method,
+            $uri,
+            $options,
+        ];
+
+        return 'video-picker:req:' . md5(Json::encode($identity));
+    }
+
+    /**
+     * Non-secret fingerprint of OAuth/config so credential changes bust the key.
+     */
+    private function _accountCacheGeneration(): string
+    {
+        $parts = [];
+
+        if (property_exists($this, 'clientId') && $this->clientId) {
+            $parts[] = (string)$this->clientId;
+        }
+
+        if (method_exists($this, 'getToken')) {
+            $token = $this->getToken();
+            if ($token && isset($token->id)) {
+                $parts[] = (string)$token->id;
+            }
+        }
+
+        return $parts ? md5(implode(':', $parts)) : '0';
+    }
+
+    private function _cacheDurationForRequest(string $uri, array $options): int
+    {
+        $settings = VideoPicker::$plugin->getSettings();
+        $isSearch = isset($options['query']['q'])
+            || isset($options['q'])
+            || str_contains(strtolower($uri), 'search');
+
+        return $isSearch
+            ? max(60, (int)$settings->providerSearchCacheDuration)
+            : max(60, (int)$settings->providerCacheDuration);
+    }
+
     private function _getLocalCache(string $cacheKey): mixed
     {
         return Craft::$app->getCache()->get($cacheKey);
     }
 
-    private function _setLocalCache(string $cacheKey, array $data): void
+    private function _setLocalCache(string $cacheKey, mixed $data, int $duration): void
     {
-        Craft::$app->getCache()->set($cacheKey, $data, 0, new TagDependency(['tags' => $this->_getLocalCacheTag()]));
+        Craft::$app->getCache()->set($cacheKey, $data, $duration, new TagDependency(['tags' => $this->_getLocalCacheTag()]));
     }
 
     private function _getLocalCacheTag(): string
     {
-        return implode('__', ['video-picker', $this->handle]);
+        // Prefer UID so renaming a handle doesn’t orphan the tag namespace.
+        $id = $this->uid ?: $this->handle;
+
+        return implode('__', ['video-picker', $id]);
     }
 }

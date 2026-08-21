@@ -5,6 +5,7 @@ use verbb\videopicker\VideoPicker;
 use verbb\videopicker\base\SourceInterface;
 use verbb\videopicker\fields\VideoPickerField;
 use verbb\videopicker\helpers\EmbedImagesExtractor;
+use verbb\videopicker\helpers\EmbedUrl;
 use verbb\videopicker\models\Settings;
 use verbb\videopicker\models\Video;
 use verbb\videopicker\records\Video as VideoRecord;
@@ -12,10 +13,6 @@ use verbb\videopicker\records\Video as VideoRecord;
 use Craft;
 use craft\base\Component;
 use craft\base\Field;
-use craft\helpers\ArrayHelper;
-use craft\helpers\DateTimeHelper;
-use craft\helpers\Db;
-use craft\helpers\ConfigHelper;
 use craft\helpers\Json;
 use craft\helpers\Html;
 use craft\helpers\StringHelper;
@@ -23,13 +20,23 @@ use craft\helpers\Template;
 use craft\helpers\UrlHelper;
 
 use DateTime;
-use DateTimeZone;
 
 use Embed\Http\Crawler;
 use Embed\Http\CurlClient;
 
+use yii\caching\TagDependency;
+
+use Throwable;
+
 class Videos extends Component
 {
+    // Properties
+    // =========================================================================
+
+    /** @var array<string, Video|null> Request-local memo for normalize / repeated lookups. */
+    private array $_videosByUrl = [];
+
+
     // Public Methods
     // =========================================================================
 
@@ -38,6 +45,12 @@ class Videos extends Component
      */
     public function getVideoByUrl(string $videoUrl, bool $clearCache = false, ?Field $field = null): ?Video
     {
+        $memoKey = $videoUrl . "\0" . ($field instanceof VideoPickerField ? (string)$field->id : '*');
+
+        if (!$clearCache && array_key_exists($memoKey, $this->_videosByUrl)) {
+            return $this->_videosByUrl[$memoKey];
+        }
+
         $allowedSources = VideoPicker::$plugin->getSources()->getSourcesForField($field);
         $allowedHandles = array_map(static fn(SourceInterface $source) => $source->handle, $allowedSources);
 
@@ -68,11 +81,11 @@ class Videos extends Component
                         || !$video->sourceHandle
                         || !in_array($video->sourceHandle, $allowedHandles, true)
                     ) {
-                        return null;
+                        return $this->_videosByUrl[$memoKey] = null;
                     }
                 }
 
-                return $video;
+                return $this->_videosByUrl[$memoKey] = $video;
             }
         }
 
@@ -80,23 +93,25 @@ class Videos extends Component
         // sources, as each defines their own logic for matching a URL pattern
         foreach ($allowedSources as $source) {
             if ($video = $source->getVideoByUrl($videoUrl)) {
-                // Save it in our cache for next time
-                $this->saveVideo($video);
+                // Provider failures return a Video with errors — don't cache those.
+                if (!$video->hasErrors()) {
+                    $this->saveVideo($video);
+                }
 
-                return $video;
+                return $this->_videosByUrl[$memoKey] = $video;
             }
         }
 
-        return null;
+        return $this->_videosByUrl[$memoKey] = null;
     }
 
     public function saveVideo(Video $video): void
     {
-        if (!$video->id || !$video->url) {
+        if (!$video->id || !$video->url || $video->hasErrors()) {
             return;
         }
 
-        // Create or update our video record
+        // Upsert by unique videoUrl (migration m260822_000000 adds the unique index).
         $record = VideoRecord::findOne([
             'videoUrl' => $video->url,
         ]) ?? new VideoRecord();
@@ -114,12 +129,15 @@ class Videos extends Component
     {
         $html = $this->getEmbedHtml($url, $params);
 
-        // Extract the embed URL from the iframe. Different to the URL of the video
-        preg_match('/src="([^"]+)"/', $html, $matches);
-        $url = $matches[1] ?? '';
+        // Extract the embed URL from the iframe (single- or double-quoted src).
+        if (!preg_match('/src=(["\'])([^"\']+)\1/', $html, $matches)) {
+            return null;
+        }
 
-        if ($url) {
-            return UrlHelper::urlWithParams($url, $params);
+        $embedUrl = $matches[2] ?? '';
+
+        if ($embedUrl) {
+            return UrlHelper::urlWithParams($embedUrl, $params);
         }
         
         return null;
@@ -147,10 +165,31 @@ class Videos extends Component
         $settings = VideoPicker::$plugin->getSettings();
 
         try {
+            EmbedUrl::assertAllowed($url, $settings->embedAllowedDomains);
+
+            $cacheKey = 'video-picker:embed:' . md5(Json::encode([
+                $url,
+                $settings->embedAllowedDomains,
+                $settings->embedClientSettings,
+                $settings->embedDetectorsSettings,
+                $settings->resolveHiResEmbedImage,
+            ]));
+
+            $cached = Craft::$app->getCache()->get($cacheKey);
+
+            if ($cached !== false && is_array($cached)) {
+                return $cached;
+            }
+
             if (class_exists(CurlClient::class)) {
                 // Handle Embed v4 support
                 $client = new CurlClient();
-                $client->setSettings($settings->embedClientSettings);
+                $clientSettings = array_merge([
+                    'timeout' => 8,
+                    'connect_timeout' => 5,
+                    'max_redirs' => 3,
+                ], $settings->embedClientSettings);
+                $client->setSettings($clientSettings);
 
                 $crawler = new Crawler($client);
                 $crawler->addDefaultHeaders($settings->embedHeaders);
@@ -162,6 +201,12 @@ class Videos extends Component
                 $embed->getExtractorFactory()->addDetector('image', EmbedImagesExtractor::class);
 
                 $info = $embed->get($url);
+
+                // Re-check final URI after redirects against the same policy.
+                if (isset($info->url) && (string)$info->url !== '') {
+                    EmbedUrl::assertAllowed((string)$info->url, $settings->embedAllowedDomains);
+                }
+
                 $image = array_values($info->image ?? []);
 
                 $data = Json::decode(Json::encode([
@@ -188,37 +233,55 @@ class Videos extends Component
                     $data['code'] = '<iframe src="' . $info->url . '"></iframe>';
                 }
 
-                return $data;
-            } else {
-                // Handle Embed v3 support
-                $dispatcher = new \Embed\Http\CurlDispatcher($settings->embedClientSettings);
-
-                $info = \Embed\Embed::create($url, $settings->getEmbedClientConfig(), $dispatcher);
-
-                $data = Json::decode(Json::encode([
-                    'title' => $info->title,
-                    'description' => $info->description,
-                    'url' => $info->url,
-                    'image' => $info->image,
-                    'code' => Template::raw($info->code ?: ''),
-                    'authorName' => $info->authorName,
-                    'authorUrl' => $info->authorUrl,
-                    'providerName' => $info->providerName,
-                    'providerUrl' => $info->providerUrl,
-                    'icon' => $info->providerIcon,
-                    'favicon' => $info->providerIcon,
-                    'publishedTime' => $info->publishedTime instanceof DateTime ? $info->publishedTime->format('c') : $info->publishedTime,
-                    'license' => $info->license,
-                    'feeds' => $info->feeds,
-                ]));
-
-                // If no embed code, create it
-                if (!trim($data['code'])) {
-                    $data['code'] = '<iframe src="' . $info->url . '"></iframe>';
-                }
+                Craft::$app->getCache()->set(
+                    $cacheKey,
+                    $data,
+                    max(60, (int)$settings->embedCacheDuration),
+                    new TagDependency(['tags' => ['video-picker-embed']]),
+                );
 
                 return $data;
             }
+
+            // Handle Embed v3 support
+            $dispatcher = new \Embed\Http\CurlDispatcher($settings->embedClientSettings);
+
+            $info = \Embed\Embed::create($url, $settings->getEmbedClientConfig(), $dispatcher);
+
+            if (isset($info->url) && (string)$info->url !== '') {
+                EmbedUrl::assertAllowed((string)$info->url, $settings->embedAllowedDomains);
+            }
+
+            $data = Json::decode(Json::encode([
+                'title' => $info->title,
+                'description' => $info->description,
+                'url' => $info->url,
+                'image' => $info->image,
+                'code' => Template::raw($info->code ?: ''),
+                'authorName' => $info->authorName,
+                'authorUrl' => $info->authorUrl,
+                'providerName' => $info->providerName,
+                'providerUrl' => $info->providerUrl,
+                'icon' => $info->providerIcon,
+                'favicon' => $info->providerIcon,
+                'publishedTime' => $info->publishedTime instanceof DateTime ? $info->publishedTime->format('c') : $info->publishedTime,
+                'license' => $info->license,
+                'feeds' => $info->feeds,
+            ]));
+
+            // If no embed code, create it
+            if (!trim($data['code'])) {
+                $data['code'] = '<iframe src="' . $info->url . '"></iframe>';
+            }
+
+            Craft::$app->getCache()->set(
+                $cacheKey,
+                $data,
+                max(60, (int)$settings->embedCacheDuration),
+                new TagDependency(['tags' => ['video-picker-embed']]),
+            );
+
+            return $data;
         } catch (Throwable $e) {
             $error = Craft::t('video-picker', 'Unable to fetch embed data for “{url}”: “{message}” {file}:{line}', [
                 'url' => $url,
@@ -234,8 +297,6 @@ class Videos extends Component
                 'message' => $e->getMessage(),
             ])];
         }
-
-        return [];
     }
 
 }

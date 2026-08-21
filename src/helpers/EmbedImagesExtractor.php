@@ -8,11 +8,13 @@ use Embed\Detectors\Detector;
 use Embed\Detectors\Image;
 
 use GuzzleHttp\Client;
-
-use Psr\Http\Message\UriInterface;
+use GuzzleHttp\RequestOptions;
 
 class EmbedImagesExtractor extends Detector
 {
+    private const MAX_CANDIDATES = 5;
+    private const MAX_BYTES = 2_000_000;
+
     // Public Methods
     // =========================================================================
 
@@ -35,7 +37,7 @@ class EmbedImagesExtractor extends Detector
         $ld = $this->extractor->getLinkedData();
 
         // Find all available images
-        $imageUrls = array_filter([
+        $imageUrls = array_values(array_unique(array_filter([
             $oembed->url('image'),
             $oembed->url('thumbnail'),
             $oembed->url('thumbnail_url'),
@@ -43,32 +45,64 @@ class EmbedImagesExtractor extends Detector
             $document->link('image_src'),
             $ld->url('image.url'),
             $this->detectFromContentType(),
+        ])));
+
+        // Cap candidates — unbounded sequential fetches were a memory/latency footgun.
+        $imageUrls = array_slice($imageUrls, 0, self::MAX_CANDIDATES);
+
+        $client = new Client([
+            RequestOptions::TIMEOUT => 5,
+            RequestOptions::CONNECT_TIMEOUT => 3,
+            RequestOptions::ALLOW_REDIRECTS => ['max' => 3],
+            RequestOptions::HTTP_ERRORS => false,
         ]);
 
-        $client = new Client();
         $largestImage = null;
         $largestSize = 0;
 
-        // Fetch them, returning just the largest
-        foreach (array_unique($imageUrls) as $imageUrl) {
-            // Fetch the image content
-            $response = $client->get($imageUrl);
-            $imageContent = $response->getBody()->getContents();
+        foreach ($imageUrls as $imageUrl) {
+            try {
+                EmbedUrl::assertAllowed((string)$imageUrl, $settings->embedAllowedDomains);
 
-            // Get image dimensions
-            [$width, $height] = getimagesizefromstring($imageContent);
+                $response = $client->get((string)$imageUrl, [
+                    RequestOptions::STREAM => true,
+                ]);
 
-            $size = $width * $height;
+                if ($response->getStatusCode() >= 400) {
+                    continue;
+                }
 
-            // Compare with the current largest image
-            if ($size > $largestSize) {
-                $largestSize = $size;
+                $body = $response->getBody();
+                $imageContent = '';
 
-                $largestImage = [
-                    'image' => $imageUrl,
-                    'imageWidth' => $width,
-                    'imageHeight' => $height,
-                ];
+                while (!$body->eof() && strlen($imageContent) < self::MAX_BYTES) {
+                    $imageContent .= $body->read(65536);
+                }
+
+                if ($imageContent === '' || strlen($imageContent) >= self::MAX_BYTES) {
+                    continue;
+                }
+
+                $sizeInfo = @getimagesizefromstring($imageContent);
+
+                if (!$sizeInfo) {
+                    continue;
+                }
+
+                [$width, $height] = $sizeInfo;
+                $size = $width * $height;
+
+                if ($size > $largestSize) {
+                    $largestSize = $size;
+
+                    $largestImage = [
+                        'image' => $imageUrl,
+                        'imageWidth' => $width,
+                        'imageHeight' => $height,
+                    ];
+                }
+            } catch (\Throwable) {
+                continue;
             }
         }
 

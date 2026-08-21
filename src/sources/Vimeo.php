@@ -71,7 +71,8 @@ class Vimeo extends OAuthSource
     {
         $data = $this->cachedRequest('GET', 'videos/' . $id, [
             'query' => [
-                'fields' => 'created_time,description,duration,height,link,name,pictures,pictures,privacy,stats,uri,user,width,download,review_link,files'
+                // Omit download/review_link/files — unused and sensitive when stored in Video::$raw.
+                'fields' => 'created_time,description,duration,height,link,name,pictures,privacy,stats,uri,user,width',
             ],
         ]);
 
@@ -214,7 +215,7 @@ class Vimeo extends OAuthSource
     private function _performVideosRequest(string $uri, array $params = []): array
     {
         $query = $this->_queryFromParams($params);
-        $query['fields'] = 'created_time,description,duration,height,link,name,pictures,pictures,privacy,stats,uri,user,width,download,review_link,files';
+        $query['fields'] = 'created_time,description,duration,height,link,name,pictures,privacy,stats,uri,user,width';
 
         $data = $this->cachedRequest('GET', $uri, [
             'query' => $query,
@@ -240,6 +241,9 @@ class Vimeo extends OAuthSource
 
     private function _parseVideo(array $data): Video
     {
+        // Never persist download/review/file URLs even if an older API response included them.
+        unset($data['download'], $data['review_link'], $data['files']);
+
         $video = new Video();
         $video->raw = $data;
         $video->authorName = $data['user']['name'] ?? null;;

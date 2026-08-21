@@ -19,7 +19,8 @@ class AuthController extends Controller
     // Properties
     // =========================================================================
 
-    protected array|int|bool $allowAnonymous = ['connect', 'callback'];
+    // Only the OAuth provider callback is anonymous — connect/disconnect require CP auth.
+    protected array|int|bool $allowAnonymous = ['callback'];
 
 
     // Public Methods
@@ -37,6 +38,9 @@ class AuthController extends Controller
 
     public function actionConnect(): ?Response
     {
+        $this->requirePermission('videoPicker-sources');
+        $this->requirePostRequest();
+
         $sourceHandle = $this->request->getRequiredParam('source');
 
         try {
@@ -102,6 +106,9 @@ class AuthController extends Controller
             // Save the token to the Auth plugin, with a reference to this source
             $token->reference = $source->id;
             Auth::getInstance()->getTokens()->upsertToken($token);
+
+            // Drop any provider responses cached under a previous account/config.
+            $source->clearLocalCache();
         } catch (Throwable $e) {
             $error = Craft::t('video-picker', 'Unable to process callback for “{source}”: “{message}” {file}:{line}', [
                 'source' => $sourceHandle,
@@ -125,6 +132,9 @@ class AuthController extends Controller
 
     public function actionDisconnect(): ?Response
     {
+        $this->requirePermission('videoPicker-sources');
+        $this->requirePostRequest();
+
         $sourceHandle = $this->request->getRequiredParam('source');
 
         if (!($source = VideoPicker::$plugin->getSources()->getSourceByHandle($sourceHandle))) {
@@ -134,8 +144,9 @@ class AuthController extends Controller
         // Delete all tokens for this source
         Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
 
-        // Clear any caches for the source
+        // Clear explorer DB cache + tagged application cache for this source
         Db::update('{{%video_picker_sources}}', ['cache' => null], ['id' => $source->id]);
+        $source->clearLocalCache();
 
         return $this->asModelSuccess($source, Craft::t('video-picker', '{provider} disconnected.', ['provider' => $source->providerName]), 'source');
     }
