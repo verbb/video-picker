@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).
+
 ## 2.0.10 - 2026-07-15
 
 ### Added

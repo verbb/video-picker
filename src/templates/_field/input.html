@@ -18,6 +18,10 @@
     'Remove',
 ]) %}
 
+{# Posted value lives on this native input so Craft FormObserver / ElementEditor
+   (jQuery serialize) can see it. `name` is the raw field handle — CustomField’s
+   namespaceInputs(..., 'fields') rewrites it to fields[handle]. pk-input is
+   chrome-only and stays nameless. #}
 <div class="vp-input-component" data-video-picker-auto-mount="input" data-settings="{{ componentSettings }}">
-    <video-picker-input></video-picker-input>
+    <input type="hidden" data-video-picker-value name="{{ name }}" value="{{ value }}">
 </div>

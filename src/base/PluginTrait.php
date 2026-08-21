@@ -8,6 +8,7 @@ use verbb\videopicker\services\Videos;
 use verbb\videopicker\web\assets\field\VideoPickerAsset;
 
 use Craft;
+use craft\helpers\App;
 
 use verbb\base\LogTrait;
 use verbb\base\helpers\Plugin;
@@ -45,9 +46,9 @@ trait PluginTrait
                 'vite' => [
                     'class' => VitePluginService::class,
                     'assetClass' => VideoPickerAsset::class,
-                    'useDevServer' => true,
+                    'useDevServer' => App::parseBooleanEnv('$VIDEO_PICKER_USE_VITE_DEV_SERVER') ?? false,
                     'devServerPublic' => 'http://localhost:4035/',
-                    'errorEntry' => 'js/main.js',
+                    'errorEntry' => 'field/src/js/video-picker.ts',
                     'cacheKeySuffix' => '',
                     'devServerInternal' => 'http://localhost:4035/',
                     'checkDevServer' => true,

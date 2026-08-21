@@ -1,0 +1,411 @@
+/* Video Picker field layout. Component internals use Plugin Kit; this file is
+   composition only, preferring --pk-* tokens over the old bespoke Vue palette. */
+
+.vp-input-component {
+    display: block;
+}
+
+.vp-input {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pk-spacing-4, 1rem);
+}
+
+.vp-input-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--pk-spacing-2, 0.5rem);
+}
+
+.vp-input-row pk-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+}
+
+/* Room for the overlaid Browse link (BEFORE sat inside the text field). */
+.vp-input-row.has-browse pk-input::part(input) {
+    padding-inline-end: 7.5rem;
+}
+
+.vp-browse {
+    position: absolute;
+    inset-inline-end: var(--pk-spacing-3, 0.75rem);
+    top: 50%;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+.vp-source-warning {
+    margin-top: var(--pk-spacing-2, 0.5rem);
+}
+
+.vp-single-video-errors {
+    word-break: break-word;
+}
+
+.vp-single-video-container {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: var(--pk-spacing-3, 0.75rem);
+}
+
+.vp-single-video-thumb {
+    flex: 1;
+    max-width: 12rem;
+}
+
+.vp-single-video-meta {
+    flex: 1;
+    max-width: 24rem;
+    min-width: 0;
+}
+
+.vp-single-video-title {
+    margin: 0;
+    font-size: var(--pk-font-size-base, 15px);
+    font-weight: 500;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vp-single-video-title a {
+    color: inherit;
+}
+
+.vp-single-video-meta-details {
+    margin-top: var(--pk-spacing-1, 0.25rem);
+    font-size: var(--pk-font-size-xs, 12px);
+    color: var(--pk-color-gray-600, #606060);
+}
+
+.vp-single-video-meta-author {
+    color: var(--pk-color-gray-600, #606060);
+}
+
+.vp-single-video-meta-author:hover {
+    color: var(--pk-color-gray-900, #0f0f0f);
+}
+
+.vp-single-video-meta-description {
+    margin-top: var(--pk-spacing-2, 0.5rem);
+    font-size: var(--pk-font-size-xs, 12px);
+    color: var(--pk-color-gray-600, #606060);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Absolute over the preview card. BEFORE used 23×23 anchors + `right: -5px` so the
+ * remove glyph’s ink lined up with the URL input edge; kit `sm` squares are 30px and
+ * left a visible gap between glyphs even with `gap: 0`. Match the old hit box. */
+.vp-single-video-buttons {
+    position: absolute;
+    top: 0;
+    right: -5px;
+    display: flex;
+    gap: 0;
+}
+
+.vp-single-video-buttons pk-button {
+    --pk-btn-height: 23px;
+    --pk-btn-icon-size: 13px;
+    color: var(--pk-color-gray-550, #596775);
+}
+
+/* Explorer dialog ---------------------------------------------------------- */
+
+/* Refresh sits left; Cancel/Select stay end-aligned (BEFORE `.buttons.left` / `.right`). */
+.vp-explorer-dialog > .vp-explorer-refresh {
+    margin-inline-end: auto;
+}
+
+.vp-explorer-body,
+.vp-preview-body {
+    position: relative;
+    height: 100%;
+    min-height: 20rem;
+}
+
+.vp-explorer {
+    display: flex;
+    height: 100%;
+    min-height: 20rem;
+}
+
+.vp-explorer-sidebar {
+    width: 14rem;
+    flex: 0 0 14rem;
+    overflow: auto;
+    border-right: 1px solid var(--pk-color-border, rgba(96, 125, 159, 0.25));
+    background: var(--pk-color-gray-50, #f3f7fc);
+    padding-block: var(--pk-spacing-3, 0.75rem);
+}
+
+.vp-sidebar-select {
+    margin-inline: var(--pk-spacing-2, 0.5rem);
+    margin-bottom: var(--pk-spacing-3, 0.75rem);
+}
+
+.vp-explorer-sidebar nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.vp-explorer-sidebar .heading {
+    margin: var(--pk-spacing-3, 0.75rem) var(--pk-spacing-3, 0.75rem) var(--pk-spacing-1, 0.25rem);
+    font-size: var(--pk-font-size-xs, 11px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--pk-color-gray-500, #7b8793);
+}
+
+.vp-explorer-sidebar nav li a {
+    /* Match Craft `.sidebar nav li a` (BEFORE explorer sits in that chrome). */
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: 1.5rem;
+    padding-block: 7px;
+    padding-inline: 0.75rem;
+    margin-inline: 0.25rem;
+    margin-block-end: 1px;
+    font-size: 14px;
+    line-height: normal;
+    color: var(--pk-color-gray-800, #202b38);
+    text-decoration: none;
+    border-radius: 5px;
+    user-select: none;
+}
+
+.vp-explorer-sidebar nav li a:hover {
+    background: var(--pk-color-gray-100, #e5ecf6);
+}
+
+.vp-explorer-sidebar nav li a.sel {
+    background: #cdd8e4;
+    color: var(--pk-color-gray-900, #202b38);
+}
+
+/* BEFORE `.vp-sidebar-icon`: 1.25rem + `rgb(59 130 246)` (not a kit token). */
+.vp-sidebar-icon {
+    display: inline-flex;
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: 0 0 1.25rem;
+    margin-inline-end: 0.5rem;
+    color: rgb(59 130 246);
+}
+
+.vp-sidebar-icon svg,
+.vp-sidebar-icon pk-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.vp-explorer-main {
+    flex: 1;
+    min-width: 0;
+    padding: var(--pk-spacing-4, 1rem);
+    overflow: auto;
+    position: relative;
+}
+
+.vp-videos-search-wrapper {
+    margin-bottom: var(--pk-spacing-2, 0.5rem);
+}
+
+.vp-videos-wrapper {
+    padding-block: var(--pk-spacing-4, 1rem);
+    /* Do not position:relative — loading/error overlays center against `.vp-explorer-main`. */
+    min-height: 8rem;
+}
+
+.vp-centered {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--pk-color-gray-500, #596673);
+}
+
+.vp-videos-more {
+    margin-top: var(--pk-spacing-4, 1rem);
+    display: flex;
+    justify-content: center;
+}
+
+.vp-video-cards {
+    display: grid;
+    width: 100%;
+    gap: var(--pk-spacing-4, 1rem);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vp-hint-text {
+    color: var(--pk-color-gray-500, #7b8793);
+}
+
+.vp-video-card {
+    cursor: pointer;
+}
+
+.vp-video-card-container {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    align-items: center;
+    margin-top: var(--pk-spacing-2, 0.5rem);
+    gap: var(--pk-spacing-1, 0.25rem);
+}
+
+.vp-video-card-text {
+    flex: 1 1 0%;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: var(--pk-font-size-sm, 13px);
+    color: var(--pk-color-gray-800, #202b38);
+}
+
+.vp-icon-private {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 1rem;
+    color: var(--pk-color-gray-600, #596775);
+}
+
+.vp-icon-private svg,
+.vp-icon-private pk-icon {
+    width: 100%;
+    height: 100%;
+    font-size: 1rem;
+}
+
+/* Thumbs ------------------------------------------------------------------- */
+
+.vp-video-thumb {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: var(--pk-radius-sm, 0.25rem);
+    box-shadow: var(--pk-color-bg, #fff) 0 0 0 3px;
+}
+
+.vp-video-thumb.is-selected,
+.vp-video-card:hover .vp-video-thumb {
+    box-shadow: var(--pk-color-danger, rgba(239, 68, 68, 0.8)) 0 0 0 3px;
+    transition: box-shadow 0.2s ease;
+}
+
+.vp-video-thumb-image-container {
+    position: relative;
+    aspect-ratio: 16 / 9;
+}
+
+.vp-video-thumb-image {
+    height: 100%;
+    width: 100%;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--pk-color-gray-200, #cdd8e4);
+}
+
+.vp-video-thumb-duration {
+    position: absolute;
+    bottom: var(--pk-spacing-1, 0.25rem);
+    right: var(--pk-spacing-1, 0.25rem);
+    display: block;
+    border-radius: var(--pk-radius-xs, 0.125rem);
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 3px 4px;
+    font-size: var(--pk-font-size-xs, 0.75rem);
+    font-weight: 700;
+    line-height: 0.75rem;
+    color: var(--pk-color-white, #fff);
+}
+
+.vp-video-thumb-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    color: #000;
+    fill: currentColor;
+    border: 2px solid var(--pk-color-white, #fff);
+    background: var(--pk-color-white, #fff);
+    border-radius: 50%;
+    opacity: 0;
+    height: 2.5rem;
+    width: 2.5rem;
+    box-sizing: border-box;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+/* Glyph must fill the disc (BEFORE). A smaller inset icon left a white halo. */
+.vp-video-thumb-play .vp-inline-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.vp-video-thumb-play .vp-inline-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.vp-video-thumb:hover .vp-video-thumb-play {
+    opacity: 0.5;
+}
+
+.vp-video-thumb-play:hover {
+    opacity: 0.7 !important;
+}
+
+.vp-inline-icon {
+    display: inline-flex;
+    width: 1em;
+    height: 1em;
+}
+
+.vp-inline-icon svg,
+.vp-inline-icon pk-icon {
+    width: 100%;
+    height: 100%;
+    font-size: 1em;
+}
+
+/* Preview dialog ----------------------------------------------------------- */
+
+.vp-preview-dialog::part(body),
+.vp-preview-body {
+    background: #000;
+}
+
+.vp-preview-embed {
+    position: absolute;
+    inset: 0;
+}
+
+.vp-preview-embed iframe {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    border: 0;
+}

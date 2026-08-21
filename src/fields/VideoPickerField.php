@@ -101,7 +101,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
 
         $id = Html::id($this->handle);
 
-        Plugin::registerAsset('field/src/js/video-picker.js');
+        Plugin::registerFieldAssets();
 
         if ($value) {
             // Format the Video model for the front-end, and add any extra data
@@ -110,9 +110,16 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             $value = $video;
         }
 
+        // Twig gets the raw handle — CustomField wraps getInputHtml in
+        // namespaceInputs(..., 'fields'). Pre-namespacing here double-wraps to
+        // fields[fields][handle] (draft dirty-checks, value never applies).
+        // JS fallback create (no SSR) still needs the fully namespaced name.
+        $inputName = $view->namespaceInputName($this->handle);
+        $urlValue = is_array($value) ? (string)($value['url'] ?? '') : '';
+
         $componentSettings = [
             'inputId' => $view->namespaceInputId($id),
-            'inputName' => $view->namespaceInputName($id),
+            'inputName' => $inputName,
             'fieldId' => $this->id,
             'value' => $value,
             'showExplorer' => $this->showExplorer,
@@ -124,6 +131,8 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
         ];
 
         return $view->renderTemplate('video-picker/_field/input', [
+            'name' => $this->handle,
+            'value' => $urlValue,
             'componentSettings' => Json::encode($componentSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
         ]);
     }

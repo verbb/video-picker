@@ -1,14 +1,30 @@
 {
-  "field/src/js/video-picker.css": {
-    "file": "assets/video-picker-e91ab26e.css",
-    "src": "field/src/js/video-picker.css"
+  "_videoPickerPkComponents-BdbnA876.js": {
+    "file": "assets/videoPickerPkComponents-BdbnA876.js",
+    "name": "videoPickerPkComponents"
   },
-  "field/src/js/video-picker.js": {
-    "file": "assets/video-picker-610e4048.js",
-    "src": "field/src/js/video-picker.js",
+  "field/src/js/plugin-kit-register.ts": {
+    "file": "assets/pluginKit-CAduPb4W.js",
+    "name": "pluginKit",
+    "src": "field/src/js/plugin-kit-register.ts",
     "isEntry": true,
+    "imports": [
+      "_videoPickerPkComponents-BdbnA876.js"
+    ],
     "css": [
-      "assets/video-picker-e91ab26e.css"
+      "assets/pluginKit-Dum0oPe8.css"
+    ]
+  },
+  "field/src/js/video-picker.ts": {
+    "file": "assets/video-picker-BlRLUcDY.js",
+    "name": "video-picker",
+    "src": "field/src/js/video-picker.ts",
+    "isEntry": true,
+    "imports": [
+      "_videoPickerPkComponents-BdbnA876.js"
+    ],
+    "css": [
+      "assets/video-picker-BDLbGxK8.css"
     ]
   }
 }

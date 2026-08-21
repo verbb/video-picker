@@ -1,0 +1,655 @@
+import { formatErrorHtml } from '../utils/ajaxErrors.js';
+import { createCollectionIcon } from '../utils/collectionIcons.js';
+import { debounce } from '../utils/formatVideo.js';
+import { createVideoGrid, type VideoData } from '../video/VideoCard.js';
+
+type PkDialogElement = HTMLElement & { open: boolean };
+type PkSelectElement = HTMLElement & { value: string };
+
+type Collection = {
+    name: string;
+    method?: string | null;
+    options?: Record<string, unknown> | unknown[];
+    icon?: string | null;
+};
+
+type Section = {
+    name: string;
+    collections: Collection[];
+};
+
+type Source = {
+    handle: string;
+    name: string;
+    supportsSearch?: boolean;
+    sections: Section[];
+};
+
+export type ExplorerDialogOptions = {
+    mount: HTMLElement;
+    fieldId?: number | null;
+    video?: VideoData | null;
+    onSelect: (video: VideoData) => void;
+    onPlay: (video: VideoData) => void;
+    onClosed: () => void;
+};
+
+/**
+ * Explorer browse dialog — ports Explorer.vue onto `pk-dialog` + `pk-select`.
+ * AJAX contracts unchanged: get-sources / get-videos (+ nextPage pagination).
+ */
+export class ExplorerDialog {
+    private readonly options: ExplorerDialogOptions;
+    private readonly dialog: PkDialogElement;
+
+    private loadingSources = false;
+    private loadingVideos = false;
+    private loadingMore = false;
+    private nextPage: unknown = null;
+    private sourcesError: string | null = null;
+    private videosError: string | null = null;
+    private query = '';
+    private sources: Source[] = [];
+    private videos: VideoData[] = [];
+    private currentSource: Source | null = null;
+    private currentCollection: Collection | null = null;
+    private currentVideo: VideoData | null = null;
+    private closed = false;
+
+    private bodyEl!: HTMLElement;
+    private footerRefresh!: HTMLElement;
+    private footerCancel!: HTMLElement;
+    private footerSelect!: HTMLElement;
+
+    private mainEl: HTMLElement | null = null;
+    private searchInput: (HTMLElement & { value?: string }) | null = null;
+
+    private readonly debouncedSearch: (() => void) & { cancel: () => void };
+    private readonly debouncedFetchVideos: (() => void) & { cancel: () => void };
+
+    constructor(options: ExplorerDialogOptions) {
+        this.options = options;
+        this.currentVideo = options.video ?? null;
+
+        this.debouncedSearch = debounce(() => this.search(), 1000);
+        // Collection clicks wait 400ms like BEFORE (rapid nav shouldn't spam get-videos).
+        this.debouncedFetchVideos = debounce(() => this.fetchVideos(), 400);
+
+        this.dialog = document.createElement('pk-dialog') as PkDialogElement;
+        this.dialog.classList.add('vp-explorer-dialog');
+        this.dialog.setAttribute('label', Craft.t('video-picker', 'Browse videos…'));
+        this.dialog.setAttribute('without-body-padding', '');
+        this.dialog.setAttribute('size', 'wide');
+        this.dialog.style.setProperty('--pk-dialog-width', '66vw');
+        this.dialog.style.setProperty('--pk-dialog-max-width', '66vw');
+        this.dialog.style.setProperty('--pk-dialog-height', '66vh');
+        this.dialog.style.setProperty('--pk-dialog-min-width', '600px');
+        this.dialog.style.setProperty('--pk-dialog-min-height', '400px');
+
+        this.bodyEl = document.createElement('div');
+        this.bodyEl.className = 'vp-explorer-body';
+        this.dialog.appendChild(this.bodyEl);
+
+        this.footerRefresh = document.createElement('pk-button');
+        this.footerRefresh.className = 'vp-explorer-refresh';
+        this.footerRefresh.setAttribute('slot', 'footer');
+        // Default variant + default size so icon-only square matches Cancel height (BEFORE `btn`).
+        this.footerRefresh.setAttribute('variant', 'default');
+        this.footerRefresh.setAttribute('title', Craft.t('video-picker', 'Refresh'));
+        this.footerRefresh.setAttribute('aria-label', Craft.t('video-picker', 'Refresh'));
+        const refreshIcon = document.createElement('pk-icon');
+        refreshIcon.setAttribute('slot', 'start');
+        refreshIcon.setAttribute('icon', 'arrows-rotate');
+        this.footerRefresh.appendChild(refreshIcon);
+
+        this.footerCancel = document.createElement('pk-button');
+        this.footerCancel.setAttribute('slot', 'footer');
+        this.footerCancel.setAttribute('variant', 'default');
+        this.footerCancel.textContent = Craft.t('app', 'Cancel');
+
+        this.footerSelect = document.createElement('pk-button');
+        this.footerSelect.setAttribute('slot', 'footer');
+        this.footerSelect.setAttribute('variant', 'primary');
+        this.footerSelect.textContent = Craft.t('video-picker', 'Select');
+
+        this.dialog.append(this.footerRefresh, this.footerCancel, this.footerSelect);
+        options.mount.appendChild(this.dialog);
+
+        this.footerRefresh.addEventListener('click', (event) => {
+            event.preventDefault();
+            this.fetchSources(true);
+        });
+        this.footerCancel.addEventListener('click', (event) => {
+            event.preventDefault();
+            this.close();
+        });
+        this.footerSelect.addEventListener('click', (event) => {
+            event.preventDefault();
+            this.commitSelect();
+        });
+
+        // Nested `pk-select` / overlays also emit composed `pk-open-change` + `pk-after-hide`.
+        // Only tear down when *this* dialog closed — otherwise light-dismissing the source
+        // select tears down the whole explorer (event.target is the select, not the dialog).
+        this.dialog.addEventListener('pk-open-change', (event) => {
+            if (event.target !== this.dialog) {
+                return;
+            }
+
+            if (event instanceof CustomEvent && event.detail?.open === false) {
+                this.finishClose();
+            }
+        });
+        this.dialog.addEventListener('pk-after-hide', (event) => {
+            if (event.target !== this.dialog) {
+                return;
+            }
+
+            this.finishClose();
+        });
+    }
+
+    open(): void {
+        this.render();
+        requestAnimationFrame(() => {
+            this.dialog.open = true;
+            this.fetchSources();
+        });
+    }
+
+    close(): void {
+        this.dialog.open = false;
+    }
+
+    private finishClose(): void {
+        if (this.closed) {
+            return;
+        }
+
+        this.closed = true;
+        this.debouncedSearch.cancel();
+        this.debouncedFetchVideos.cancel();
+        window.setTimeout(() => this.dialog.remove(), 0);
+        this.options.onClosed();
+    }
+
+    private commitSelect(): void {
+        if (!this.currentVideo) {
+            return;
+        }
+
+        this.options.onSelect(this.currentVideo);
+        this.close();
+    }
+
+    private supportsSearch(): boolean {
+        return this.currentSource?.supportsSearch ?? true;
+    }
+
+    private canSelect(): boolean {
+        return Boolean(this.currentVideo);
+    }
+
+    private reset(): void {
+        this.query = '';
+        this.nextPage = null;
+        this.videos = [];
+
+        if (this.searchInput) {
+            this.searchInput.value = '';
+        }
+    }
+
+    private setCollection(collection: Collection | null): void {
+        this.currentCollection = collection;
+
+        // PHP sometimes sends options as [] — coerce so we can assign nextPage / q.
+        if (this.currentCollection && Array.isArray(this.currentCollection.options)) {
+            this.currentCollection.options = {};
+        }
+    }
+
+    private isCollectionSelected(collection: Collection): boolean {
+        return JSON.stringify(collection) === JSON.stringify(this.currentCollection);
+    }
+
+    /**
+     * Live options bag on the current collection.
+     * BEFORE mutates this in place for search `q` and pagination `nextPage` —
+     * a shallow copy would drop `q` on Load More and fall back to the sidebar collection.
+     */
+    private collectionOptions(): Record<string, unknown> {
+        if (!this.currentCollection) {
+            return {};
+        }
+
+        if (!this.currentCollection.options || Array.isArray(this.currentCollection.options)) {
+            this.currentCollection.options = {};
+        }
+
+        return this.currentCollection.options as Record<string, unknown>;
+    }
+
+    // -------------------------------------------------------------------------
+    // AJAX
+    // -------------------------------------------------------------------------
+
+    private fetchSources(refresh = false): void {
+        this.loadingSources = true;
+        this.sourcesError = null;
+        this.render();
+
+        const data: Record<string, unknown> = {
+            fieldId: this.options.fieldId,
+        };
+
+        if (refresh) {
+            data.refresh = true;
+        }
+
+        Craft.sendActionRequest('POST', 'video-picker/videos/get-sources', { data })
+            .then((response: { data: Source[] }) => {
+                this.sources = response.data ?? [];
+                this.loadingSources = false;
+
+                if (this.sources.length) {
+                    this.currentSource = this.sources[0];
+                    this.setCollection(this.currentSource?.sections?.[0]?.collections?.[0] ?? null);
+                    // Clear sources spinner before videos fetch so render shows the explorer chrome.
+                    this.fetchVideos();
+                } else {
+                    this.render();
+                }
+            })
+            .catch((error: unknown) => {
+                this.sourcesError = formatErrorHtml(error);
+                this.loadingSources = false;
+                this.render();
+            });
+    }
+
+    private fetchVideos(): void {
+        if (!this.currentSource) {
+            return;
+        }
+
+        this.loadingVideos = true;
+        this.videosError = null;
+        this.render();
+
+        const data = {
+            source: this.currentSource.handle,
+            method: this.currentCollection?.method ?? null,
+            options: this.collectionOptions(),
+        };
+
+        Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
+            .then((response: { data: { videos: VideoData[]; nextPage: unknown } }) => {
+                this.videos = response.data.videos ?? [];
+                this.nextPage = response.data.nextPage;
+            })
+            .catch((error: unknown) => {
+                this.videosError = formatErrorHtml(error);
+            })
+            .finally(() => {
+                this.loadingVideos = false;
+                this.render();
+            });
+    }
+
+    private fetchMoreVideos(): void {
+        if (!this.currentSource) {
+            return;
+        }
+
+        this.loadingMore = true;
+        this.videosError = null;
+        this.renderMoreState();
+
+        const options = this.collectionOptions();
+        options.nextPage = this.nextPage;
+
+        const data: {
+            source: string;
+            method: string | null;
+            options: Record<string, unknown>;
+        } = {
+            source: this.currentSource.handle,
+            method: this.currentCollection?.method ?? null,
+            options,
+        };
+
+        // Search pagination must keep method=search when q is present (BEFORE quirk).
+        if (options.q) {
+            data.method = 'search';
+        }
+
+        Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
+            .then((response: { data: { videos: VideoData[]; nextPage: unknown } }) => {
+                this.videos = this.videos.concat(response.data.videos ?? []);
+                this.nextPage = response.data.nextPage;
+            })
+            .catch((error: unknown) => {
+                this.videosError = formatErrorHtml(error);
+            })
+            .finally(() => {
+                this.loadingMore = false;
+                // Full re-render would snap scroll to top — keep the user’s place (BEFORE).
+                const scrollTop = this.mainEl?.scrollTop ?? 0;
+                this.render();
+                if (this.mainEl) {
+                    this.mainEl.scrollTop = scrollTop;
+                }
+            });
+    }
+
+    private searchVideos(): void {
+        if (!this.currentSource) {
+            return;
+        }
+
+        this.loadingVideos = true;
+        this.videosError = null;
+        this.render();
+
+        const options = this.collectionOptions();
+        // Persist on the collection so fetchMoreVideos still sees `q` (BEFORE).
+        options.q = this.query;
+
+        const data = {
+            source: this.currentSource.handle,
+            method: 'search',
+            options,
+        };
+
+        Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
+            .then((response: { data: { videos: VideoData[]; nextPage: unknown } }) => {
+                this.videos = response.data.videos ?? [];
+                this.nextPage = response.data.nextPage;
+            })
+            .catch((error: unknown) => {
+                this.videosError = formatErrorHtml(error);
+            })
+            .finally(() => {
+                this.loadingVideos = false;
+                this.render();
+            });
+    }
+
+    private search(): void {
+        this.debouncedSearch.cancel();
+        this.searchVideos();
+    }
+
+    private maybeLoadMore(): void {
+        if (!this.nextPage || this.loadingMore || !this.mainEl) {
+            return;
+        }
+
+        const { scrollHeight, scrollTop, clientHeight } = this.mainEl;
+
+        if (scrollHeight - scrollTop <= clientHeight + 15) {
+            this.fetchMoreVideos();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // DOM
+    // -------------------------------------------------------------------------
+
+    private render(): void {
+        this.bodyEl.replaceChildren();
+        this.footerSelect.toggleAttribute('disabled', !this.canSelect());
+
+        if (this.loadingSources) {
+            this.bodyEl.appendChild(this.centeredSpinner());
+            return;
+        }
+
+        if (this.sourcesError) {
+            const err = document.createElement('div');
+            err.className = 'vp-centered error';
+            err.style.wordBreak = 'break-word';
+            err.innerHTML = this.sourcesError;
+            this.bodyEl.appendChild(err);
+            return;
+        }
+
+        const explorer = document.createElement('div');
+        explorer.className = 'vp-explorer';
+
+        explorer.append(this.buildSidebar(), this.buildMain());
+        this.bodyEl.appendChild(explorer);
+    }
+
+    /** Avoid full re-render while appending — only swap the Load More / spinner row. */
+    private renderMoreState(): void {
+        const more = this.bodyEl.querySelector('.vp-videos-more');
+
+        if (!more) {
+            this.render();
+            return;
+        }
+
+        more.replaceChildren();
+
+        if (this.loadingMore) {
+            const spinner = document.createElement('pk-spinner');
+            spinner.setAttribute('size', 'sm');
+            more.appendChild(spinner);
+        } else {
+            const btn = document.createElement('pk-button');
+            btn.setAttribute('variant', 'secondary');
+            btn.textContent = Craft.t('video-picker', 'Load More');
+            btn.addEventListener('click', () => this.fetchMoreVideos());
+            more.appendChild(btn);
+        }
+    }
+
+    private centeredSpinner(size: 'sm' | 'md' | 'lg' = 'md'): HTMLElement {
+        const wrap = document.createElement('div');
+        // Absolute to `.vp-explorer-main` (BEFORE `.vp-no-videos`) — not the short videos wrap.
+        wrap.className = 'vp-centered';
+        const spinner = document.createElement('pk-spinner');
+        // BEFORE `vp-loading-lg` is 2rem → kit `md` (kit `lg` is 3rem and reads huge).
+        spinner.setAttribute('size', size);
+        wrap.appendChild(spinner);
+
+        return wrap;
+    }
+
+    private buildSidebar(): HTMLElement {
+        const sidebar = document.createElement('div');
+        sidebar.className = 'vp-explorer-sidebar';
+
+        const selectWrap = document.createElement('div');
+        selectWrap.className = 'vp-sidebar-select';
+
+        const select = document.createElement('pk-select') as PkSelectElement;
+        select.setAttribute('width', 'full');
+        select.setAttribute('aria-label', Craft.t('video-picker', 'Source'));
+
+        for (const source of this.sources) {
+            const option = document.createElement('pk-option');
+            option.setAttribute('value', source.handle);
+            option.setAttribute('label', source.name);
+            option.textContent = source.name;
+
+            if (this.currentSource?.handle === source.handle) {
+                option.setAttribute('selected', '');
+            }
+
+            select.appendChild(option);
+        }
+
+        if (this.currentSource) {
+            select.value = this.currentSource.handle;
+        }
+
+        select.addEventListener('pk-change', () => {
+            const handle = select.value;
+            const next = this.sources.find((s) => s.handle === handle);
+
+            if (!next || next === this.currentSource) {
+                return;
+            }
+
+            this.currentSource = next;
+            this.setCollection(next.sections?.[0]?.collections?.[0] ?? null);
+            this.reset();
+            this.fetchVideos();
+        });
+
+        selectWrap.appendChild(select);
+        sidebar.appendChild(selectWrap);
+
+        const nav = document.createElement('nav');
+        const list = document.createElement('ul');
+
+        if (this.currentSource) {
+            for (const section of this.currentSource.sections ?? []) {
+                const heading = document.createElement('li');
+                heading.className = 'heading';
+                const span = document.createElement('span');
+                span.textContent = section.name;
+                heading.appendChild(span);
+                list.appendChild(heading);
+
+                for (const collection of section.collections ?? []) {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = '#';
+
+                    if (this.isCollectionSelected(collection)) {
+                        a.classList.add('sel');
+                    }
+
+                    if (collection.icon) {
+                        a.appendChild(createCollectionIcon(collection.icon));
+                    }
+
+                    a.append(document.createTextNode(collection.name));
+                    a.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        this.setCollection(collection);
+                        this.render();
+                        this.debouncedFetchVideos();
+                    });
+                    li.appendChild(a);
+                    list.appendChild(li);
+                }
+            }
+        }
+
+        nav.appendChild(list);
+        sidebar.appendChild(nav);
+
+        return sidebar;
+    }
+
+    /** Update selection chrome in place so the scroll position survives a card click. */
+    private selectCurrentVideo(video: VideoData): void {
+        this.currentVideo = video;
+        this.footerSelect.toggleAttribute('disabled', !this.canSelect());
+
+        this.bodyEl.querySelectorAll('.vp-video-thumb').forEach((el) => {
+            el.classList.remove('is-selected');
+        });
+
+        const cards = this.bodyEl.querySelectorAll('.vp-video-card');
+        cards.forEach((card, index) => {
+            const match = this.videos[index];
+
+            if (match && String(match.id) === String(video.id)) {
+                card.querySelector('.vp-video-thumb')?.classList.add('is-selected');
+            }
+        });
+    }
+
+    private buildMain(): HTMLElement {
+        const main = document.createElement('div');
+        main.className = 'vp-explorer-main';
+        main.addEventListener('scroll', () => this.maybeLoadMore());
+        this.mainEl = main;
+
+        if (this.currentSource && this.supportsSearch()) {
+            const searchWrap = document.createElement('div');
+            searchWrap.className = 'vp-videos-search-wrapper';
+
+            const search = document.createElement('pk-input') as HTMLElement & { value?: string };
+            search.setAttribute('type', 'search');
+            search.setAttribute(
+                'placeholder',
+                Craft.t('video-picker', 'Search {source} videos…', { source: this.currentSource.name }),
+            );
+            const searchIcon = document.createElement('pk-icon');
+            searchIcon.setAttribute('slot', 'start');
+            searchIcon.setAttribute('icon', 'magnifying-glass');
+            search.appendChild(searchIcon);
+            search.value = this.query;
+            this.searchInput = search;
+
+            search.addEventListener('input', () => {
+                this.query = search.value ?? '';
+                this.debouncedSearch();
+            });
+            search.addEventListener('keydown', (event: Event) => {
+                if ((event as KeyboardEvent).key === 'Enter') {
+                    event.preventDefault();
+                    this.search();
+                }
+            });
+
+            searchWrap.appendChild(search);
+            main.appendChild(searchWrap);
+        }
+
+        const videosWrap = document.createElement('div');
+        videosWrap.className = 'vp-videos-wrapper';
+
+        if (this.loadingVideos) {
+            // Mount on `main` so absolute centering uses the full panel (search + body), like BEFORE.
+            main.appendChild(this.centeredSpinner('md'));
+        } else if (this.videosError) {
+            const err = document.createElement('div');
+            err.className = 'vp-centered error';
+            err.style.wordBreak = 'break-word';
+            err.innerHTML = this.videosError;
+            main.appendChild(err);
+        } else {
+            videosWrap.appendChild(
+                createVideoGrid(this.videos, this.currentVideo?.id ?? null, {
+                    onSelect: (video) => this.selectCurrentVideo(video),
+                    onUse: (video) => {
+                        this.currentVideo = video;
+                        this.commitSelect();
+                    },
+                    onPlay: (video) => this.options.onPlay(video),
+                }),
+            );
+
+            if (this.nextPage) {
+                const more = document.createElement('div');
+                more.className = 'vp-videos-more';
+
+                if (this.loadingMore) {
+                    const spinner = document.createElement('pk-spinner');
+                    spinner.setAttribute('size', 'sm');
+                    more.appendChild(spinner);
+                } else {
+                    const btn = document.createElement('pk-button');
+                    btn.setAttribute('variant', 'secondary');
+                    btn.textContent = Craft.t('video-picker', 'Load More');
+                    btn.addEventListener('click', () => this.fetchMoreVideos());
+                    more.appendChild(btn);
+                }
+
+                videosWrap.appendChild(more);
+            }
+
+            main.appendChild(videosWrap);
+        }
+
+        return main;
+    }
+}
