@@ -3,6 +3,7 @@ namespace verbb\videopicker\services;
 
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\base\SourceInterface;
+use verbb\videopicker\fields\VideoPickerField;
 use verbb\videopicker\helpers\EmbedImagesExtractor;
 use verbb\videopicker\models\Settings;
 use verbb\videopicker\models\Video;
@@ -10,6 +11,7 @@ use verbb\videopicker\records\Video as VideoRecord;
 
 use Craft;
 use craft\base\Component;
+use craft\base\Field;
 use craft\helpers\ArrayHelper;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Db;
@@ -31,8 +33,14 @@ class Videos extends Component
     // Public Methods
     // =========================================================================
 
-    public function getVideoByUrl(string $videoUrl, bool $clearCache = false): ?Video
+    /**
+     * @param Field|null $field When a VideoPickerField, only match against that field’s allowed sources.
+     */
+    public function getVideoByUrl(string $videoUrl, bool $clearCache = false, ?Field $field = null): ?Video
     {
+        $allowedSources = VideoPicker::$plugin->getSources()->getSourcesForField($field);
+        $allowedHandles = array_map(static fn(SourceInterface $source) => $source->handle, $allowedSources);
+
         // Fetch the video data from our saved database store of videos
         $record = VideoRecord::findOne([
             'videoUrl' => $videoUrl,
@@ -43,7 +51,7 @@ class Videos extends Component
                 $record->delete();
 
                 // Also clear this source's local cache so the next fetch hits the provider
-                foreach (VideoPicker::$plugin->getSources()->getAllEnabledSources() as $source) {
+                foreach ($allowedSources as $source) {
                     if ($source->getVideoIdFromUrl($videoUrl)) {
                         $source->clearLocalCache();
                         break;
@@ -51,13 +59,26 @@ class Videos extends Component
                 }
             } else {
                 // Handle emoji's in video content
-                return new Video(Json::decode(StringHelper::shortcodesToEmoji($record->data)));
+                $video = new Video(Json::decode(StringHelper::shortcodesToEmoji($record->data)));
+
+                // Hard-limit: cached rows from other providers must not leak into this field.
+                if ($field instanceof VideoPickerField) {
+                    if (
+                        !$allowedHandles
+                        || !$video->sourceHandle
+                        || !in_array($video->sourceHandle, $allowedHandles, true)
+                    ) {
+                        return null;
+                    }
+                }
+
+                return $video;
             }
         }
 
-        // Fetch the video data from the source directly - we need to look through all sources, as each defines
-        // their own logic for matching a URL pattern
-        foreach (VideoPicker::$plugin->getSources()->getAllEnabledSources() as $source) {
+        // Fetch the video data from the source directly - we need to look through allowed
+        // sources, as each defines their own logic for matching a URL pattern
+        foreach ($allowedSources as $source) {
             if ($video = $source->getVideoByUrl($videoUrl)) {
                 // Save it in our cache for next time
                 $this->saveVideo($video);

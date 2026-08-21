@@ -2,7 +2,7 @@
 namespace verbb\videopicker\controllers;
 
 use verbb\videopicker\VideoPicker;
-use verbb\videopicker\base\SourceInterface;
+use verbb\videopicker\fields\VideoPickerField;
 use verbb\videopicker\helpers\Videos;
 
 use Craft;
@@ -24,7 +24,8 @@ class VideosController extends Controller
     public function actionGetSources(): Response
     {
         $refresh = (bool)$this->request->getParam('refresh');
-        $sources = VideoPicker::$plugin->getSources()->getAllEnabledSources();
+        $field = $this->_getVideoPickerField();
+        $sources = VideoPicker::$plugin->getSources()->getSourcesForField($field);
 
         $data = [];
 
@@ -42,8 +43,16 @@ class VideosController extends Controller
         $sourceHandle = $this->request->getRequiredParam('source');
         $method = $this->request->getRequiredParam('method');
         $options = $this->request->getParam('options') ?? [];
+        $field = $this->_getVideoPickerField();
 
-        $source = VideoPicker::$plugin->getSources()->getSourceByHandle($sourceHandle);
+        // Reject browse requests for sources the field does not allow.
+        $source = VideoPicker::$plugin->getSources()->getSourceByHandleForField($sourceHandle, $field);
+
+        if (!$source) {
+            throw new BadRequestHttpException(Craft::t('video-picker', 'Unable to find source “{source}”.', [
+                'source' => $sourceHandle,
+            ]));
+        }
 
         $videosResponse = $source->getVideos($method, $options);
 
@@ -65,12 +74,29 @@ class VideosController extends Controller
 
         $url = $this->request->getRequiredParam('url');
         $refresh = (bool)$this->request->getParam('refresh');
-        $video = VideoPicker::getInstance()->getVideos()->getVideoByUrl($url, $refresh);
+        $field = $this->_getVideoPickerField();
+        $video = VideoPicker::getInstance()->getVideos()->getVideoByUrl($url, $refresh, $field);
 
         if (!$video) {
             return $this->asErrorJson(Craft::t('video-picker', 'Unable to find the video.'));
         }
 
         return $this->asJson($video->getVideoData());
+    }
+
+    // Private Methods
+    // =========================================================================
+
+    private function _getVideoPickerField(): ?VideoPickerField
+    {
+        $fieldId = $this->request->getParam('fieldId');
+
+        if (!$fieldId) {
+            return null;
+        }
+
+        $field = Craft::$app->getFields()->getFieldById((int)$fieldId);
+
+        return $field instanceof VideoPickerField ? $field : null;
     }
 }

@@ -20,3 +20,26 @@
     name: 'placeholder',
     value: field.placeholder ?? '',
 }) }}
+
+{% set sourceOptions = [] %}
+
+{% for source in sources %}
+    {% set sourceOptions = sourceOptions | merge([{ label: source.name, value: source.uid }]) %}
+{% endfor %}
+
+{% if not sourceOptions | length %}
+    {{ forms.checkboxSelectField({
+        label: 'Available Sources' | t('video-picker'),
+        instructions: 'Select which sources should be available for this field. Manage these through [Sources]({url}).' | t('video-picker', { url: cpUrl('video-picker/sources') }),
+        warning: 'You must create at least one source to proceed.' | t('video-picker'),
+    }) }}
+{% else %}
+    {{ forms.checkboxSelectField({
+        label: 'Available Sources' | t('video-picker'),
+        instructions: 'Select which sources should be available for this field. Manage these through [Sources]({url}).' | t('video-picker', { url: cpUrl('video-picker/sources') }),
+        name: 'sources',
+        options: sourceOptions,
+        values: field.sources ?? '*',
+        showAllOption: true,
+    }) }}
+{% endif %}

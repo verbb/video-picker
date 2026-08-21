@@ -6,7 +6,10 @@ use verbb\videopicker\base\SourceInterface;
 use verbb\videopicker\events\SourceEvent;
 use verbb\videopicker\records\Source as SourceRecord;
 
+use verbb\videopicker\fields\VideoPickerField;
+
 use Craft;
+use craft\base\Field;
 use craft\base\MemoizableArray;
 use craft\db\Query;
 use craft\errors\MissingComponentException;
@@ -108,6 +111,63 @@ class Sources extends Component
         }
 
         return $sources;
+    }
+
+    /**
+     * Enabled sources allowed for a Video Picker field.
+     *
+     * Field setting `sources`: `*` / null → all enabled (null keeps legacy fields open);
+     * `''` / `[]` → none; otherwise a list of source UIDs.
+     *
+     * @return SourceInterface[]
+     */
+    public function getSourcesForField(?Field $field): array
+    {
+        $allSources = $this->getAllEnabledSources();
+
+        if (!$field instanceof VideoPickerField) {
+            return $allSources;
+        }
+
+        // Unset (pre-setting fields) or All → every enabled source.
+        if ($field->sources === null || $field->sources === '*') {
+            return $allSources;
+        }
+
+        if ($field->sources === '' || $field->sources === []) {
+            return [];
+        }
+
+        if (!is_array($field->sources)) {
+            return $allSources;
+        }
+
+        $sources = [];
+
+        foreach ($allSources as $source) {
+            if (in_array($source->uid, $field->sources, true)) {
+                $sources[] = $source;
+            }
+        }
+
+        return $sources;
+    }
+
+    public function getSourceByHandleForField(string $handle, ?Field $field): ?SourceInterface
+    {
+        $source = $this->getSourceByHandle($handle);
+
+        if (!$source) {
+            return null;
+        }
+
+        foreach ($this->getSourcesForField($field) as $allowed) {
+            if ($allowed->handle === $source->handle) {
+                return $source;
+            }
+        }
+
+        return null;
     }
 
     public function getAllSourcesByParams(array $params): array

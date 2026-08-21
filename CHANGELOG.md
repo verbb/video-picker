@@ -4,6 +4,10 @@
 
 ### Added
 - Add field setting for optional input placeholder text when no video is selected.
+- Add field setting to limit Available Sources (Icon Picker–style checkbox select). Browse, URL paste, and save only resolve against the selected sources (`*` / unset = all enabled).
+
+### Fixed
+- Explorer video cards are keyboard-operable (listbox/option, roving tabindex, arrow keys, Enter/Space).
 
 ### Changed
 - Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).
