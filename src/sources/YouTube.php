@@ -205,7 +205,7 @@ class YouTube extends OAuthSource
         $params['type'] = 'video';
 
         $response = $this->request('GET', 'youtube/v3/search', [
-            'query' => $this->_queryFromParams($params),
+            'query' => $this->_queryFromParams($params, true),
         ]);
 
         $videoIds = [];
@@ -337,9 +337,15 @@ class YouTube extends OAuthSource
         return $collections;
     }
 
-    private function _queryFromParams(array $params = []): array
+    private function _queryFromParams(array $params = [], bool $allowSearchQuery = false): array
     {
         $page = ArrayHelper::remove($params, 'nextPage') ?? null;
+
+        // Search `q` must never reach playlistItems / videos.list — Google rejects
+        // pageToken when q is present (GH-6). Only search.list accepts q.
+        if (!$allowSearchQuery) {
+            ArrayHelper::remove($params, 'q');
+        }
 
         return array_merge([
             'maxResults' => $this->getVideosPerPage(),

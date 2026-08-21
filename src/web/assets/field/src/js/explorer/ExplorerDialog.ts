@@ -49,6 +49,8 @@ export class ExplorerDialog {
     private sourcesError: string | null = null;
     private videosError: string | null = null;
     private query = '';
+    /** True while the grid is showing search results (not a sidebar collection). */
+    private searching = false;
     private sources: Source[] = [];
     private videos: VideoData[] = [];
     private currentSource: Source | null = null;
@@ -201,6 +203,7 @@ export class ExplorerDialog {
 
     private reset(): void {
         this.query = '';
+        this.searching = false;
         this.nextPage = null;
         this.videos = [];
 
@@ -212,9 +215,15 @@ export class ExplorerDialog {
     private setCollection(collection: Collection | null): void {
         this.currentCollection = collection;
 
-        // PHP sometimes sends options as [] — coerce so we can assign nextPage / q.
+        // PHP sometimes sends options as [] — coerce to a plain object.
         if (this.currentCollection && Array.isArray(this.currentCollection.options)) {
             this.currentCollection.options = {};
+        }
+
+        // Never carry search `q` on collection options (GH-6: playlistItems + q + pageToken).
+        if (this.currentCollection?.options && !Array.isArray(this.currentCollection.options)) {
+            delete (this.currentCollection.options as Record<string, unknown>).q;
+            delete (this.currentCollection.options as Record<string, unknown>).nextPage;
         }
     }
 
@@ -223,11 +232,10 @@ export class ExplorerDialog {
     }
 
     /**
-     * Live options bag on the current collection.
-     * BEFORE mutates this in place for search `q` and pagination `nextPage` —
-     * a shallow copy would drop `q` on Load More and fall back to the sidebar collection.
+     * Base options for the active sidebar collection (playlist id, etc.).
+     * Search query / pagination live on the dialog — never mutate this bag with `q`.
      */
-    private collectionOptions(): Record<string, unknown> {
+    private browseOptions(): Record<string, unknown> {
         if (!this.currentCollection) {
             return {};
         }
@@ -236,7 +244,11 @@ export class ExplorerDialog {
             this.currentCollection.options = {};
         }
 
-        return this.currentCollection.options as Record<string, unknown>;
+        const options = { ...(this.currentCollection.options as Record<string, unknown>) };
+        delete options.q;
+        delete options.nextPage;
+
+        return options;
     }
 
     // -------------------------------------------------------------------------
@@ -328,6 +340,8 @@ export class ExplorerDialog {
             return;
         }
 
+        this.searching = false;
+        this.nextPage = null;
         this.loadingVideos = true;
         this.videosError = null;
         this.render();
@@ -335,7 +349,7 @@ export class ExplorerDialog {
         const data = {
             source: this.currentSource.handle,
             method: this.currentCollection?.method ?? null,
-            options: this.collectionOptions(),
+            options: this.browseOptions(),
             fieldId: this.options.fieldId,
         };
 
@@ -363,8 +377,10 @@ export class ExplorerDialog {
         this.videosError = null;
         this.renderMoreState();
 
-        const options = this.collectionOptions();
-        options.nextPage = this.nextPage;
+        const searching = this.searching && Boolean(this.query.trim());
+        const options = searching
+            ? { q: this.query.trim(), nextPage: this.nextPage }
+            : { ...this.browseOptions(), nextPage: this.nextPage };
 
         const data: {
             source: string;
@@ -373,15 +389,10 @@ export class ExplorerDialog {
             fieldId?: number | null;
         } = {
             source: this.currentSource.handle,
-            method: this.currentCollection?.method ?? null,
+            method: searching ? 'search' : (this.currentCollection?.method ?? null),
             options,
             fieldId: this.options.fieldId,
         };
-
-        // Search pagination must keep method=search when q is present (BEFORE quirk).
-        if (options.q) {
-            data.method = 'search';
-        }
 
         const previousCount = this.videos.length;
 
@@ -413,18 +424,25 @@ export class ExplorerDialog {
             return;
         }
 
+        const q = this.query.trim();
+
+        // Empty search returns to the active collection browse (clear bleed state).
+        if (!q) {
+            this.searching = false;
+            this.fetchVideos();
+            return;
+        }
+
+        this.searching = true;
+        this.nextPage = null;
         this.loadingVideos = true;
         this.videosError = null;
         this.render();
 
-        const options = this.collectionOptions();
-        // Persist on the collection so fetchMoreVideos still sees `q` (BEFORE).
-        options.q = this.query;
-
         const data = {
             source: this.currentSource.handle,
             method: 'search',
-            options,
+            options: { q },
             fieldId: this.options.fieldId,
         };
 
@@ -622,7 +640,15 @@ export class ExplorerDialog {
                     a.append(document.createTextNode(collection.name));
                     a.addEventListener('click', (event) => {
                         event.preventDefault();
+                        this.debouncedSearch.cancel();
                         this.setCollection(collection);
+                        // Leave search mode so browse never inherits q / search pageToken (GH-6).
+                        this.query = '';
+                        this.searching = false;
+                        this.nextPage = null;
+                        if (this.searchInput) {
+                            this.searchInput.value = '';
+                        }
                         this.render();
                         this.debouncedFetchVideos();
                     });
