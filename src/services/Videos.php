@@ -52,7 +52,6 @@ class Videos extends Component
         }
 
         $allowedSources = VideoPicker::$plugin->getSources()->getSourcesForField($field);
-        $allowedHandles = array_map(static fn(SourceInterface $source) => $source->handle, $allowedSources);
 
         // Fetch the video data from our saved database store of videos
         $record = VideoRecord::findOne([
@@ -74,18 +73,22 @@ class Videos extends Component
                 // Handle emoji's in video content
                 $video = new Video(Json::decode(StringHelper::shortcodesToEmoji($record->data)));
 
-                // Hard-limit: cached rows from other providers must not leak into this field.
+                // Cache is keyed by URL (shared across same-provider sources). Gate by
+                // provider URL grammar via allowed sources — not the stamped sourceHandle —
+                // so a second YouTube source can reuse a row fetched by the first.
                 if ($field instanceof VideoPickerField) {
-                    if (
-                        !$allowedHandles
-                        || !$video->sourceHandle
-                        || !in_array($video->sourceHandle, $allowedHandles, true)
-                    ) {
-                        return $this->_videosByUrl[$memoKey] = null;
-                    }
-                }
+                    $compatible = $this->_compatibleSourcesForUrl($allowedSources, $videoUrl);
 
-                return $this->_videosByUrl[$memoKey] = $video;
+                    if ($compatible) {
+                        $video->sourceHandle = $this->_preferredSourceHandle($compatible, $video->sourceHandle);
+
+                        return $this->_videosByUrl[$memoKey] = $video;
+                    }
+
+                    // Wrong provider for this field’s sources — fall through to live fetch.
+                } else {
+                    return $this->_videosByUrl[$memoKey] = $video;
+                }
             }
         }
 
@@ -297,6 +300,42 @@ class Videos extends Component
                 'message' => $e->getMessage(),
             ])];
         }
+    }
+
+
+    // Private Methods
+    // =========================================================================
+
+    /**
+     * Sources that can parse this URL (same provider grammar as a live fetch).
+     *
+     * @param SourceInterface[] $sources
+     * @return SourceInterface[]
+     */
+    private function _compatibleSourcesForUrl(array $sources, string $videoUrl): array
+    {
+        return array_values(array_filter(
+            $sources,
+            static fn(SourceInterface $source) => (bool)$source->getVideoIdFromUrl($videoUrl),
+        ));
+    }
+
+    /**
+     * Keep the cached stamp when that source is still allowed; otherwise first compatible.
+     *
+     * @param SourceInterface[] $compatible
+     */
+    private function _preferredSourceHandle(array $compatible, ?string $cachedHandle): string
+    {
+        if ($cachedHandle) {
+            foreach ($compatible as $source) {
+                if ($source->handle === $cachedHandle) {
+                    return $cachedHandle;
+                }
+            }
+        }
+
+        return $compatible[0]->handle;
     }
 
 }
