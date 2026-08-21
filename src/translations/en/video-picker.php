@@ -72,6 +72,7 @@ return [
   'Video Cache' => 'Video Cache',
   'Video cache cleared.' => 'Video cache cleared.',
   'Video Picker' => 'Video Picker',
+  'Video preview' => 'Video preview',
   'Videos' => 'Videos',
   'Video Picker will cache the data for a video‘s URL indefinitely for performance. Use this utility to clear a video‘s data.' => 'Video Picker will cache the data for a video‘s URL indefinitely for performance. Use this utility to clear a video‘s data.',
   'Videos Per Page' => 'Videos Per Page',

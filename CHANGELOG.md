@@ -13,6 +13,7 @@
 - Explorer video cards are keyboard-operable (listbox/option, arrow keys, Enter/Space).
 - Explorer / preview dialogs now response properly on tablet/mobile.
 - Play control is a real always-visible button (field preview is tabbable; explorer uses `P` on the focused card so the listbox keeps one tab stop).
+- Preview dialog exposes an accessible name (video title, or “Video preview”) even with `without-header`.
 
 ## 2.0.10 - 2026-07-15
 
