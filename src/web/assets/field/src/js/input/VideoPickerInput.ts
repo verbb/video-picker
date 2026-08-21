@@ -342,13 +342,15 @@ export class VideoPickerInput {
         const meta = document.createElement('div');
         meta.className = 'vp-single-video-meta';
 
-        const title = document.createElement('h3');
+        const title = document.createElement('div');
         title.className = 'vp-single-video-title';
         const titleLink = document.createElement('a');
         titleLink.href = this.currentVideo.url ?? '#';
         titleLink.target = '_blank';
         titleLink.rel = 'noopener noreferrer';
-        titleLink.textContent = this.currentVideo.title ?? '';
+        const titleText = this.currentVideo.title ?? '';
+        titleLink.textContent = titleText;
+        titleLink.setAttribute('aria-label', this.newTabLabel(titleText || Craft.t('video-picker', 'Video')));
         title.appendChild(titleLink);
 
         const details = document.createElement('div');
@@ -359,7 +361,11 @@ export class VideoPickerInput {
         author.href = this.currentVideo.authorUrl ?? '#';
         author.target = '_blank';
         author.rel = 'noopener noreferrer';
-        author.textContent = this.currentVideo.authorName ?? '';
+        const authorText = this.currentVideo.authorName ?? '';
+        author.textContent = authorText;
+        if (authorText) {
+            author.setAttribute('aria-label', this.newTabLabel(authorText));
+        }
 
         const plays = document.createElement('span');
         plays.className = 'vp-single-video-meta-plays';
@@ -423,6 +429,11 @@ export class VideoPickerInput {
         button.appendChild(glyph);
 
         return button;
+    }
+
+    /** Visible link text plus an AT cue that target=_blank opens a new tab (A14). */
+    private newTabLabel(label: string): string {
+        return Craft.t('video-picker', '{label} (opens in a new tab)', { label });
     }
 
     private removeVideo(): void {

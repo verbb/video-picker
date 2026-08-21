@@ -63,6 +63,8 @@ export class ExplorerDialog {
 
     private mainEl: HTMLElement | null = null;
     private searchInput: (HTMLElement & { value?: string }) | null = null;
+    /** Persistent polite region — survives body re-renders (Load More / search). */
+    private liveRegion!: HTMLElement;
 
     private readonly debouncedSearch: (() => void) & { cancel: () => void };
     private readonly debouncedFetchVideos: (() => void) & { cancel: () => void };
@@ -78,6 +80,13 @@ export class ExplorerDialog {
         this.dialog = document.createElement('pk-dialog') as PkDialogElement;
         this.dialog.classList.add('vp-explorer-dialog');
         this.dialog.setAttribute('label', Craft.t('video-picker', 'Browse videos…'));
+
+        this.liveRegion = document.createElement('div');
+        this.liveRegion.className = 'vp-sr-only';
+        this.liveRegion.setAttribute('role', 'status');
+        this.liveRegion.setAttribute('aria-live', 'polite');
+        this.liveRegion.setAttribute('aria-atomic', 'true');
+        this.dialog.appendChild(this.liveRegion);
         this.dialog.setAttribute('without-body-padding', '');
         // Sizing lives in CSS (`.vp-explorer-dialog`) so mins can cap to the viewport.
 
@@ -106,6 +115,11 @@ export class ExplorerDialog {
         this.footerSelect.setAttribute('slot', 'footer');
         this.footerSelect.setAttribute('variant', 'primary');
         this.footerSelect.textContent = Craft.t('video-picker', 'Select');
+        // Keyboard path for mouse double-click: Select, or Enter again on a selected card.
+        this.footerSelect.setAttribute(
+            'title',
+            Craft.t('video-picker', 'Use the selected video (or press Enter on a selected card)'),
+        );
 
         this.dialog.append(this.footerRefresh, this.footerCancel, this.footerSelect);
         options.mount.appendChild(this.dialog);
@@ -290,6 +304,7 @@ export class ExplorerDialog {
             .finally(() => {
                 this.loadingVideos = false;
                 this.render();
+                this.announceVideoCount();
             });
     }
 
@@ -322,6 +337,8 @@ export class ExplorerDialog {
             data.method = 'search';
         }
 
+        const previousCount = this.videos.length;
+
         Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
             .then((response: { data: { videos: VideoData[]; nextPage: unknown } }) => {
                 this.videos = this.videos.concat(response.data.videos ?? []);
@@ -341,6 +358,7 @@ export class ExplorerDialog {
                     this.mainEl.scrollTop = scrollTop;
                 }
                 this.restoreVideoCardFocus(restoreId);
+                this.announceVideoCount(previousCount);
             });
     }
 
@@ -375,6 +393,7 @@ export class ExplorerDialog {
             .finally(() => {
                 this.loadingVideos = false;
                 this.render();
+                this.announceVideoCount();
             });
     }
 
@@ -545,6 +564,7 @@ export class ExplorerDialog {
 
                     if (this.isCollectionSelected(collection)) {
                         a.classList.add('sel');
+                        a.setAttribute('aria-current', 'true');
                     }
 
                     if (collection.icon) {
@@ -620,16 +640,27 @@ export class ExplorerDialog {
 
             const search = document.createElement('pk-input') as HTMLElement & { value?: string };
             search.setAttribute('type', 'search');
-            search.setAttribute(
-                'placeholder',
-                Craft.t('video-picker', 'Search {source} videos…', { source: this.currentSource.name }),
-            );
+            const searchLabel = Craft.t('video-picker', 'Search {source} videos…', {
+                source: this.currentSource.name,
+            });
+            search.setAttribute('placeholder', searchLabel);
+            // Accessible name must not rely on placeholder alone (A6).
+            search.setAttribute('aria-label', searchLabel);
             const searchIcon = document.createElement('pk-icon');
             searchIcon.setAttribute('slot', 'start');
             searchIcon.setAttribute('icon', 'magnifying-glass');
             search.appendChild(searchIcon);
             search.value = this.query;
             this.searchInput = search;
+
+            const applySearchName = (): void => {
+                search.setAttribute('aria-label', searchLabel);
+                search.shadowRoot?.querySelector('input')?.setAttribute('aria-label', searchLabel);
+            };
+            applySearchName();
+            void customElements.whenDefined('pk-input').then(() => {
+                requestAnimationFrame(applySearchName);
+            });
 
             search.addEventListener('input', () => {
                 this.query = search.value ?? '';
@@ -701,5 +732,34 @@ export class ExplorerDialog {
         }
 
         return main;
+    }
+
+    /**
+     * Announce total (and optional newly appended) video counts after grid updates.
+     * Clears first so identical strings still fire for successive Load More calls.
+     */
+    private announceVideoCount(previousCount?: number): void {
+        if (this.videosError) {
+            return;
+        }
+
+        const total = this.videos.length;
+        const message =
+            previousCount != null && total > previousCount
+                ? Craft.t(
+                      'video-picker',
+                      '{added, number} more {added, plural, =1{video} other{videos}} loaded. {total, number} total.',
+                      { added: total - previousCount, total },
+                  )
+                : Craft.t(
+                      'video-picker',
+                      '{count, number} {count, plural, =1{video} other{videos}} loaded.',
+                      { count: total },
+                  );
+
+        this.liveRegion.textContent = '';
+        requestAnimationFrame(() => {
+            this.liveRegion.textContent = message;
+        });
     }
 }

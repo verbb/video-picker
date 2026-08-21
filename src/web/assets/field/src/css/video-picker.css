@@ -40,6 +40,29 @@
     transform: translateY(-50%);
 }
 
+/* Narrow field columns: stop overlaying Browse so the URL isn’t crushed (R4). */
+@container vp-field (max-width: 22rem) {
+    .vp-input-row.has-browse {
+        flex-wrap: wrap;
+        gap: var(--pk-spacing-1, 0.25rem);
+    }
+
+    .vp-input-row.has-browse pk-input {
+        flex: 1 1 100%;
+    }
+
+    .vp-input-row.has-browse pk-input::part(input) {
+        padding-inline-end: var(--pk-input-padding-inline, 0.75rem);
+    }
+
+    .vp-browse {
+        position: static;
+        inset: auto;
+        transform: none;
+        margin-inline-start: auto;
+    }
+}
+
 .vp-source-warning {
     margin-top: var(--pk-spacing-2, 0.5rem);
 }
@@ -123,6 +146,26 @@
     --pk-btn-height: 23px;
     --pk-btn-icon-size: 13px;
     color: var(--pk-color-gray-550, #596775);
+}
+
+/* Touch / coarse pointers: enlarge Refresh / Remove toward 44×44 guidance (A11). */
+@media (pointer: coarse) {
+    .vp-single-video-buttons {
+        right: 0;
+        gap: var(--pk-spacing-1, 0.25rem);
+    }
+
+    .vp-single-video-buttons pk-button {
+        --pk-btn-height: 2.75rem;
+        --pk-btn-icon-size: 1rem;
+    }
+
+    /* Explorer only — field preview uses a full-bleed hit target without a rest glyph. */
+    .vp-video-card .vp-video-thumb-play {
+        height: 2.75rem;
+        width: 2.75rem;
+        opacity: 0.75;
+    }
 }
 
 /* Stack thumb above meta when the field column is tight (slideouts, half-width layouts). */
@@ -423,6 +466,9 @@
 .vp-video-thumb-image {
     height: 100%;
     width: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: center;
     background-size: cover;
     background-position: center;
     background-color: var(--pk-color-gray-200, #cdd8e4);
@@ -432,6 +478,9 @@
     position: absolute;
     bottom: var(--pk-spacing-1, 0.25rem);
     right: var(--pk-spacing-1, 0.25rem);
+    z-index: 2;
+    /* Clicks go through to the play control underneath. */
+    pointer-events: none;
     display: block;
     border-radius: var(--pk-radius-xs, 0.125rem);
     background-color: rgba(0, 0, 0, 0.8);
@@ -446,12 +495,13 @@
     position: absolute;
     top: 50%;
     left: 50%;
+    z-index: 1;
     color: #000;
     fill: currentColor;
     border: 2px solid var(--pk-color-white, #fff);
     background: var(--pk-color-white, #fff);
     border-radius: 50%;
-    /* Always visible — hover-only hid the control from touch / keyboard discovery. */
+    /* Explorer: always visible. Field preview overrides below. */
     opacity: 0.55;
     height: 2.5rem;
     width: 2.5rem;
@@ -497,6 +547,50 @@
         0 0 0 4px var(--pk-color-link, #2563eb);
 }
 
+/*
+ * Field preview: keep the thumbnail clean. Play is still a real button covering the
+ * whole thumb (tabbable, named, touch-friendly); the disc only appears on hover /
+ * keyboard focus so we don’t regress the old hover-only-div failure mode.
+ */
+.vp-video-thumb--field .vp-video-thumb-play {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: none;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    opacity: 1;
+    overflow: visible;
+}
+
+.vp-video-thumb--field .vp-video-thumb-play .vp-inline-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2.5rem;
+    height: 2.5rem;
+    transform: translate(-50%, -50%);
+    border: 2px solid var(--pk-color-white, #fff);
+    border-radius: 50%;
+    background: var(--pk-color-white, #fff);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.vp-video-thumb--field:hover .vp-video-thumb-play .vp-inline-icon,
+.vp-video-thumb--field .vp-video-thumb-play:focus-visible .vp-inline-icon {
+    opacity: 0.75;
+}
+
+.vp-video-thumb--field .vp-video-thumb-play:focus-visible {
+    box-shadow: inset 0 0 0 3px var(--pk-color-link, #2563eb);
+}
+
 .vp-inline-icon {
     display: inline-flex;
     width: 1em;
@@ -540,4 +634,18 @@
     height: 100%;
     width: 100%;
     border: 0;
+}
+
+/* Drop non-essential motion when the user prefers reduced motion (A13). */
+@media (prefers-reduced-motion: reduce) {
+    .vp-video-thumb.is-selected,
+    .vp-video-card:hover .vp-video-thumb,
+    .vp-video-card:focus-visible .vp-video-thumb,
+    .vp-video-thumb-play {
+        transition: none;
+    }
+
+    .vp-video-thumb--field .vp-video-thumb-play .vp-inline-icon {
+        transition: none;
+    }
 }

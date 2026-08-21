@@ -12,11 +12,23 @@
 ### Fixed
 - Explorer video cards are keyboard-operable (listbox/option, arrow keys, Enter/Space).
 - Explorer / preview dialogs now response properly on tablet/mobile.
-- Play control is a real always-visible button (field preview is tabbable; explorer uses `P` on the focused card so the listbox keeps one tab stop).
+- Play control is a real button (explorer: always-visible disc + `P` on the focused card; field preview: full-thumb hit target with glyph on hover/focus only so the thumbnail stays clean).
 - Preview dialog exposes an accessible name (video title, or “Video preview”) even with `without-header`.
 - URL `pk-input` picks up the Craft field label (host id matches `label[for]`; shadow textbox gets `aria-label`) instead of using the placeholder as its accessible name.
 - Loading and error states announce to assistive tech (`aria-busy` on the field; `role="alert"` / `role="status"` in the explorer).
 - Selected-video preview stacks thumb above meta in narrow field columns (container query) and on Craft mobile.
+- Explorer search uses an explicit `aria-label` (not placeholder-only).
+- Explorer collection links expose `aria-current` for the active collection.
+- Selection state is programmatic (`aria-selected` + “Selected” in the option name).
+- Thumbnails use real `<img alt>` (or `role="img"`) instead of CSS-only backgrounds.
+- Private videos announce “Private” via the option label (lock icon stays decorative).
+- Narrow URL rows move Browse out of the input overlay so the editable area isn’t crushed.
+- Refresh / Remove (and play) hit targets enlarge on coarse pointers.
+- Load More / pagination announce video counts via a polite live region.
+- Thumb play / selection transitions respect `prefers-reduced-motion`.
+- Title and author links announce that they open in a new tab.
+- Field preview title is a styled `div` (no stray `h3` in the form outline).
+- Keyboard users can commit a selected card with Enter (parity with double-click); Select button documents the path.
 
 ## 2.0.10 - 2026-07-15
 

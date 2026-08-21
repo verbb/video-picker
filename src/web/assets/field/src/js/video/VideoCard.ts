@@ -42,18 +42,35 @@ export const createVideoThumb = (
     const imageContainer = document.createElement('div');
     imageContainer.className = 'vp-video-thumb-image-container';
 
-    const image = document.createElement('div');
-    image.className = 'vp-video-thumb-image';
+    const title = (video.title ?? '').trim();
+    const alt = title || Craft.t('video-picker', 'Video thumbnail');
 
+    // Real <img> (not CSS background) so empty/truncated titles still have a text alternative.
     if (video.thumbnail) {
-        image.style.backgroundImage = `url(${JSON.stringify(video.thumbnail).slice(1, -1)})`;
+        const image = document.createElement('img');
+        image.className = 'vp-video-thumb-image';
+        image.src = video.thumbnail;
+        image.alt = alt;
+        image.loading = 'lazy';
+        image.decoding = 'async';
+        imageContainer.appendChild(image);
+    } else {
+        const image = document.createElement('div');
+        image.className = 'vp-video-thumb-image';
+        image.setAttribute('role', 'img');
+        image.setAttribute('aria-label', alt);
+        imageContainer.appendChild(image);
     }
-
-    imageContainer.appendChild(image);
 
     const duration = document.createElement('div');
     duration.className = 'vp-video-thumb-duration';
-    duration.textContent = video.duration ?? '';
+    if (video.duration) {
+        duration.textContent = video.duration;
+        duration.setAttribute(
+            'aria-label',
+            Craft.t('video-picker', 'Duration {duration}', { duration: video.duration }),
+        );
+    }
 
     // Real control (not a hover-only div) so pointer / AT / field-preview keyboard work.
     const play = document.createElement('button');
@@ -61,7 +78,11 @@ export const createVideoThumb = (
     play.className = 'vp-video-thumb-play';
     play.setAttribute('aria-label', Craft.t('video-picker', 'Play preview'));
 
-    if (!options.playInTabOrder) {
+    if (options.playInTabOrder) {
+        // Field preview: clean thumb by default; glyph only on hover / focus-visible.
+        // The control still covers the full thumb so touch / AT / keyboard stay usable.
+        thumb.classList.add('vp-video-thumb--field');
+    } else {
         // Explorer listbox: keep a single tab stop on the option; activate play with `P`.
         play.tabIndex = -1;
     }
@@ -94,6 +115,17 @@ export const syncVideoCardSelection = (
         const selected = selectedId != null && id !== '' && String(selectedId) === String(id);
         card.setAttribute('aria-selected', selected ? 'true' : 'false');
         card.querySelector('.vp-video-thumb')?.classList.toggle('is-selected', selected);
+
+        // Keep option name in sync with visual selection (A7).
+        const base = (card.querySelector('.vp-video-card-text')?.textContent ?? '').trim()
+            || Craft.t('video-picker', 'Video');
+        const isPrivate = Boolean(card.querySelector('.vp-icon-private'));
+        const parts = [
+            base,
+            isPrivate ? Craft.t('video-picker', 'Private') : null,
+            selected ? Craft.t('video-picker', 'Selected') : null,
+        ].filter(Boolean);
+        card.setAttribute('aria-label', parts.join(', '));
 
         if (selected) {
             focusIndex = list.indexOf(card);
@@ -132,8 +164,12 @@ export const createVideoCard = (
         card.dataset.videoId = String(video.id);
     }
 
-    const label = (video.title ?? '').trim() || Craft.t('video-picker', 'Video');
-    card.setAttribute('aria-label', label);
+    const labelParts = [
+        (video.title ?? '').trim() || Craft.t('video-picker', 'Video'),
+        video.private ? Craft.t('video-picker', 'Private') : null,
+        selected ? Craft.t('video-picker', 'Selected') : null,
+    ].filter(Boolean);
+    card.setAttribute('aria-label', labelParts.join(', '));
 
     const thumb = createVideoThumb(video, {
         selected,
@@ -144,8 +180,10 @@ export const createVideoCard = (
     container.className = 'vp-video-card-container';
 
     if (video.private) {
+        // Decorative lock — “Private” is included in the option aria-label (avoids double speak).
         const privateIcon = document.createElement('div');
         privateIcon.className = 'vp-icon-private';
+        privateIcon.setAttribute('aria-hidden', 'true');
         privateIcon.appendChild(createInlineIcon('lock'));
         container.appendChild(privateIcon);
     }
@@ -153,6 +191,8 @@ export const createVideoCard = (
     const text = document.createElement('div');
     text.className = 'vp-video-card-text';
     text.textContent = video.title ?? '';
+    // Title is duplicated in the option aria-label — hide from the accessibility tree here.
+    text.setAttribute('aria-hidden', 'true');
     container.appendChild(text);
 
     card.append(thumb, container);
