@@ -19,6 +19,8 @@ export interface VideoPickerSettings {
     value?: VideoValue | null;
     showExplorer?: boolean;
     showPreview?: boolean;
+    /** Empty URL control hint; falls back to “Enter a video URL” when unset. */
+    placeholder?: string | null;
     sourceCount?: number;
     sourceWarning?: string;
 }
@@ -106,7 +108,7 @@ export class VideoPickerInput {
         // ignores ElementInternals / form-associated custom elements.
         this.urlInput = document.createElement('pk-input') as PkInputElement;
         this.urlInput.id = this.settings.inputId;
-        this.urlInput.setAttribute('placeholder', Craft.t('video-picker', 'Enter a video URL'));
+        this.urlInput.setAttribute('placeholder', this.placeholder);
 
         // Display only — posted value stays on the SSR hidden unless it actually differs.
         const displayUrl = this.valueInput.value || this.videoUrl || '';
@@ -142,6 +144,16 @@ export class VideoPickerInput {
 
         // Value input first so serialize order stays stable if other named nodes appear later.
         this.root.append(this.valueInput, this.wrap);
+    }
+
+    /** Field setting when set; otherwise the historical default URL hint. */
+    private get placeholder(): string {
+        const raw = this.settings.placeholder;
+        if (typeof raw === 'string' && raw.trim()) {
+            return raw.trim();
+        }
+
+        return Craft.t('video-picker', 'Enter a video URL');
     }
 
     /**

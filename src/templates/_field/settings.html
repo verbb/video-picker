@@ -13,3 +13,10 @@
     name: 'showPreview',
     on: field.showPreview,
 }) }}
+
+{{ forms.textField({
+    label: 'Placeholder' | t('video-picker'),
+    instructions: 'Optional placeholder text shown in the field when no video is selected.' | t('video-picker'),
+    name: 'placeholder',
+    value: field.placeholder ?? '',
+}) }}

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Add field setting for optional input placeholder text when no video is selected.
+
 ### Changed
 - Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).
 

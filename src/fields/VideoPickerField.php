@@ -53,6 +53,8 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
 
     public bool $showExplorer = true;
     public bool $showPreview = true;
+    /** Shown in the empty URL control (e.g. “Enter a video URL”). */
+    public ?string $placeholder = null;
 
 
     // Public Methods
@@ -124,6 +126,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             'value' => $value,
             'showExplorer' => $this->showExplorer,
             'showPreview' => $this->showPreview,
+            'placeholder' => $this->placeholder,
             'sourceCount' => count(VideoPicker::$plugin->getSources()->getAllEnabledSources()),
             'sourceWarning' => Markdown::processParagraph(Craft::t('video-picker', 'Provide at least one enabled [source]({link}) to browse videos and fetch video data.', [
                 'link' => UrlHelper::cpUrl('video-picker/sources'),

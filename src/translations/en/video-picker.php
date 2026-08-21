@@ -35,6 +35,8 @@ return [
   'No sources exist yet.' => 'No sources exist yet.',
   'Not Connected' => 'Not Connected',
   'No videos available.' => 'No videos available.',
+  'Optional placeholder text shown in the field when no video is selected.' => 'Optional placeholder text shown in the field when no video is selected.',
+  'Placeholder' => 'Placeholder',
   'Plugin name for the end user.' => 'Plugin name for the end user.',
   'Provide at least one enabled [source]({link}) to browse videos and fetch video data.' => 'Provide at least one enabled [source]({link}) to browse videos and fetch video data.',
   'Provider' => 'Provider',
