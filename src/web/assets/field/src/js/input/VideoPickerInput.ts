@@ -290,6 +290,7 @@ export class VideoPickerInput {
         thumbWrap.appendChild(
             createVideoThumb(this.currentVideo, {
                 onPlay: () => this.openPreview(this.currentVideo!),
+                playInTabOrder: true,
             }),
         );
 

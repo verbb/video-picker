@@ -6,12 +6,13 @@
 - Add field setting for optional input placeholder text when no video is selected.
 - Add field setting to limit Available Sources (Icon Picker–style checkbox select). Browse, URL paste, and save only resolve against the selected sources (`*` / unset = all enabled).
 
-### Fixed
-- Explorer video cards are keyboard-operable (listbox/option, roving tabindex, arrow keys, Enter/Space).
-- Explorer / preview dialogs no longer force a 600×400px minimum — mins cap to the viewport, and below 767px the dialog fills the screen with a stacked explorer layout.
-
 ### Changed
 - Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).
+
+### Fixed
+- Explorer video cards are keyboard-operable (listbox/option, arrow keys, Enter/Space).
+- Explorer / preview dialogs now response properly on tablet/mobile.
+- Play control is a real always-visible button (field preview is tabbable; explorer uses `P` on the focused card so the listbox keeps one tab stop).
 
 ## 2.0.10 - 2026-07-15
 

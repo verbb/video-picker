@@ -410,14 +410,18 @@
     border: 2px solid var(--pk-color-white, #fff);
     background: var(--pk-color-white, #fff);
     border-radius: 50%;
-    opacity: 0;
+    /* Always visible — hover-only hid the control from touch / keyboard discovery. */
+    opacity: 0.55;
     height: 2.5rem;
     width: 2.5rem;
+    padding: 0;
     box-sizing: border-box;
     transform: translate(-50%, -50%);
     transition: opacity 0.2s ease;
     cursor: pointer;
     overflow: hidden;
+    appearance: none;
+    font: inherit;
 }
 
 /* Glyph must fill the disc (BEFORE). A smaller inset icon left a white halo. */
@@ -433,12 +437,23 @@
     height: 100%;
 }
 
-.vp-video-thumb:hover .vp-video-thumb-play {
-    opacity: 0.5;
+.vp-video-thumb:hover .vp-video-thumb-play,
+.vp-video-thumb-play:hover {
+    opacity: 0.75;
 }
 
-.vp-video-thumb-play:hover {
-    opacity: 0.7 !important;
+/* Craft `body :focus-visible { box-shadow: var(--focus-ring) }` — replace with a
+   ring that reads on the white disc. */
+.vp-video-thumb-play:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.vp-video-thumb-play:focus-visible {
+    opacity: 0.95;
+    box-shadow:
+        0 0 0 2px var(--pk-color-white, #fff),
+        0 0 0 4px var(--pk-color-link, #2563eb);
 }
 
 .vp-inline-icon {

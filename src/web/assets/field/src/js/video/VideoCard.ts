@@ -25,7 +25,12 @@ export type VideoCardHandlers = {
 
 export const createVideoThumb = (
     video: VideoData,
-    options: { selected?: boolean; onPlay?: () => void } = {},
+    options: {
+        selected?: boolean;
+        onPlay?: () => void;
+        /** Field preview: play is in the tab order. Explorer cards keep roving focus on the option (`P` plays). */
+        playInTabOrder?: boolean;
+    } = {},
 ): HTMLElement => {
     const thumb = document.createElement('div');
     thumb.className = 'vp-video-thumb';
@@ -50,12 +55,22 @@ export const createVideoThumb = (
     duration.className = 'vp-video-thumb-duration';
     duration.textContent = video.duration ?? '';
 
-    const play = document.createElement('div');
+    // Real control (not a hover-only div) so pointer / AT / field-preview keyboard work.
+    const play = document.createElement('button');
+    play.type = 'button';
     play.className = 'vp-video-thumb-play';
+    play.setAttribute('aria-label', Craft.t('video-picker', 'Play preview'));
+
+    if (!options.playInTabOrder) {
+        // Explorer listbox: keep a single tab stop on the option; activate play with `P`.
+        play.tabIndex = -1;
+    }
+
     play.appendChild(createInlineIcon('play'));
     play.addEventListener('click', (event) => {
-        // Match BEFORE: preventDefault only; bubble still selects the card.
         event.preventDefault();
+        // Don't bubble into card select / commit — play is its own action.
+        event.stopPropagation();
         options.onPlay?.();
     });
 
@@ -161,6 +176,14 @@ export const createVideoCard = (
             } else {
                 handlers.onSelect(video);
             }
+
+            return;
+        }
+
+        // Play without nesting a second tab stop inside the listbox option.
+        if (event.key === 'p' || event.key === 'P') {
+            event.preventDefault();
+            handlers.onPlay(video);
         }
     });
 
