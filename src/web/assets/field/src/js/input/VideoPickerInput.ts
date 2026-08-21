@@ -144,6 +144,13 @@ export class VideoPickerInput {
 
         // Value input first so serialize order stays stable if other named nodes appear later.
         this.root.append(this.valueInput, this.wrap);
+        this.syncBusyState();
+    }
+
+    /** Reflect in-flight URL fetch without polite live spam (fetch runs on every keystroke). */
+    private syncBusyState(): void {
+        this.wrap.toggleAttribute('aria-busy', this.loadingVideo);
+        this.previewHost.toggleAttribute('aria-busy', this.loadingVideo);
     }
 
     /** Field setting when set; otherwise the historical default URL hint. */
@@ -275,10 +282,12 @@ export class VideoPickerInput {
 
     private syncPreview(): void {
         this.previewHost.replaceChildren();
+        this.syncBusyState();
 
         if (!this.hasSources()) {
             const warning = document.createElement('div');
             warning.className = 'vp-source-warning';
+            warning.setAttribute('role', 'status');
             warning.innerHTML = `<span class="warning with-icon">${this.settings.sourceWarning ?? ''}</span>`;
             this.previewHost.appendChild(warning);
             return;
@@ -287,9 +296,11 @@ export class VideoPickerInput {
         if (this.loadingVideo) {
             const loading = document.createElement('div');
             loading.className = 'vp-single-video-container';
+            // aria-busy on the host announces progress; keep the spinner decorative.
             const spinner = document.createElement('pk-spinner');
             // BEFORE `.vp-loading` ::after is 1rem — kit `xs`. (`sm`/omit = 1.5rem, too large here.)
             spinner.setAttribute('size', 'xs');
+            spinner.setAttribute('aria-hidden', 'true');
             loading.appendChild(spinner);
             this.previewHost.appendChild(loading);
             return;
@@ -300,6 +311,7 @@ export class VideoPickerInput {
         if (errors.length) {
             const errWrap = document.createElement('div');
             errWrap.className = 'error vp-single-video-errors';
+            errWrap.setAttribute('role', 'alert');
 
             for (const error of errors) {
                 const row = document.createElement('div');

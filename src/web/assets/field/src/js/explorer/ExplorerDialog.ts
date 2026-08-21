@@ -404,13 +404,14 @@ export class ExplorerDialog {
         this.footerSelect.toggleAttribute('disabled', !this.canSelect());
 
         if (this.loadingSources) {
-            this.bodyEl.appendChild(this.centeredSpinner());
+            this.bodyEl.appendChild(this.centeredSpinner('md', Craft.t('video-picker', 'Loading sources…')));
             return;
         }
 
         if (this.sourcesError) {
             const err = document.createElement('div');
             err.className = 'vp-centered error';
+            err.setAttribute('role', 'alert');
             err.style.wordBreak = 'break-word';
             err.innerHTML = this.sourcesError;
             this.bodyEl.appendChild(err);
@@ -438,8 +439,18 @@ export class ExplorerDialog {
         if (this.loadingMore) {
             const spinner = document.createElement('pk-spinner');
             spinner.setAttribute('size', 'sm');
-            more.appendChild(spinner);
+            spinner.setAttribute('aria-hidden', 'true');
+            more.setAttribute('role', 'status');
+            more.setAttribute('aria-live', 'polite');
+            more.setAttribute('aria-busy', 'true');
+            const sr = document.createElement('span');
+            sr.className = 'vp-sr-only';
+            sr.textContent = Craft.t('video-picker', 'Loading more videos…');
+            more.append(spinner, sr);
         } else {
+            more.removeAttribute('role');
+            more.removeAttribute('aria-live');
+            more.removeAttribute('aria-busy');
             const btn = document.createElement('pk-button');
             btn.setAttribute('variant', 'secondary');
             btn.textContent = Craft.t('video-picker', 'Load More');
@@ -448,14 +459,24 @@ export class ExplorerDialog {
         }
     }
 
-    private centeredSpinner(size: 'sm' | 'md' | 'lg' = 'md'): HTMLElement {
+    private centeredSpinner(
+        size: 'sm' | 'md' | 'lg' = 'md',
+        statusText = Craft.t('video-picker', 'Loading…'),
+    ): HTMLElement {
         const wrap = document.createElement('div');
         // Absolute to `.vp-explorer-main` (BEFORE `.vp-no-videos`) — not the short videos wrap.
         wrap.className = 'vp-centered';
+        wrap.setAttribute('role', 'status');
+        wrap.setAttribute('aria-live', 'polite');
+        wrap.setAttribute('aria-busy', 'true');
         const spinner = document.createElement('pk-spinner');
         // BEFORE `vp-loading-lg` is 2rem → kit `md` (kit `lg` is 3rem and reads huge).
         spinner.setAttribute('size', size);
-        wrap.appendChild(spinner);
+        spinner.setAttribute('aria-hidden', 'true');
+        const sr = document.createElement('span');
+        sr.className = 'vp-sr-only';
+        sr.textContent = statusText;
+        wrap.append(spinner, sr);
 
         return wrap;
     }
@@ -630,10 +651,11 @@ export class ExplorerDialog {
 
         if (this.loadingVideos) {
             // Mount on `main` so absolute centering uses the full panel (search + body), like BEFORE.
-            main.appendChild(this.centeredSpinner('md'));
+            main.appendChild(this.centeredSpinner('md', Craft.t('video-picker', 'Loading videos…')));
         } else if (this.videosError) {
             const err = document.createElement('div');
             err.className = 'vp-centered error';
+            err.setAttribute('role', 'alert');
             err.style.wordBreak = 'break-word';
             err.innerHTML = this.videosError;
             main.appendChild(err);
@@ -656,7 +678,14 @@ export class ExplorerDialog {
                 if (this.loadingMore) {
                     const spinner = document.createElement('pk-spinner');
                     spinner.setAttribute('size', 'sm');
-                    more.appendChild(spinner);
+                    spinner.setAttribute('aria-hidden', 'true');
+                    more.setAttribute('role', 'status');
+                    more.setAttribute('aria-live', 'polite');
+                    more.setAttribute('aria-busy', 'true');
+                    const sr = document.createElement('span');
+                    sr.className = 'vp-sr-only';
+                    sr.textContent = Craft.t('video-picker', 'Loading more videos…');
+                    more.append(spinner, sr);
                 } else {
                     const btn = document.createElement('pk-button');
                     btn.setAttribute('variant', 'secondary');
