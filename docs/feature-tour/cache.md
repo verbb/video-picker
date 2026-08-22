@@ -9,12 +9,11 @@ There are two ways to address this - firstly, when the explorer is open, you'll 
 The videos for each source are **not** cached, as these are paginated, and cannot reliably be cached.
 
 ## Video Caching
-Whenever you pick a video, we store a copy of it's data to the database, keyed by its URL. This is cached indefinitely. So, if you change anything about a video, like its title or description, you'll need to refresh it on Video Picker's end.
+Whenever you pick a video, we store a copy of its data in the database, keyed by its URL. That snapshot is trusted for a configurable duration (**Video Cache Duration**, default 7 days). After it expires, Video Picker revalidates from the provider on the next read and keeps showing the last good snapshot if refresh fails (stale-while-revalidate).
 
-There are two ways to address this - firstly, when viewing a Video Picker field with a video value, you'll find a **Refresh** button, that will ensure the video is refreshed from the API. You can also use our **Cache Utility** found in Utilities → Video Picker for on-demand cache-clearing of specific URLs.
+You can still force a refresh: use the **Refresh** control on a Video Picker field, or **Cache Utility** → clear a specific URL under Utilities → Video Picker.
 
-The benefit of this is that if you use a particular video multiple times in your content, you'll be loading it from the cache. Likewise, even when the cache is cleared, you'll only be making a single API call to fetch that video
-
+The benefit of this is that if you use a particular video multiple times in your content, you'll be loading it from the cache. Likewise, even when the cache is cleared, you'll only be making a single API call to fetch that video.
 ## Database Caching
 We utilize database-level caching instead of file-level caching, to ensure that Video Picker caches aren't cleared unnecessarily. It's common (and encouraged) to clear file-level caching when deploying to a server, which can lead to a lot of API calls for videos after a deployment - particularly if you have a large site with lots of videos.
 

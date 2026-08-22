@@ -21,6 +21,12 @@ class Settings extends Model
     /** Application-cache TTL for Twig generic embed crawls. */
     public int $embedCacheDuration = 3600;
 
+    /**
+     * Selected-video DB cache TTL (seconds). Minimum 3600 (1 hour); default 7 days.
+     * Expired rows revalidate on read (stale-while-revalidate).
+     */
+    public int $videoCacheDuration = 604800;
+
     public bool $resolveHiResEmbedImage = false;
     public array $embedClientConfig = [];
     public array $embedClientSettings = [];
@@ -67,6 +73,7 @@ class Settings extends Model
             'providerSearchCacheDuration',
             'embedCacheDuration',
         ], 'number', 'integerOnly' => true, 'min' => 60];
+        $rules[] = [['videoCacheDuration'], 'number', 'integerOnly' => true, 'min' => 3600];
 
         return $rules;
     }

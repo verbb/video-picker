@@ -51,6 +51,18 @@
     warning: macros.configWarning('embedCacheDuration', 'video-picker'),
 }) }}
 
+{{ forms.textField({
+    label: 'Video Cache Duration' | t('video-picker'),
+    instructions: 'How long (in seconds) to trust selected-video metadata in the database before revalidating. Expired entries still show the last snapshot while a refresh is attempted. Minimum 3600 (1 hour).' | t('video-picker'),
+    id: 'videoCacheDuration',
+    name: 'videoCacheDuration',
+    value: settings.videoCacheDuration,
+    size: 10,
+    unit: 'seconds' | t('app'),
+    errors: settings.getErrors('videoCacheDuration'),
+    warning: macros.configWarning('videoCacheDuration', 'video-picker'),
+}) }}
+
 {% endnamespace %}
 
 {% endblock %}

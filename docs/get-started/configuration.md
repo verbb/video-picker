@@ -12,10 +12,11 @@ return [
         'hasCpSection' => true,
         'videosPerPage' => 12,
 
-        // Provider / embed application-cache TTLs (seconds; minimum 60)
+        // Provider / embed / selected-video cache TTLs (seconds)
         'providerCacheDuration' => 3600,
         'providerSearchCacheDuration' => 900,
         'embedCacheDuration' => 3600,
+        'videoCacheDuration' => 604800,
 
         // Embed settings
         'resolveHiResEmbedImage' => false,
@@ -36,6 +37,7 @@ return [
 - `providerCacheDuration` - How long (seconds) to cache provider API responses such as playlists and video lists.
 - `providerSearchCacheDuration` - How long (seconds) to cache provider search results (typically shorter than `providerCacheDuration`).
 - `embedCacheDuration` - How long (seconds) to cache generic Twig embed helper crawls.
+- `videoCacheDuration` - How long (seconds) to trust selected-video metadata stored in the database before revalidating on read. Minimum 3600 (1 hour); default 604800 (7 days). Expired rows still serve the last snapshot (stale-while-revalidate).
 - `resolveHiResEmbedImage` - Whether the embed helpers should determine the most hi-resolution image available. Do note that there's performance implications for this, as it requires fetching every available image for the embed data and comparing them.
 - `embedClientSettings` - Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers. **Config file only.**
 - `embedHeaders` - Define any [headers](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers. **Config file only.**

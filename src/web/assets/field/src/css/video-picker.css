@@ -134,6 +134,12 @@
     color: var(--pk-color-gray-600, #606060);
 }
 
+.vp-single-video-cache-status {
+    margin-top: var(--pk-spacing-1, 0.25rem);
+    font-size: var(--pk-font-size-xs, 12px);
+    color: var(--pk-color-warning-text, #9f6b0a);
+}
+
 .vp-single-video-meta-author {
     color: var(--pk-color-gray-600, #606060);
 }

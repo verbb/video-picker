@@ -13,12 +13,14 @@ use verbb\videopicker\records\Video as VideoRecord;
 use Craft;
 use craft\base\Component;
 use craft\base\Field;
+use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\helpers\Html;
 use craft\helpers\StringHelper;
 use craft\helpers\Template;
 use craft\helpers\UrlHelper;
 
+use DateInterval;
 use DateTime;
 
 use Embed\Http\Crawler;
@@ -30,6 +32,17 @@ use Throwable;
 
 class Videos extends Component
 {
+    // Constants
+    // =========================================================================
+
+    public const CACHE_OK = 'ok';
+    public const CACHE_STALE = 'stale';
+    public const CACHE_UNAVAILABLE = 'unavailable';
+
+    /** Soft backoff after a failed revalidate so CP loads don’t hammer the API. */
+    private const REVALIDATE_BACKOFF = 'PT15M';
+
+
     // Properties
     // =========================================================================
 
@@ -61,6 +74,7 @@ class Videos extends Component
         if ($record) {
             if ($clearCache) {
                 $record->delete();
+                $record = null;
 
                 // Also clear this source's local cache so the next fetch hits the provider
                 foreach ($allowedSources as $source) {
@@ -70,39 +84,78 @@ class Videos extends Component
                     }
                 }
             } else {
-                // Handle emoji's in video content
-                $video = new Video(Json::decode(StringHelper::shortcodesToEmoji($record->data)));
+                $compatible = $field instanceof VideoPickerField
+                    ? $this->_compatibleSourcesForUrl($allowedSources, $videoUrl)
+                    : $allowedSources;
 
-                // Cache is keyed by URL (shared across same-provider sources). Gate by
-                // provider URL grammar via allowed sources — not the stamped sourceHandle —
-                // so a second YouTube source can reuse a row fetched by the first.
-                if ($field instanceof VideoPickerField) {
-                    $compatible = $this->_compatibleSourcesForUrl($allowedSources, $videoUrl);
+                // Field scoped: wrong provider for this field — fall through to live fetch.
+                if ($field instanceof VideoPickerField && !$compatible) {
+                    // Leave the shared URL row alone; try a live resolve for this field.
+                } else {
+                    $video = $this->_videoFromRecord($record);
 
-                    if ($compatible) {
+                    if ($field instanceof VideoPickerField) {
                         $video->sourceHandle = $this->_preferredSourceHandle($compatible, $video->sourceHandle);
+                    }
 
+                    // Fresh snapshot — serve as-is.
+                    if (!$this->_recordIsExpired($record)) {
                         return $this->_videosByUrl[$memoKey] = $video;
                     }
 
-                    // Wrong provider for this field’s sources — fall through to live fetch.
-                } else {
+                    // Expired — sync revalidate; keep last good on failure (SWR).
+                    $revalidateSources = $compatible ?: $allowedSources;
+                    foreach ($revalidateSources as $source) {
+                        if ($source->getVideoIdFromUrl($videoUrl)) {
+                            // Bust provider app cache so revalidate isn’t served from TTL API cache.
+                            $source->clearLocalCache();
+                            break;
+                        }
+                    }
+
+                    $fresh = $this->_fetchLiveVideo($videoUrl, $revalidateSources);
+
+                    if ($fresh && !$fresh->hasErrors()) {
+                        $this->saveVideo($fresh);
+
+                        if ($field instanceof VideoPickerField) {
+                            $fresh->sourceHandle = $this->_preferredSourceHandle(
+                                $this->_compatibleSourcesForUrl($allowedSources, $videoUrl) ?: $allowedSources,
+                                $fresh->sourceHandle,
+                            );
+                        }
+
+                        $fresh->cacheStatus = self::CACHE_OK;
+
+                        return $this->_videosByUrl[$memoKey] = $fresh;
+                    }
+
+                    $status = ($fresh && $fresh->hasErrors())
+                        ? self::CACHE_UNAVAILABLE
+                        : self::CACHE_STALE;
+                    $error = $fresh && $fresh->hasErrors()
+                        ? implode(' ', $fresh->getFirstErrors())
+                        : Craft::t('video-picker', 'Unable to refresh video metadata.');
+
+                    $this->_markRevalidateFailure($record, $status, $error);
+                    $video->cacheStatus = $status;
+                    $video->cacheError = $error;
+
                     return $this->_videosByUrl[$memoKey] = $video;
                 }
             }
         }
 
-        // Fetch the video data from the source directly - we need to look through allowed
-        // sources, as each defines their own logic for matching a URL pattern
-        foreach ($allowedSources as $source) {
-            if ($video = $source->getVideoByUrl($videoUrl)) {
-                // Provider failures return a Video with errors — don't cache those.
-                if (!$video->hasErrors()) {
-                    $this->saveVideo($video);
-                }
+        // Miss / cleared / incompatible cached provider — live fetch.
+        $video = $this->_fetchLiveVideo($videoUrl, $allowedSources);
 
-                return $this->_videosByUrl[$memoKey] = $video;
+        if ($video) {
+            if (!$video->hasErrors()) {
+                $this->saveVideo($video);
+                $video->cacheStatus = self::CACHE_OK;
             }
+
+            return $this->_videosByUrl[$memoKey] = $video;
         }
 
         return $this->_videosByUrl[$memoKey] = null;
@@ -119,10 +172,18 @@ class Videos extends Component
             'videoUrl' => $video->url,
         ]) ?? new VideoRecord();
 
+        $now = new DateTime();
+        $ttl = max(3600, (int)VideoPicker::$plugin->getSettings()->videoCacheDuration);
+        $expires = (clone $now)->add(new DateInterval('PT' . $ttl . 'S'));
+
         $record->setAttributes([
             'videoId' => $video->id,
             'videoUrl' => $video->url,
             'data' => $video->serializeData(),
+            'fetchedAt' => $now,
+            'expiresAt' => $expires,
+            'status' => self::CACHE_OK,
+            'lastError' => null,
         ], false);
 
         $record->save();
@@ -305,6 +366,54 @@ class Videos extends Component
 
     // Private Methods
     // =========================================================================
+
+    /**
+     * @param SourceInterface[] $sources
+     */
+    private function _fetchLiveVideo(string $videoUrl, array $sources): ?Video
+    {
+        foreach ($sources as $source) {
+            if ($video = $source->getVideoByUrl($videoUrl)) {
+                return $video;
+            }
+        }
+
+        return null;
+    }
+
+    private function _videoFromRecord(VideoRecord $record): Video
+    {
+        // Handle emoji's in video content
+        $video = new Video(Json::decode(StringHelper::shortcodesToEmoji($record->data)));
+        $video->cacheStatus = $record->status ?: self::CACHE_OK;
+        $video->cacheError = $record->lastError;
+
+        return $video;
+    }
+
+    private function _recordIsExpired(VideoRecord $record): bool
+    {
+        if (!$record->expiresAt) {
+            return true;
+        }
+
+        $expires = DateTimeHelper::toDateTime($record->expiresAt);
+
+        if (!$expires) {
+            return true;
+        }
+
+        return $expires <= new DateTime();
+    }
+
+    private function _markRevalidateFailure(VideoRecord $record, string $status, string $error): void
+    {
+        $record->status = $status;
+        $record->lastError = StringHelper::truncate($error, 1000);
+        // Short backoff — stay expired relative to full TTL, but avoid per-request refetch.
+        $record->expiresAt = (new DateTime())->add(new DateInterval(self::REVALIDATE_BACKOFF));
+        $record->save(false);
+    }
 
     /**
      * Sources that can parse this URL (same provider grammar as a live fetch).

@@ -19,6 +19,8 @@ export type VideoData = {
     providerColor?: string | null;
     /** Trusted brand SVG markup from the source provider. */
     providerIcon?: string | null;
+    cacheStatus?: string | null;
+    cacheError?: string | null;
     errors?: Record<string, string[]> | null;
     [key: string]: unknown;
 };

@@ -43,6 +43,15 @@ class Video extends Model
      */
     public array $embedDefaults = [];
 
+    /**
+     * Managed DB cache status for this snapshot (ok / stale / unavailable).
+     * Runtime-only — not serialized into video_picker_videos.data.
+     */
+    public string $cacheStatus = 'ok';
+
+    /** Last revalidation error when status is stale/unavailable (runtime-only). */
+    public ?string $cacheError = null;
+
     private ?SourceInterface $_source = null;
 
 
@@ -52,8 +61,8 @@ class Video extends Model
     public function fields(): array
     {
         $fields = parent::fields();
-        // Keep field defaults off serialized video cache / GraphQL bag.
-        unset($fields['embedDefaults']);
+        // Keep field defaults / cache chrome off serialized video cache / GraphQL bag.
+        unset($fields['embedDefaults'], $fields['cacheStatus'], $fields['cacheError']);
 
         return $fields;
     }
@@ -78,6 +87,8 @@ class Video extends Model
         $video['embedHtml'] = $this->getEmbedHtml(['autoplay' => true, 'muted' => true]);
         $video['duration'] = $this->getFormattedDuration();
         $video['duration8601'] = $this->getDuration8601();
+        $video['cacheStatus'] = $this->cacheStatus;
+        $video['cacheError'] = $this->cacheError;
 
         // Selected-card chrome (P02) — provider identity when the source still exists.
         if ($source = $this->getSource()) {

@@ -538,7 +538,21 @@ export class VideoPickerInput {
         });
 
         buttons.append(open, refresh, remove);
-        meta.append(titleRow, details, description, buttons);
+        meta.append(titleRow, details);
+
+        // A03: surface stale / unavailable after a failed revalidate (last snapshot still shown).
+        const cacheStatus = this.currentVideo.cacheStatus;
+        if (cacheStatus === 'stale' || cacheStatus === 'unavailable') {
+            const notice = document.createElement('div');
+            notice.className = 'vp-single-video-cache-status';
+            notice.setAttribute('role', 'status');
+            notice.textContent = cacheStatus === 'unavailable'
+                ? Craft.t('video-picker', 'This video may be unavailable. Showing the last saved metadata.')
+                : Craft.t('video-picker', 'Metadata may be out of date. Showing the last saved snapshot.');
+            meta.appendChild(notice);
+        }
+
+        meta.append(description, buttons);
         container.append(thumbWrap, meta);
         this.previewHost.appendChild(container);
     }

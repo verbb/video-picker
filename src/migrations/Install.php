@@ -56,6 +56,10 @@ class Install extends Migration
             'videoId' => $this->string()->notNull(),
             'videoUrl' => $this->string()->notNull(),
             'data' => $this->text(),
+            'fetchedAt' => $this->dateTime()->null(),
+            'expiresAt' => $this->dateTime()->null(),
+            'status' => $this->string(32)->notNull()->defaultValue('ok'),
+            'lastError' => $this->text()->null(),
             'dateCreated' => $this->dateTime()->notNull(),
             'dateUpdated' => $this->dateTime()->notNull(),
             'uid' => $this->uid(),
@@ -69,6 +73,8 @@ class Install extends Migration
 
         $this->createIndex(null, '{{%video_picker_videos}}', ['videoId'], false);
         $this->createIndex(null, '{{%video_picker_videos}}', ['videoUrl'], true);
+        $this->createIndex(null, '{{%video_picker_videos}}', ['expiresAt'], false);
+        $this->createIndex(null, '{{%video_picker_videos}}', ['status'], false);
     }
 
     public function dropTables(): void
