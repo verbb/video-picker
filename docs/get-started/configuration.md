@@ -47,7 +47,7 @@ return [
 - `embedAllowedDomains` - Define any allowed domain names for embed helpers. Any embed links that are added _not_ in this list will fail to be saved. Leave empty to allow any domain. Include just the TLD with no `http://`, `https://` or `www`.
 
 ### Sources
-Supply OAuth client credentials in `config/video-picker.php` when you want to pre-seed YouTube or Vimeo sources. The `key` for each item should be the source `handle`. Dailymotion, Mux, and Wistia are configured in the control panel (API tokens are not stored in project config).
+Supply OAuth client credentials in `config/video-picker.php` when you want to pre-seed OAuth sources. The `key` for each item should be the source `handle`. Credential-based sources are configured in the control panel (API tokens are not stored in project config).
 
 ```php
 return [

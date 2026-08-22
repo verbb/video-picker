@@ -3,9 +3,7 @@
 ## Unreleased
 
 ### Added
-- Add **Dailymotion** source.
-- Add **Mux** source.
-- Add **Wistia** source.
+- Add **Bunny Stream**, **Cloudflare Stream**, **Dailymotion**, **Mux**, **Sprout Video** and **Wistia** sources.
 - Add field setting for optional input placeholder text when no video is selected.
 - Add `CredentialsSource` and `OAuthSource` split to cater for different authentication methods of providers.
 - Add source setting **Available Fields** to control what fields can browse the source.
