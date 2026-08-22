@@ -121,25 +121,36 @@ class Sources extends Component
      * Each source’s `fields` setting: `*` / null → all fields; `[]` → none;
      * otherwise a list of field UIDs.
      *
+     * @param bool $usableOnly When true (default), only configured + connected sources
+     *                         (explorer / URL fetch). Pass false to include disconnected
+     *                         sources for messaging / admin checks.
      * @return SourceInterface[]
      */
-    public function getSourcesForField(?Field $field): array
+    public function getSourcesForField(?Field $field, bool $usableOnly = true): array
     {
         $allSources = $this->getAllEnabledSources();
 
         if (!$field instanceof VideoPickerField) {
-            return $allSources;
-        }
+            $sources = $allSources;
+        } else {
+            $sources = [];
 
-        $sources = [];
-
-        foreach ($allSources as $source) {
-            if ($source->isAvailableForField($field)) {
-                $sources[] = $source;
+            foreach ($allSources as $source) {
+                if ($source->isAvailableForField($field)) {
+                    $sources[] = $source;
+                }
             }
         }
 
-        return $sources;
+        if (!$usableOnly) {
+            return $sources;
+        }
+
+        // Explorer + URL resolve need a live provider session — not merely enabled.
+        return array_values(array_filter(
+            $sources,
+            static fn(SourceInterface $source) => $source->isConfigured() && $source->isConnected(),
+        ));
     }
 
     public function getSourceByHandleForField(string $handle, ?Field $field): ?SourceInterface

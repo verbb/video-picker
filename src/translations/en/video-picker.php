@@ -60,6 +60,7 @@ return [
   'New source' => 'New source',
   'No source exists with the ID “{id}”.' => 'No source exists with the ID “{id}”.',
   'No sources are available for this field. On each source, set Available Fields to All (or include this field).' => 'No sources are available for this field. On each source, set Available Fields to All (or include this field).',
+  'No connected sources are available for this field. [Connect a source]({link}) that allows this field.' => 'No connected sources are available for this field. [Connect a source]({link}) that allows this field.',
   'No sources exist yet.' => 'No sources exist yet.',
   'Not Connected' => 'Not Connected',
   'No videos available.' => 'No videos available.',

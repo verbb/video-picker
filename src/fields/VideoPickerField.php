@@ -118,16 +118,21 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
         $urlValue = is_array($value) ? (string)($value['url'] ?? '') : '';
 
         $fieldSources = VideoPicker::$plugin->getSources()->getSourcesForField($this);
+        $allowedSources = VideoPicker::$plugin->getSources()->getSourcesForField($this, false);
         $sourceCount = count($fieldSources);
         $hasGlobalSources = count(VideoPicker::$plugin->getSources()->getAllEnabledSources()) > 0;
 
-        // Distinguish “no sources configured in the plugin” vs “none available for this field”.
+        // Distinguish no plugin sources / Available Fields / not connected yet.
         if (!$hasGlobalSources) {
             $sourceWarning = Craft::t('video-picker', 'Provide at least one enabled [source]({link}) to browse videos and fetch video data.', [
                 'link' => UrlHelper::cpUrl('video-picker/sources'),
             ]);
-        } elseif ($sourceCount === 0) {
+        } elseif (count($allowedSources) === 0) {
             $sourceWarning = Craft::t('video-picker', 'No sources are available for this field. On each source, set Available Fields to All (or include this field).');
+        } elseif ($sourceCount === 0) {
+            $sourceWarning = Craft::t('video-picker', 'No connected sources are available for this field. [Connect a source]({link}) that allows this field.', [
+                'link' => UrlHelper::cpUrl('video-picker/sources'),
+            ]);
         } else {
             $sourceWarning = '';
         }
