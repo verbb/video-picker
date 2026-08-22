@@ -12,7 +12,10 @@ Video Picker is a Craft CMS plugin that provides a rich experience when dealing 
 - Events to write your own source types, or extend existing ones.
 
 ## Sources
+- Dailymotion
+- Mux
 - Vimeo
+- Wistia
 - YouTube
 
 ## Documentation

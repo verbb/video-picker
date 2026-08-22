@@ -85,7 +85,7 @@
 
 {{ forms.selectField({
     label: 'Video Sort' | t('video-picker'),
-    instructions: 'Sort each explorer page after it loads. Provider order leaves results as returned by YouTube/Vimeo. Sorting is best-effort on the current page only.' | t('video-picker'),
+    instructions: 'Sort each explorer page after it loads. Provider order leaves results as returned by each provider. Sorting is best-effort on the current page only.' | t('video-picker'),
     name: 'videoSort',
     options: field.videoSortOptions(),
     value: field.videoSort,

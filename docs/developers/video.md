@@ -7,7 +7,7 @@ Attribute | Description
 --- | ---
 `id` | The ID of the video.
 `url` | The URL of the video.
-`sourceHandle` | A handle identifying the video source, e.g., "YouTube" or "Vimeo".
+`sourceHandle` | A handle identifying the video source, e.g. `youtube` or `dailymotion`.
 `date` | The date the video was published or created (`DateTime` object).
 `duration` | Duration of the video in seconds.
 `duration8601` | Duration of the video in ISO8601 format.

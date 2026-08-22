@@ -5,8 +5,7 @@
  * Note: no opening PHP tag — @verbb/docs-screenshots injects this into a bootstrap.
  *
  * Starter seed: creates the field with defaults so the field-settings and entry-edit
- * routes resolve. Configure enabled sources/gateways (YouTube, Vimeo) here as the Phase 1
- * explorer UI lands, mirroring hyper/seed-docs-field.php for richer scenes.
+ * routes resolve. Configure enabled sources here as needed for docs screenshots.
  */
 
 use craft\elements\Entry;
@@ -89,7 +88,7 @@ function docsScreenshotVideoPickerField(): VideoPickerField
     ]);
 
     $field->name = 'Video';
-    $field->instructions = 'Pick a video from Vimeo or YouTube.';
+    $field->instructions = 'Pick a video from a connected source.';
 
     if (!$fields->saveField($field)) {
         throw new RuntimeException('Unable to save Video Picker field: ' . Json::encode($field->getErrors()));

@@ -24,13 +24,13 @@
 - Selected-video DB rows are no longer indefinite: expired snapshots revalidate on read and keep the last good data if refresh fails.
 
 ### Fixed
-- Cached video rows are shared by URL across same-provider sources; field scoping gates on provider URL match and rebinds `sourceHandle` to an allowed source (no longer rejects when another YouTube/Vimeo source originally fetched the row).
+- Cached video rows are shared by URL across same-provider sources; field scoping gates on provider URL match and rebinds `sourceHandle` to an allowed source (no longer rejects when another source for the same provider originally fetched the row).
 - Explorer search no longer mutates collection options — leaving search or switching collections clears `q` / search pagination so YouTube playlist browse cannot send `q` + `pageToken` together (#6).
 - YouTube search uses `cachedRequest` so `providerSearchCacheDuration` applies (was uncached via `request()`).
 - Explorer get-videos options are whitelisted (`id`, `q`, `nextPage`); provider page size is forced after merge so `maxResults` / `per_page` cannot exceed Videos Per Page.
 - Explorer and URL resolve only use sources that are configured and connected; the field warns when sources are allowed but not connected.
 - Saving a source clears explorer section cache + provider application cache when provider settings/credentials change (not merely Available Fields); OAuth connect uses the same path.
-- Field URL input debounces get-video and only requests once the value matches a YouTube/Vimeo URL pattern (or on blur/Enter); posted URL still updates every keystroke for save.
+- Field URL input debounces get-video and only requests once the value matches a supported provider URL pattern (or on blur/Enter); posted URL still updates every keystroke for save.
 - Require `videoPicker-sources` for source CP actions; OAuth `connect`/`disconnect` require that permission + POST (only `callback` stays anonymous).
 - Field video AJAX requires a valid `fieldId` so source Available Fields scoping cannot be bypassed.
 - Enforce `embedAllowedDomains` (when set), block private/loopback hosts, cache generic embed crawls, and bound hi-res image fetches.

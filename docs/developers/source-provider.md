@@ -178,6 +178,6 @@ class MySourceProvider extends OAuthSource
 This is the minimum amount of implementation required for a typical source provider.
 
 Video Picker source providers extend `Source`, `CredentialsSource` (API keys), or
-`OAuthSource` (YouTube/Vimeo-style Connect). Credential sources use the
+`OAuthSource` (OAuth Connect). Credential sources use the
 [Auth](https://github.com/verbb/auth) credentials trait; OAuth sources use
 `league/oauth2-client` via Auth.

@@ -27,14 +27,14 @@
 
 {{ forms.editableTableField({
     label: 'Embed Allowed Domains' | t('video-picker'),
-    instructions: 'Hosts allowed for Twig embed helpers. Leave empty to allow any public host. Use the domain only (no `http://`, `https://`, or `www`) — e.g. `youtube.com`, `vimeo.com`.' | t('video-picker'),
+    instructions: 'Hosts allowed for Twig embed helpers. Leave empty to allow any public host. Use the domain only (no `http://`, `https://`, or `www`) — e.g. `youtube.com`, `vimeo.com`, `wistia.com`.' | t('video-picker'),
     id: 'embedAllowedDomains',
     name: 'embedAllowedDomains',
     cols: {
         domain: {
             type: 'singleline',
             heading: 'Domain' | t('video-picker'),
-            info: 'e.g. youtube.com' | t('video-picker'),
+            info: 'e.g. provider.com' | t('video-picker'),
         },
     },
     rows: settings.embedAllowedDomainRows,

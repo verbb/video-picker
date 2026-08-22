@@ -9,4 +9,4 @@ Once selected, you'll see the video as a preview in the field. You can go ahead 
 ## Direct URL
 Of course, you don't _have_ to use the explorer to use videos, you can enter in the direct URL to a video in the field. Video Picker will look up that video, fetch data and save it as a preview in the field. Once that's done, you can go ahead and [render the video](docs:template-guides/rendering-videos).
 
-Note that video URLs entered here will **only** work for sources that are connected and enabled. For example, you can't put the URL of any video provider in, as it has to be with a provider that Video Picker supports (YouTube, Vimeo, etc).
+Note that video URLs entered here will **only** work for sources that are connected and enabled. The URL must match a provider that Video Picker supports (YouTube, Vimeo, Dailymotion, Mux, Wistia, or a custom source).

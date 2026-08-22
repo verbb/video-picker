@@ -2,7 +2,7 @@
 A Source allows you to connect to a video provider to fetch Videos from various platforms. Once a Source is set up, you can retrieve video data, including titles, descriptions, thumbnails, and playback details.
 
 ## Provider Settings
-Each provider will be different, but almost all require OAuth authentication. Create a Source and follow the documentation for the provider to get your Client ID/Secret credentials. Once configured, connect to the provider, going through the OAuth handshake to retrieve a token.
+Each provider is different. OAuth sources (YouTube, Vimeo) need Client ID/Secret credentials and an OAuth Connect handshake; credential sources (Dailymotion, Mux, Wistia) use API tokens you paste into the source settings. Create a source and follow the [provider docs](docs:providers/youtube) for your platform.
 
 ## Fetching Videos
 To fetch a video from a source, you'll need to provide a URL for the video, and use `source.getVideoByUrl(url)`.
