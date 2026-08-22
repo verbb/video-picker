@@ -16,6 +16,7 @@ Video Picker is a Craft CMS plugin that provides a rich experience when dealing 
 - Cloudflare Stream
 - Dailymotion
 - Mux
+- Sprout Video
 - Vimeo
 - Wistia
 - YouTube

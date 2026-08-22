@@ -57,6 +57,7 @@ class Sources extends Component
             sourceTypes\CloudflareStream::class,
             sourceTypes\Dailymotion::class,
             sourceTypes\Mux::class,
+            sourceTypes\SproutVideo::class,
             sourceTypes\Wistia::class,
         ];
 

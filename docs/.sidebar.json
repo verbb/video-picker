@@ -25,6 +25,7 @@
             "providers/cloudflare-stream",
             "providers/dailymotion",
             "providers/mux",
+            "providers/sprout-video",
             "providers/vimeo",
             "providers/wistia",
             "providers/youtube"
