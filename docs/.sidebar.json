@@ -21,6 +21,7 @@
         "title": "Providers",
         "collapsable": false,
         "children": [
+            "providers/dailymotion",
             "providers/vimeo",
             "providers/youtube"
         ]
