@@ -3,6 +3,14 @@
 
 {% include 'video-picker/sources/_oauth' %}
 
+{{ forms.lightswitchField({
+    label: 'Privacy Enhanced Mode' | t('video-picker'),
+    instructions: 'Embed videos from youtube-nocookie.com so YouTube does not set cookies until the visitor plays the video.' | t('video-picker'),
+    name: 'privacyEnhanced',
+    on: source.privacyEnhanced ?? false,
+    errors: source.getErrors('privacyEnhanced'),
+}) }}
+
 {{ forms.booleanMenuField({
     label: 'Proxy Redirect URI' | t('video-picker'),
     instructions: 'Whether to proxy the redirect URI through Verbb‘s servers. This should **only** be used for local testing. See [docs](https://verbb.io/craft-plugins/video-picker/docs/feature-tour/providers#local-testing-proxy) for more.' | t('video-picker') | md,

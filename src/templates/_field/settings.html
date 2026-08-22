@@ -83,3 +83,40 @@
     value: field.videoSort,
     errors: field.getErrors('videoSort'),
 }) }}
+
+<hr>
+
+<h3>{{ 'Embed' | t('video-picker') }}</h3>
+<p class="instructions">{{ 'Default embed behaviour for front-end output. Applied for the video’s provider when supported; Twig/GraphQL options still override.' | t('video-picker') }}</p>
+
+{{ forms.lightswitchField({
+    label: 'Autoplay' | t('video-picker'),
+    instructions: 'Start playback automatically when the embed loads (browsers often require Muted).' | t('video-picker'),
+    name: 'embedAutoplay',
+    on: field.embedAutoplay,
+    errors: field.getErrors('embedAutoplay'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Muted' | t('video-picker'),
+    instructions: 'Start with sound off.' | t('video-picker'),
+    name: 'embedMuted',
+    on: field.embedMuted,
+    errors: field.getErrors('embedMuted'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Loop' | t('video-picker'),
+    instructions: 'Replay the video when it ends.' | t('video-picker'),
+    name: 'embedLoop',
+    on: field.embedLoop,
+    errors: field.getErrors('embedLoop'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Show Controls' | t('video-picker'),
+    instructions: 'Show the player’s playback controls.' | t('video-picker'),
+    name: 'embedControls',
+    on: field.embedControls,
+    errors: field.getErrors('embedControls'),
+}) }}

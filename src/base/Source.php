@@ -314,30 +314,131 @@ abstract class Source extends SavableComponent implements SourceInterface
         return '';
     }
 
+    /**
+     * Embed URL for a video id.
+     *
+     * `$options` may mix:
+     * - **Intent** — `autoplay`, `muted`/`mute`, `loop`, `controls`, `start` (mapped per provider)
+     * - **Iframe attrs** — `title`, `class`, `width`, `height`, `allow`, `loading`, …
+     * - **Query passthrough** — anything else (e.g. `rel`, `theme`) appended as query params
+     *
+     * Provider-unsupported intent keys are ignored by `mapEmbedQueryParams()`.
+     */
     public function getEmbedUrl(string $videoId, array $options = []): string
+    {
+        [$intent, $queryExtra] = $this->partitionEmbedOptions($options);
+
+        return $this->buildEmbedUrl(
+            $videoId,
+            array_merge($this->mapEmbedQueryParams($videoId, $intent), $queryExtra)
+        );
+    }
+
+    /**
+     * Iframe HTML for a video id. Intent/query options shape `src`; iframe keys become attributes.
+     */
+    public function getEmbedHtml(string $videoId, array $options = []): string
+    {
+        [$intent, $queryExtra, $attrs] = $this->partitionEmbedOptions($options);
+
+        $attributes = array_merge([
+            'src' => $this->buildEmbedUrl(
+                $videoId,
+                array_merge($this->mapEmbedQueryParams($videoId, $intent), $queryExtra)
+            ),
+            'title' => 'External video from ' . $this->handle,
+            'frameborder' => '0',
+            'allowfullscreen' => 'true',
+            'allow' => 'autoplay; encrypted-media',
+        ], $attrs);
+
+        return Html::tag('iframe', '', $attributes);
+    }
+
+    /**
+     * Map neutral embed intent → provider query params. Override per source; ignore unsupported keys.
+     *
+     * @param array{autoplay?: mixed, muted?: mixed, mute?: mixed, loop?: mixed, controls?: mixed, start?: mixed} $intent
+     */
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        $params = [];
+
+        if ($this->isEmbedTruthy($intent['autoplay'] ?? null)) {
+            $params['autoplay'] = 1;
+        }
+
+        if ($this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null)) {
+            $params['muted'] = 1;
+        }
+
+        if ($this->isEmbedTruthy($intent['loop'] ?? null)) {
+            $params['loop'] = 1;
+        }
+
+        // Only emit controls when explicitly off — providers default to on.
+        if (array_key_exists('controls', $intent) && !$this->isEmbedTruthy($intent['controls'])) {
+            $params['controls'] = 0;
+        }
+
+        if (isset($intent['start']) && $intent['start'] !== '' && $intent['start'] !== null) {
+            $params['start'] = (int)$intent['start'];
+        }
+
+        return $params;
+    }
+
+    /**
+     * @return array{0: array, 1: array, 2: array} intent, query passthrough, iframe attributes
+     */
+    protected function partitionEmbedOptions(array $options): array
+    {
+        $intentKeys = ['autoplay', 'muted', 'mute', 'loop', 'controls', 'start'];
+        $attrKeys = [
+            'title', 'class', 'id', 'width', 'height', 'style', 'allow', 'loading',
+            'frameborder', 'allowfullscreen', 'referrerpolicy', 'sandbox', 'name',
+        ];
+
+        $intent = [];
+        $queryExtra = [];
+        $attrs = [];
+
+        foreach ($options as $key => $value) {
+            if (in_array($key, $intentKeys, true)) {
+                $intent[$key] = $value;
+            } elseif (in_array($key, $attrKeys, true)) {
+                $attrs[$key] = $value;
+            } else {
+                // Legacy Twig: unknown keys were query params (and wrongly iframe attrs too).
+                $queryExtra[$key] = $value;
+            }
+        }
+
+        return [$intent, $queryExtra, $attrs];
+    }
+
+    protected function buildEmbedUrl(string $videoId, array $queryParams): string
     {
         $url = Craft::t('app', $this->getEmbedUrlFormat(), ['id' => $videoId]);
 
-        if ($options) {
-            // Add any options to the URL as a query string
-            $url = UrlHelper::urlWithParams($url, $options);
+        if ($queryParams) {
+            $url = UrlHelper::urlWithParams($url, $queryParams);
         }
 
         return $url;
     }
 
-    public function getEmbedHtml(string $videoId, array $options = []): string
+    protected function isEmbedTruthy(mixed $value): bool
     {
-        $attributes = array_replace([
-            'src' => $this->getEmbedUrl($videoId, $options),
-            'title' => 'External video from ' . $this->handle,
-            'frameborder' => '0',
-            'allowfullscreen' => 'true',
-            'allowscriptaccess' => 'true',
-            'allow' => 'autoplay; encrypted-media',
-        ], $options);
+        if ($value === true || $value === 1 || $value === '1') {
+            return true;
+        }
 
-        return Html::tag('iframe', null, $attributes);
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['true', 'yes', 'on'], true);
+        }
+
+        return false;
     }
 
     public function cachedRequest(string $method = 'GET', string $uri = '', array $options = [])

@@ -39,6 +39,9 @@ class YouTube extends OAuthSource
 
     public ?string $proxyRedirect = null;
 
+    /** Use youtube-nocookie.com embeds (Privacy Enhanced Mode). */
+    public bool $privacyEnhanced = false;
+
 
     // Public Methods
     // =========================================================================
@@ -81,7 +84,40 @@ class YouTube extends OAuthSource
 
     public function getEmbedUrlFormat(): string
     {
-        return 'https://www.youtube.com/embed/{id}?wmode=transparent';
+        // Host is a source setting — field embeds stay provider-agnostic.
+        $host = $this->privacyEnhanced ? 'www.youtube-nocookie.com' : 'www.youtube.com';
+
+        return "https://{$host}/embed/{id}";
+    }
+
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        $params = ['wmode' => 'transparent'];
+
+        if ($this->isEmbedTruthy($intent['autoplay'] ?? null)) {
+            $params['autoplay'] = 1;
+        }
+
+        // YouTube uses `mute`, not `muted`.
+        if ($this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null)) {
+            $params['mute'] = 1;
+        }
+
+        if ($this->isEmbedTruthy($intent['loop'] ?? null)) {
+            $params['loop'] = 1;
+            // Single-video loop requires playlist = that video id.
+            $params['playlist'] = $videoId;
+        }
+
+        if (array_key_exists('controls', $intent) && !$this->isEmbedTruthy($intent['controls'])) {
+            $params['controls'] = 0;
+        }
+
+        if (isset($intent['start']) && $intent['start'] !== '' && $intent['start'] !== null) {
+            $params['start'] = (int)$intent['start'];
+        }
+
+        return $params;
     }
 
     public function getVideoIdFromUrl(string $url): ?string

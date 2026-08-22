@@ -37,11 +37,26 @@ class Video extends Model
     public ?int $height = null;
     public array $raw = [];
 
+    /**
+     * Field-level embed intent defaults (autoplay/muted/loop/controls).
+     * Merged under call-site options; not part of persisted video cache identity.
+     */
+    public array $embedDefaults = [];
+
     private ?SourceInterface $_source = null;
 
 
     // Public Methods
     // =========================================================================
+
+    public function fields(): array
+    {
+        $fields = parent::fields();
+        // Keep field defaults off serialized video cache / GraphQL bag.
+        unset($fields['embedDefaults']);
+
+        return $fields;
+    }
 
     public function getVideoData(): array
     {
@@ -59,7 +74,8 @@ class Video extends Model
         ]);
 
         $video['thumbnail'] = $this->getThumbnail();
-        $video['embedHtml'] = $this->getEmbedHtml(['autoplay' => true]);
+        // CP preview: always autoplay+muted so the dialog feels live without sound blast.
+        $video['embedHtml'] = $this->getEmbedHtml(['autoplay' => true, 'muted' => true]);
         $video['duration'] = $this->getFormattedDuration();
         $video['duration8601'] = $this->getDuration8601();
 
@@ -129,7 +145,8 @@ class Video extends Model
             return null;
         }
 
-        return $source->getEmbedHtml($this->id, $options);
+        // Field defaults under Twig/GQL call-site overrides.
+        return $source->getEmbedHtml($this->id, array_merge($this->embedDefaults, $options));
     }
 
     public function getEmbedUrl(array $options = []): ?string
@@ -140,7 +157,7 @@ class Video extends Model
             return null;
         }
 
-        return $source->getEmbedUrl($this->id, $options);
+        return $source->getEmbedUrl($this->id, array_merge($this->embedDefaults, $options));
     }
 
     public function getSource(): ?SourceInterface

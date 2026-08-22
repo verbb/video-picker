@@ -79,9 +79,28 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
      */
     public string $videoSort = '';
 
+    /** Front-end embed intent — applied for whichever provider the saved video uses. */
+    public bool $embedAutoplay = false;
+    public bool $embedMuted = false;
+    public bool $embedLoop = false;
+    public bool $embedControls = true;
+
 
     // Public Methods
     // =========================================================================
+
+    /**
+     * Neutral embed intent for this field (Twig/GQL call-site overrides still win).
+     */
+    public function getEmbedIntentDefaults(): array
+    {
+        return [
+            'autoplay' => $this->embedAutoplay,
+            'muted' => $this->embedMuted,
+            'loop' => $this->embedLoop,
+            'controls' => $this->embedControls,
+        ];
+    }
 
     public function setVideosPerPage(mixed $value): void
     {
@@ -209,7 +228,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
     public function normalizeValue(mixed $value, ?ElementInterface $element = null): ?Video
     {
         if ($value instanceof Video) {
-            return $value;
+            return $this->applyEmbedDefaults($value);
         }
 
         if ($value && is_string($value) && filter_var(trim($value), FILTER_VALIDATE_URL)) {
@@ -221,17 +240,25 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
                     $video->addError('url', $reason);
                 }
 
-                return $video;
+                return $this->applyEmbedDefaults($video);
             }
 
             $video = new Video();
             $video->url = $value;
             $video->addError('url', Craft::t('video-picker', 'Unable to find the video.'));
 
-            return $video;
+            return $this->applyEmbedDefaults($video);
         }
 
         return null;
+    }
+
+    /** Stamp field embed intent onto the Video so getEmbedHtml/Url pick it up. */
+    private function applyEmbedDefaults(Video $video): Video
+    {
+        $video->embedDefaults = $this->getEmbedIntentDefaults();
+
+        return $video;
     }
 
     public function serializeValue(mixed $value, ?ElementInterface $element = null): mixed
@@ -370,12 +397,18 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
                 'embedHtml' => [
                     'name' => 'embedHtml',
                     'type' => Type::string(),
-                    'description' => 'The embed HTML of the video.',
+                    'description' => 'The embed HTML of the video (field embed defaults applied; args not supported).',
+                    'resolve' => static function(Video $model) {
+                        return $model->getEmbedHtml();
+                    },
                 ],
                 'embedUrl' => [
                     'name' => 'embedUrl',
                     'type' => Type::string(),
-                    'description' => 'The embed URL of the video.',
+                    'description' => 'The embed URL of the video (field embed defaults applied).',
+                    'resolve' => static function(Video $model) {
+                        return $model->getEmbedUrl();
+                    },
                 ],
             ],
         ]));

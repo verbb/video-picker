@@ -56,6 +56,31 @@ class Vimeo extends OAuthSource
         return 'https://player.vimeo.com/video/{id}';
     }
 
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        $params = [];
+
+        if ($this->isEmbedTruthy($intent['autoplay'] ?? null)) {
+            $params['autoplay'] = 1;
+        }
+
+        if ($this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null)) {
+            $params['muted'] = 1;
+        }
+
+        if ($this->isEmbedTruthy($intent['loop'] ?? null)) {
+            $params['loop'] = 1;
+        }
+
+        if (array_key_exists('controls', $intent) && !$this->isEmbedTruthy($intent['controls'])) {
+            $params['controls'] = 0;
+        }
+
+        // Vimeo start time is usually a hash (#t=); ignore generic `start` intent.
+
+        return $params;
+    }
+
     public function getVideoIdFromUrl(string $url): ?string
     {
         $pattern = '/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/[\w]+\/|groups\/[\w]+\/videos\/|album\/\d+\/video\/|video\/|)(\d+)/';

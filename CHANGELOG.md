@@ -7,9 +7,12 @@
 - Add source setting **Available Fields** to control what fields can browse the source.
 - Expose provider/search/embed cache durations, hi-res embed image toggle, and embed allowed domains in plugin settings (advanced embed client arrays stay config-only).
 - Add field selection policies: Allow URL Input, Allow Search, Public Videos Only, optional Videos Per Page override, min/max duration, and per-page Video Sort (no default source/collection — source order remains global).
+- Add field embed intent defaults (Autoplay, Muted, Loop, Show Controls) applied per video provider; Twig/GraphQL options still override.
+- Add YouTube source **Privacy Enhanced Mode** (`youtube-nocookie.com` embeds).
 
 ### Changed
 - Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).
+- Source embeds split intent/query params from iframe attributes (no longer merge query options onto the iframe tag).
 
 ### Fixed
 - Cached video rows are shared by URL across same-provider sources; field scoping gates on provider URL match and rebinds `sourceHandle` to an allowed source (no longer rejects when another YouTube/Vimeo source originally fetched the row).
