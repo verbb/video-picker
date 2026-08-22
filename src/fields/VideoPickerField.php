@@ -52,6 +52,8 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
 
     public bool $showExplorer = true;
     public bool $showPreview = true;
+    /** Provider brand tile on the selected-video thumbnail (off by default). */
+    public bool $showProviderIcon = false;
     /** Shown in the empty URL control (e.g. “Enter a video URL”). */
     public ?string $placeholder = null;
 
@@ -204,6 +206,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             'value' => $value,
             'showExplorer' => $this->showExplorer,
             'showPreview' => $this->showPreview,
+            'showProviderIcon' => $this->showProviderIcon,
             'allowUrlInput' => $this->allowUrlInput,
             'allowSearch' => $this->allowSearch,
             'placeholder' => $this->placeholder,
@@ -533,6 +536,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
         $rules[] = [[
             'showExplorer',
             'showPreview',
+            'showProviderIcon',
             'allowUrlInput',
             'allowSearch',
             'publicOnly',

@@ -79,6 +79,15 @@ class Video extends Model
         $video['duration'] = $this->getFormattedDuration();
         $video['duration8601'] = $this->getDuration8601();
 
+        // Selected-card chrome (P02) — provider identity when the source still exists.
+        if ($source = $this->getSource()) {
+            $video['providerName'] = $source->getProviderName();
+            $video['providerHandle'] = $source->getProviderHandle();
+            $video['providerColor'] = $source->getPrimaryColor();
+            // Brand SVG for the compact title-row icon (CP field preview).
+            $video['providerIcon'] = $source->getIcon();
+        }
+
         return $video;
     }
 

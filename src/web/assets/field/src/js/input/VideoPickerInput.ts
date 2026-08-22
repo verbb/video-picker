@@ -20,6 +20,7 @@ export interface VideoPickerSettings {
     value?: VideoValue | null;
     showExplorer?: boolean;
     showPreview?: boolean;
+    showProviderIcon?: boolean;
     allowUrlInput?: boolean;
     allowSearch?: boolean;
     /** Empty URL control hint; falls back to “Enter a video URL” when unset. */
@@ -54,6 +55,7 @@ export class VideoPickerInput {
     private videoUrl: string | null = null;
     private enableExplorer = true;
     private enablePreview = true;
+    private showProviderIcon = false;
     private allowUrlInput = true;
     private allowSearch = true;
     private currentVideo: VideoData | null = null;
@@ -81,6 +83,7 @@ export class VideoPickerInput {
     init(): void {
         this.enableExplorer = Boolean(this.settings.showExplorer);
         this.enablePreview = Boolean(this.settings.showPreview);
+        this.showProviderIcon = Boolean(this.settings.showProviderIcon);
         this.allowUrlInput = this.settings.allowUrlInput !== false;
         this.allowSearch = this.settings.allowSearch !== false;
         this.currentVideo = this.settings.value ?? null;
@@ -437,11 +440,15 @@ export class VideoPickerInput {
             createVideoThumb(this.currentVideo, {
                 onPlay: () => this.openPreview(this.currentVideo!),
                 playInTabOrder: true,
+                showProviderIcon: this.showProviderIcon,
             }),
         );
 
         const meta = document.createElement('div');
         meta.className = 'vp-single-video-meta';
+
+        const titleRow = document.createElement('div');
+        titleRow.className = 'vp-single-video-title-row';
 
         const title = document.createElement('div');
         title.className = 'vp-single-video-title';
@@ -453,6 +460,19 @@ export class VideoPickerInput {
         titleLink.textContent = titleText;
         titleLink.setAttribute('aria-label', this.newTabLabel(titleText || Craft.t('video-picker', 'Video')));
         title.appendChild(titleLink);
+        titleRow.appendChild(title);
+
+        if (this.currentVideo.private) {
+            const lock = document.createElement('span');
+            lock.className = 'vp-single-video-private-icon';
+            lock.setAttribute('aria-label', Craft.t('video-picker', 'Private'));
+            lock.title = Craft.t('video-picker', 'Private');
+            const lockGlyph = document.createElement('pk-icon');
+            lockGlyph.setAttribute('icon', 'lock');
+            lockGlyph.setAttribute('aria-hidden', 'true');
+            lock.appendChild(lockGlyph);
+            titleRow.appendChild(lock);
+        }
 
         const details = document.createElement('div');
         details.className = 'vp-single-video-meta-details';
@@ -491,6 +511,18 @@ export class VideoPickerInput {
         const buttons = document.createElement('div');
         buttons.className = 'vp-single-video-buttons';
 
+        // Title already links to the video URL — this is the explicit open-on-provider control.
+        const openLabel = this.currentVideo.providerName
+            ? Craft.t('video-picker', 'Open on {provider}', { provider: this.currentVideo.providerName })
+            : Craft.t('video-picker', 'Open video');
+        const open = this.iconButton('arrow-up-right-from-square', openLabel);
+        open.addEventListener('click', (event) => {
+            event.preventDefault();
+            if (this.currentVideo?.url) {
+                window.open(this.currentVideo.url, '_blank', 'noopener,noreferrer');
+            }
+        });
+
         // BEFORE Rotate/Remove paths (registered as vp-refresh / vp-remove) — heavier
         // filled art than kit arrows-rotate / xmark; explorer still uses kit glyphs.
         const refresh = this.iconButton('vp-refresh', Craft.t('video-picker', 'Refresh'));
@@ -505,8 +537,8 @@ export class VideoPickerInput {
             this.removeVideo();
         });
 
-        buttons.append(refresh, remove);
-        meta.append(title, details, description, buttons);
+        buttons.append(open, refresh, remove);
+        meta.append(titleRow, details, description, buttons);
         container.append(thumbWrap, meta);
         this.previewHost.appendChild(container);
     }

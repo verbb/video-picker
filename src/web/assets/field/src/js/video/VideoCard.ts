@@ -13,6 +13,12 @@ export type VideoData = {
     description?: string | null;
     embedHtml?: string | null;
     private?: boolean | null;
+    sourceHandle?: string | null;
+    providerName?: string | null;
+    providerHandle?: string | null;
+    providerColor?: string | null;
+    /** Trusted brand SVG markup from the source provider. */
+    providerIcon?: string | null;
     errors?: Record<string, string[]> | null;
     [key: string]: unknown;
 };
@@ -30,6 +36,8 @@ export const createVideoThumb = (
         onPlay?: () => void;
         /** Field preview: play is in the tab order. Explorer cards keep roving focus on the option (`P` plays). */
         playInTabOrder?: boolean;
+        /** Field preview: brand icon bottom-left on the thumb (opposite duration). */
+        showProviderIcon?: boolean;
     } = {},
 ): HTMLElement => {
     const thumb = document.createElement('div');
@@ -96,6 +104,22 @@ export const createVideoThumb = (
     });
 
     thumb.append(imageContainer, duration, play);
+
+    // Provider brand tile — bottom-left, mirrors duration on the right (field preview).
+    if (options.showProviderIcon && video.providerIcon) {
+        const provider = document.createElement('span');
+        provider.className = 'vp-video-thumb-provider';
+        provider.setAttribute('aria-hidden', 'true');
+        if (video.providerColor) {
+            provider.style.setProperty('--vp-provider-color', video.providerColor);
+        }
+        if (video.providerName) {
+            provider.title = video.providerName;
+        }
+        // SVG from Auth ProviderHelper via the connected source — not user HTML.
+        provider.innerHTML = video.providerIcon;
+        thumb.appendChild(provider);
+    }
 
     return thumb;
 };

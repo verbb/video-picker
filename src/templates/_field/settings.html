@@ -23,6 +23,14 @@
     on: field.showPreview,
 }) }}
 
+{{ forms.lightswitchField({
+    label: 'Show Provider Icon' | t('video-picker'),
+    instructions: 'Show the provider brand icon on the selected video’s thumbnail.' | t('video-picker'),
+    name: 'showProviderIcon',
+    on: field.showProviderIcon,
+    errors: field.getErrors('showProviderIcon'),
+}) }}
+
 {{ forms.textField({
     label: 'Placeholder' | t('video-picker'),
     instructions: 'Optional placeholder text shown in the field when no video is selected.' | t('video-picker'),
