@@ -39,7 +39,7 @@
 - Element thumb `srcset` no longer emits an empty 2× candidate.
 - Explorer video cards are keyboard-operable (listbox/option, arrow keys, Enter/Space).
 - Explorer / preview dialogs now response properly on tablet/mobile.
-- Play control is a real button (explorer: always-visible disc + `P` on the focused card; field preview: full-thumb hit target with glyph on hover/focus only so the thumbnail stays clean).
+- Play control is a real button (explorer + field: glyph on hover/focus; explorer also `P` on the focused card; field: full-thumb hit target). Coarse pointers keep a faint explorer rest glyph.
 - Preview dialog exposes an accessible name (video title, or “Video preview”) even with `without-header`.
 - URL `pk-input` picks up the Craft field label (host id matches `label[for]`; shadow textbox gets `aria-label`) instead of using the placeholder as its accessible name.
 - Loading and error states announce to assistive tech (`aria-busy` on the field; `role="alert"` / `role="status"` in the explorer).

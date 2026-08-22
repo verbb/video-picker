@@ -93,7 +93,8 @@ export const createVideoThumb = (
         // The control still covers the full thumb so touch / AT / keyboard stay usable.
         thumb.classList.add('vp-video-thumb--field');
     } else {
-        // Explorer listbox: keep a single tab stop on the option; activate play with `P`.
+        // Explorer listbox: single tab stop on the option; `P` plays. Disc is CSS-hidden
+        // at rest (hover / card focus-visible) so thumbs stay clean like the field preview.
         play.tabIndex = -1;
     }
 

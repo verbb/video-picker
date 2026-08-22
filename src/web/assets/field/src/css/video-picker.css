@@ -188,10 +188,16 @@
         --pk-btn-icon-size: 1rem;
     }
 
-    /* Explorer only — field preview uses a full-bleed hit target without a rest glyph. */
+    /* Explorer: keep a faint rest glyph on touch so play stays discoverable without hover. */
     .vp-video-card .vp-video-thumb-play {
         height: 2.75rem;
         width: 2.75rem;
+        opacity: 0.55;
+    }
+
+    .vp-video-card:hover .vp-video-thumb-play,
+    .vp-video-card:focus-visible .vp-video-thumb-play,
+    .vp-video-card .vp-video-thumb-play:hover {
         opacity: 0.75;
     }
 }
@@ -553,8 +559,8 @@
     border: 2px solid var(--pk-color-white, #fff);
     background: var(--pk-color-white, #fff);
     border-radius: 50%;
-    /* Explorer: always visible. Field preview overrides below. */
-    opacity: 0.55;
+    /* Explorer: hidden at rest (card hover / focus / play hover reveals). Field overrides below. */
+    opacity: 0;
     height: 2.5rem;
     width: 2.5rem;
     padding: 0;
@@ -580,8 +586,12 @@
     height: 100%;
 }
 
+/* Explorer: reveal on card/thumb interaction. Play stays a real control (`P` on focused card). */
+.vp-video-card:hover .vp-video-thumb-play,
+.vp-video-card:focus-visible .vp-video-thumb-play,
 .vp-video-thumb:hover .vp-video-thumb-play,
-.vp-video-thumb-play:hover {
+.vp-video-thumb-play:hover,
+.vp-video-thumb-play:focus-visible {
     opacity: 0.75;
 }
 
