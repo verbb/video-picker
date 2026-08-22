@@ -53,6 +53,7 @@ class Sources extends Component
         $sourceTypes = [
             sourceTypes\YouTube::class,
             sourceTypes\Vimeo::class,
+            sourceTypes\BunnyStream::class,
             sourceTypes\Dailymotion::class,
             sourceTypes\Mux::class,
             sourceTypes\Wistia::class,
