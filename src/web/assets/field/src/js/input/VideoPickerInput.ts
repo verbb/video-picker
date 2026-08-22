@@ -7,7 +7,8 @@
 import { ExplorerDialog } from '../explorer/ExplorerDialog.js';
 import { PreviewDialog } from '../preview/PreviewDialog.js';
 import { formatErrorHtml } from '../utils/ajaxErrors.js';
-import { formatPlays, formatTimeAgo } from '../utils/formatVideo.js';
+import { debounce, formatPlays, formatTimeAgo } from '../utils/formatVideo.js';
+import { isResolvableVideoUrl } from '../utils/videoUrl.js';
 import { createVideoThumb, type VideoData } from '../video/VideoCard.js';
 
 export type VideoValue = VideoData;
@@ -61,6 +62,8 @@ export class VideoPickerInput {
     private previewHost!: HTMLElement;
     private explorerOpen = false;
     private previewOpen = false;
+    /** Debounced get-video — only runs for complete provider URLs (D05). */
+    private readonly debouncedFetchVideo: (() => void) & { cancel: () => void };
 
     constructor(root: HTMLElement) {
         this.root = root;
@@ -68,6 +71,7 @@ export class VideoPickerInput {
             inputId: '',
             inputName: '',
         });
+        this.debouncedFetchVideo = debounce(() => this.fetchVideo(), 400);
     }
 
     init(): void {
@@ -245,13 +249,83 @@ export class VideoPickerInput {
     }
 
     private bindEvents(): void {
-        // No debounce — BEFORE fetches on every input event.
         this.urlInput.addEventListener('input', () => {
             // Sync hidden before FormObserver’s delayed checkForm (100–1000ms).
             // Do not notifyForm — pk-input’s composed input already woke the observer.
             this.setPostedUrl(this.urlInput.value || null);
-            this.fetchVideo();
+            this.scheduleVideoFetch();
         });
+
+        // Commit incomplete typing: resolve once the URL is complete (or clear).
+        this.urlInput.addEventListener('change', () => {
+            this.commitVideoFetch();
+        });
+        this.urlInput.addEventListener('blur', () => {
+            this.commitVideoFetch();
+        });
+
+        this.urlInput.addEventListener('keydown', (event: Event) => {
+            if ((event as KeyboardEvent).key === 'Enter') {
+                event.preventDefault();
+                this.commitVideoFetch();
+            }
+        });
+    }
+
+    /**
+     * While typing: only queue get-video when the URL matches a provider pattern.
+     * Always keep the posted URL in sync so save works without a preview.
+     */
+    private scheduleVideoFetch(): void {
+        const url = (this.urlInput.value || '').trim();
+
+        if (!url) {
+            this.debouncedFetchVideo.cancel();
+            this.currentVideo = null;
+            this.videoError = null;
+            this.loadingVideo = false;
+            this.syncPreview();
+            return;
+        }
+
+        // Drop stale preview/errors while the typed URL no longer matches the resolved one.
+        if (this.currentVideo?.url && this.currentVideo.url !== url) {
+            this.currentVideo = null;
+            this.videoError = null;
+            this.syncPreview();
+        }
+
+        if (!isResolvableVideoUrl(url)) {
+            this.debouncedFetchVideo.cancel();
+            this.videoError = null;
+            this.loadingVideo = false;
+            this.syncPreview();
+            return;
+        }
+
+        this.debouncedFetchVideo();
+    }
+
+    /** Blur / Enter — fetch immediately when the URL is resolvable. */
+    private commitVideoFetch(): void {
+        this.debouncedFetchVideo.cancel();
+        const url = (this.urlInput.value || '').trim();
+
+        if (!url) {
+            this.currentVideo = null;
+            this.videoError = null;
+            this.loadingVideo = false;
+            this.syncPreview();
+            return;
+        }
+
+        if (!isResolvableVideoUrl(url)) {
+            this.videoError = null;
+            this.syncPreview();
+            return;
+        }
+
+        this.fetchVideo();
     }
 
     private hasSources(): boolean {
@@ -488,19 +562,26 @@ export class VideoPickerInput {
             return;
         }
 
+        const requestedUrl = (this.videoUrl || '').trim();
+
+        // Guard: debounce/commit should only call for resolvable URLs; refresh always allowed.
+        if (!refresh && requestedUrl && !isResolvableVideoUrl(requestedUrl)) {
+            return;
+        }
+
         this.loadingVideo = true;
         this.currentVideo = null;
         this.videoError = null;
         this.syncPreview();
 
-        if (!this.videoUrl) {
+        if (!requestedUrl) {
             this.loadingVideo = false;
             this.syncPreview();
             return;
         }
 
         const data: Record<string, unknown> = {
-            url: this.videoUrl,
+            url: requestedUrl,
             fieldId: this.settings.fieldId,
         };
 
@@ -510,6 +591,11 @@ export class VideoPickerInput {
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-video', { data })
             .then((response: { data: VideoData & { error?: string } }) => {
+                // Ignore stale responses if the user kept typing.
+                if ((this.videoUrl || '').trim() !== requestedUrl) {
+                    return;
+                }
+
                 if (response.data.error) {
                     this.videoError = response.data.error;
                 } else {
@@ -517,9 +603,17 @@ export class VideoPickerInput {
                 }
             })
             .catch((error: unknown) => {
+                if ((this.videoUrl || '').trim() !== requestedUrl) {
+                    return;
+                }
+
                 this.videoError = formatErrorHtml(error);
             })
             .finally(() => {
+                if ((this.videoUrl || '').trim() !== requestedUrl) {
+                    return;
+                }
+
                 this.loadingVideo = false;
                 this.syncPreview();
             });
