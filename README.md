@@ -13,6 +13,7 @@ Video Picker is a Craft CMS plugin that provides a rich experience when dealing 
 
 ## Sources
 - Bunny Stream
+- Cloudflare Stream
 - Dailymotion
 - Mux
 - Vimeo

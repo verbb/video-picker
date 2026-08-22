@@ -54,6 +54,7 @@ class Sources extends Component
             sourceTypes\YouTube::class,
             sourceTypes\Vimeo::class,
             sourceTypes\BunnyStream::class,
+            sourceTypes\CloudflareStream::class,
             sourceTypes\Dailymotion::class,
             sourceTypes\Mux::class,
             sourceTypes\Wistia::class,

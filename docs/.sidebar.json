@@ -22,6 +22,7 @@
         "collapsable": false,
         "children": [
             "providers/bunny-stream",
+            "providers/cloudflare-stream",
             "providers/dailymotion",
             "providers/mux",
             "providers/vimeo",
