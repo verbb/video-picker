@@ -54,6 +54,7 @@ class Sources extends Component
             sourceTypes\YouTube::class,
             sourceTypes\Vimeo::class,
             sourceTypes\Dailymotion::class,
+            sourceTypes\Mux::class,
         ];
 
         $event = new RegisterComponentTypesEvent([

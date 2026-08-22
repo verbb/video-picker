@@ -22,6 +22,7 @@
         "collapsable": false,
         "children": [
             "providers/dailymotion",
+            "providers/mux",
             "providers/vimeo",
             "providers/youtube"
         ]
