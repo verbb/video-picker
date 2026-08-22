@@ -28,6 +28,8 @@ type Source = {
 export type ExplorerDialogOptions = {
     mount: HTMLElement;
     fieldId?: number | null;
+    /** Field setting — ANDed with each source’s supportsSearch. */
+    allowSearch?: boolean;
     video?: VideoData | null;
     onSelect: (video: VideoData) => void;
     onPlay: (video: VideoData) => void;
@@ -194,6 +196,10 @@ export class ExplorerDialog {
     }
 
     private supportsSearch(): boolean {
+        if (this.options.allowSearch === false) {
+            return false;
+        }
+
         return this.currentSource?.supportsSearch ?? true;
     }
 

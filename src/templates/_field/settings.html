@@ -2,9 +2,18 @@
 
 {{ forms.lightswitchField({
     label: 'Show Explorer' | t('video-picker'),
-    instructions: 'Whether to show the video explorer ("Browse videos") button.' | t('video-picker'),
+    instructions: 'Whether to show the video explorer (“Browse videos”) button.' | t('video-picker'),
     name: 'showExplorer',
     on: field.showExplorer,
+    errors: field.getErrors('showExplorer'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Allow URL Input' | t('video-picker'),
+    instructions: 'Whether editors can paste or type a video URL. Turn off for browse-only fields.' | t('video-picker'),
+    name: 'allowUrlInput',
+    on: field.allowUrlInput,
+    errors: field.getErrors('allowUrlInput'),
 }) }}
 
 {{ forms.lightswitchField({
@@ -19,4 +28,58 @@
     instructions: 'Optional placeholder text shown in the field when no video is selected.' | t('video-picker'),
     name: 'placeholder',
     value: field.placeholder ?? '',
+}) }}
+
+<hr>
+
+{{ forms.lightswitchField({
+    label: 'Allow Search' | t('video-picker'),
+    instructions: 'Whether to show search in the explorer when the provider supports it.' | t('video-picker'),
+    name: 'allowSearch',
+    on: field.allowSearch,
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Public Videos Only' | t('video-picker'),
+    instructions: 'Hide private videos when browsing and reject private URLs when resolving.' | t('video-picker'),
+    name: 'publicOnly',
+    on: field.publicOnly,
+}) }}
+
+{{ forms.textField({
+    label: 'Videos Per Page' | t('video-picker'),
+    instructions: 'Override the plugin Videos Per Page setting for this field’s explorer. Leave blank to use the plugin default.' | t('video-picker'),
+    name: 'videosPerPage',
+    value: field.videosPerPage,
+    size: 5,
+    errors: field.getErrors('videosPerPage'),
+}) }}
+
+{{ forms.textField({
+    label: 'Minimum Duration' | t('video-picker'),
+    instructions: 'Minimum video length in seconds. Leave blank for no minimum. Applied when duration is known.' | t('video-picker'),
+    name: 'minDuration',
+    value: field.minDuration,
+    size: 8,
+    unit: 'seconds' | t('app'),
+    errors: field.getErrors('minDuration'),
+}) }}
+
+{{ forms.textField({
+    label: 'Maximum Duration' | t('video-picker'),
+    instructions: 'Maximum video length in seconds. Leave blank for no maximum. Applied when duration is known.' | t('video-picker'),
+    name: 'maxDuration',
+    value: field.maxDuration,
+    size: 8,
+    unit: 'seconds' | t('app'),
+    errors: field.getErrors('maxDuration'),
+}) }}
+
+{{ forms.selectField({
+    label: 'Video Sort' | t('video-picker'),
+    instructions: 'Sort each explorer page after it loads. Provider order leaves results as returned by YouTube/Vimeo. Sorting is best-effort on the current page only.' | t('video-picker'),
+    name: 'videoSort',
+    options: field.videoSortOptions(),
+    value: field.videoSort,
+    errors: field.getErrors('videoSort'),
 }) }}

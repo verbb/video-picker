@@ -73,6 +73,9 @@ abstract class Source extends SavableComponent implements SourceInterface
     public array $authorizationOptions = [];
     public array $scopes = [];
 
+    /** Request-local page size override from a field setting (D02 / S-F02). */
+    private ?int $_videosPerPageOverride = null;
+
 
     // Abstract Methods
     // =========================================================================
@@ -231,18 +234,28 @@ abstract class Source extends SavableComponent implements SourceInterface
         return $this->cache;
     }
 
-    public function getVideos(string $method, array $options = []): array
+    public function getVideos(string $method, array $options = [], ?int $videosPerPage = null): array
     {
         // Explorer AJAX can send arbitrary option bags — only keep known keys, then
         // providers still force page size after merge (D02).
         $options = $this->filterVideoRequestOptions($options);
-        $methodName = 'fetchVideos' . ucwords($method);
+        $previousOverride = $this->_videosPerPageOverride;
 
-        if (method_exists($this, $methodName)) {
-            return $this->{$methodName}($options);
+        if ($videosPerPage !== null) {
+            $this->_videosPerPageOverride = max(1, min(50, $videosPerPage));
         }
 
-        return [];
+        try {
+            $methodName = 'fetchVideos' . ucwords($method);
+
+            if (method_exists($this, $methodName)) {
+                return $this->{$methodName}($options);
+            }
+
+            return [];
+        } finally {
+            $this->_videosPerPageOverride = $previousOverride;
+        }
     }
 
     /**
@@ -288,6 +301,10 @@ abstract class Source extends SavableComponent implements SourceInterface
 
     public function getVideosPerPage(): int
     {
+        if ($this->_videosPerPageOverride !== null) {
+            return $this->_videosPerPageOverride;
+        }
+
         // Clamp so callers / settings cannot mint oversized provider pages.
         return max(1, min(50, (int)VideoPicker::$plugin->getSettings()->videosPerPage));
     }

@@ -55,9 +55,48 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
     /** Shown in the empty URL control (e.g. “Enter a video URL”). */
     public ?string $placeholder = null;
 
+    /** When false, editors must use Browse (no URL paste/typing). */
+    public bool $allowUrlInput = true;
+
+    /** When false, hide explorer search even if the provider supports it. */
+    public bool $allowSearch = true;
+
+    /** Hide private videos in the explorer and reject private URL resolves. */
+    public bool $publicOnly = false;
+
+    /** Optional per-field page size; null = plugin Videos Per Page. */
+    public ?int $videosPerPage = null;
+
+    /** Minimum duration in seconds (inclusive); null = no minimum. */
+    public ?int $minDuration = null;
+
+    /** Maximum duration in seconds (inclusive); null = no maximum. */
+    public ?int $maxDuration = null;
+
+    /**
+     * Client-side sort of each explorer page after fetch.
+     * Empty = provider order. Values: dateAsc, dateDesc, playsDesc, titleAsc.
+     */
+    public string $videoSort = '';
+
 
     // Public Methods
     // =========================================================================
+
+    public function setVideosPerPage(mixed $value): void
+    {
+        $this->videosPerPage = ($value === '' || $value === null) ? null : (int)$value;
+    }
+
+    public function setMinDuration(mixed $value): void
+    {
+        $this->minDuration = ($value === '' || $value === null) ? null : (int)$value;
+    }
+
+    public function setMaxDuration(mixed $value): void
+    {
+        $this->maxDuration = ($value === '' || $value === null) ? null : (int)$value;
+    }
 
     public function getPreviewHtml(mixed $value, ElementInterface $element): string
     {
@@ -146,6 +185,8 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             'value' => $value,
             'showExplorer' => $this->showExplorer,
             'showPreview' => $this->showPreview,
+            'allowUrlInput' => $this->allowUrlInput,
+            'allowSearch' => $this->allowSearch,
             'placeholder' => $this->placeholder,
             'sourceCount' => $sourceCount,
             'sourceWarning' => $sourceWarning ? Markdown::processParagraph($sourceWarning) : '',
@@ -176,6 +217,10 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             $video = VideoPicker::$plugin->getVideos()->getVideoByUrl($value, false, $this);
 
             if ($video) {
+                if ($reason = $this->selectionPolicyError($video)) {
+                    $video->addError('url', $reason);
+                }
+
                 return $video;
             }
 
@@ -341,4 +386,145 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
 
         return $videoType;
     }
+
+    /**
+     * Effective explorer/API page size for this field.
+     */
+    public function resolveVideosPerPage(): int
+    {
+        if ($this->videosPerPage !== null) {
+            return max(1, min(50, $this->videosPerPage));
+        }
+
+        $settings = VideoPicker::$plugin->getSettings();
+
+        return max(1, min(50, (int)$settings->videosPerPage));
+    }
+
+    /**
+     * @return string[] Craft select options for videoSort.
+     */
+    public static function videoSortOptions(): array
+    {
+        return [
+            '' => Craft::t('video-picker', 'Provider order'),
+            'dateDesc' => Craft::t('video-picker', 'Newest first'),
+            'dateAsc' => Craft::t('video-picker', 'Oldest first'),
+            'playsDesc' => Craft::t('video-picker', 'Most plays'),
+            'titleAsc' => Craft::t('video-picker', 'Title A–Z'),
+        ];
+    }
+
+    /**
+     * Whether a resolved video may be selected under this field’s policy.
+     */
+    public function selectionPolicyError(?Video $video): ?string
+    {
+        if (!$video || $video->hasErrors()) {
+            return null;
+        }
+
+        if ($this->publicOnly && $video->private) {
+            return Craft::t('video-picker', 'Private videos are not allowed for this field.');
+        }
+
+        $duration = $video->duration;
+
+        if ($duration !== null) {
+            if ($this->minDuration !== null && $duration < $this->minDuration) {
+                return Craft::t('video-picker', 'This video is shorter than the minimum duration for this field.');
+            }
+
+            if ($this->maxDuration !== null && $duration > $this->maxDuration) {
+                return Craft::t('video-picker', 'This video is longer than the maximum duration for this field.');
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Filter + sort Video models for explorer pages (best-effort on the current page).
+     *
+     * @param Video[] $videos
+     * @return Video[]
+     */
+    public function applyExplorerVideoPolicy(array $videos): array
+    {
+        $filtered = [];
+
+        foreach ($videos as $video) {
+            if (!$video instanceof Video) {
+                continue;
+            }
+
+            if ($this->selectionPolicyError($video)) {
+                continue;
+            }
+
+            $filtered[] = $video;
+        }
+
+        return $this->sortVideos($filtered);
+    }
+
+    /**
+     * @param Video[] $videos
+     * @return Video[]
+     */
+    public function sortVideos(array $videos): array
+    {
+        $sort = $this->videoSort;
+
+        if ($sort === '' || !isset(self::videoSortOptions()[$sort])) {
+            return array_values($videos);
+        }
+
+        usort($videos, static function(Video $a, Video $b) use ($sort): int {
+            return match ($sort) {
+                'dateAsc' => ($a->date?->getTimestamp() ?? 0) <=> ($b->date?->getTimestamp() ?? 0),
+                'dateDesc' => ($b->date?->getTimestamp() ?? 0) <=> ($a->date?->getTimestamp() ?? 0),
+                'playsDesc' => ($b->plays ?? 0) <=> ($a->plays ?? 0),
+                'titleAsc' => strcasecmp((string)$a->title, (string)$b->title),
+                default => 0,
+            };
+        });
+
+        return array_values($videos);
+    }
+
+    public function defineRules(): array
+    {
+        $rules = parent::defineRules();
+
+        $rules[] = [[
+            'showExplorer',
+            'showPreview',
+            'allowUrlInput',
+            'allowSearch',
+            'publicOnly',
+        ], 'boolean'];
+        $rules[] = [['videosPerPage'], 'number', 'integerOnly' => true, 'min' => 1, 'max' => 50, 'skipOnEmpty' => true];
+        $rules[] = [['minDuration', 'maxDuration'], 'number', 'integerOnly' => true, 'min' => 0, 'skipOnEmpty' => true];
+        $rules[] = [['videoSort'], 'in', 'range' => array_keys(self::videoSortOptions())];
+        $rules[] = [['allowUrlInput'], 'validateSelectionMode'];
+
+        return $rules;
+    }
+
+    public function validateSelectionMode(string $attribute): void
+    {
+        if (!$this->allowUrlInput && !$this->showExplorer) {
+            $this->addError($attribute, Craft::t('video-picker', 'Enable URL input and/or Show Explorer so editors can select a video.'));
+        }
+
+        if (
+            $this->minDuration !== null
+            && $this->maxDuration !== null
+            && $this->minDuration > $this->maxDuration
+        ) {
+            $this->addError('minDuration', Craft::t('video-picker', 'Minimum duration cannot be greater than maximum duration.'));
+        }
+    }
+
 }

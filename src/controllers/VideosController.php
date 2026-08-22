@@ -53,6 +53,10 @@ class VideosController extends Controller
         $options = $this->request->getParam('options') ?? [];
         $field = $this->_getVideoPickerField();
 
+        if ($method === 'search' && !$field->allowSearch) {
+            throw new BadRequestHttpException(Craft::t('video-picker', 'Search is disabled for this field.'));
+        }
+
         // Reject browse requests for sources the field does not allow.
         $source = VideoPicker::$plugin->getSources()->getSourceByHandleForField($sourceHandle, $field);
 
@@ -62,11 +66,11 @@ class VideosController extends Controller
             ]));
         }
 
-        $videosResponse = $source->getVideos($method, $options);
+        $videosResponse = $source->getVideos($method, $options, $field->resolveVideosPerPage());
 
         $videos = [];
 
-        foreach (($videosResponse['videos'] ?? []) as $video) {
+        foreach ($field->applyExplorerVideoPolicy($videosResponse['videos'] ?? []) as $video) {
             $videos[] = $video->getVideoData();
         }
 
@@ -95,6 +99,10 @@ class VideosController extends Controller
                 ?: Craft::t('video-picker', 'Unable to find the video.');
 
             return $this->asErrorJson($message);
+        }
+
+        if ($reason = $field->selectionPolicyError($video)) {
+            return $this->asErrorJson($reason);
         }
 
         return $this->asJson($video->getVideoData());

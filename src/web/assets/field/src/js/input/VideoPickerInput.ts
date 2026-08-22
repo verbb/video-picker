@@ -20,6 +20,8 @@ export interface VideoPickerSettings {
     value?: VideoValue | null;
     showExplorer?: boolean;
     showPreview?: boolean;
+    allowUrlInput?: boolean;
+    allowSearch?: boolean;
     /** Empty URL control hint; falls back to “Enter a video URL” when unset. */
     placeholder?: string | null;
     sourceCount?: number;
@@ -52,6 +54,8 @@ export class VideoPickerInput {
     private videoUrl: string | null = null;
     private enableExplorer = true;
     private enablePreview = true;
+    private allowUrlInput = true;
+    private allowSearch = true;
     private currentVideo: VideoData | null = null;
 
     private wrap!: HTMLElement;
@@ -77,6 +81,8 @@ export class VideoPickerInput {
     init(): void {
         this.enableExplorer = Boolean(this.settings.showExplorer);
         this.enablePreview = Boolean(this.settings.showPreview);
+        this.allowUrlInput = this.settings.allowUrlInput !== false;
+        this.allowSearch = this.settings.allowSearch !== false;
         this.currentVideo = this.settings.value ?? null;
         this.videoUrl = this.currentVideo?.url ?? null;
 
@@ -108,21 +114,38 @@ export class VideoPickerInput {
         const urlRow = document.createElement('div');
         urlRow.className = 'vp-input-row';
 
-        // Nameless on purpose — Craft FormObserver uses jQuery serialize, which
-        // ignores ElementInternals / form-associated custom elements.
-        this.urlInput = document.createElement('pk-input') as PkInputElement;
-        this.urlInput.setAttribute('placeholder', this.placeholder);
-        this.associateCraftFieldLabel();
+        if (this.allowUrlInput) {
+            // Nameless on purpose — Craft FormObserver uses jQuery serialize, which
+            // ignores ElementInternals / form-associated custom elements.
+            this.urlInput = document.createElement('pk-input') as PkInputElement;
+            this.urlInput.setAttribute('placeholder', this.placeholder);
+            this.associateCraftFieldLabel();
 
-        // Display only — posted value stays on the SSR hidden unless it actually differs.
-        const displayUrl = this.valueInput.value || this.videoUrl || '';
-        this.videoUrl = displayUrl || null;
+            // Display only — posted value stays on the SSR hidden unless it actually differs.
+            const displayUrl = this.valueInput.value || this.videoUrl || '';
+            this.videoUrl = displayUrl || null;
 
-        if (displayUrl) {
-            this.urlInput.value = displayUrl;
+            if (displayUrl) {
+                this.urlInput.value = displayUrl;
+            }
+
+            urlRow.appendChild(this.urlInput);
+        } else {
+            // Browse-only: keep a display-only URL when a video is already selected.
+            this.urlInput = document.createElement('pk-input') as PkInputElement;
+            this.urlInput.setAttribute('readonly', '');
+            this.urlInput.toggleAttribute('disabled', true);
+            this.urlInput.setAttribute(
+                'placeholder',
+                Craft.t('video-picker', 'Browse videos to select…'),
+            );
+            const displayUrl = this.valueInput.value || this.videoUrl || '';
+            this.videoUrl = displayUrl || null;
+            if (displayUrl) {
+                this.urlInput.value = displayUrl;
+            }
+            urlRow.appendChild(this.urlInput);
         }
-
-        urlRow.appendChild(this.urlInput);
 
         if (this.hasSources() && this.enableExplorer) {
             // Link chrome + absolute placement matches BEFORE’s in-field “Browse videos…” control.
@@ -249,6 +272,10 @@ export class VideoPickerInput {
     }
 
     private bindEvents(): void {
+        if (!this.allowUrlInput) {
+            return;
+        }
+
         this.urlInput.addEventListener('input', () => {
             // Sync hidden before FormObserver’s delayed checkForm (100–1000ms).
             // Do not notifyForm — pk-input’s composed input already woke the observer.
@@ -527,11 +554,15 @@ export class VideoPickerInput {
         new ExplorerDialog({
             mount: this.root,
             fieldId: this.settings.fieldId,
+            allowSearch: this.allowSearch,
             video: this.currentVideo,
             onSelect: (video) => {
                 this.currentVideo = video;
                 this.videoError = null;
                 this.setPostedUrl(video.url ?? null, { notifyForm: true });
+                if (this.urlInput) {
+                    this.urlInput.value = video.url ?? '';
+                }
                 this.syncPreview();
             },
             onPlay: (video) => this.openPreview(video),
