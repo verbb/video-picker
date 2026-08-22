@@ -55,6 +55,7 @@ class Sources extends Component
             sourceTypes\Vimeo::class,
             sourceTypes\Dailymotion::class,
             sourceTypes\Mux::class,
+            sourceTypes\Wistia::class,
         ];
 
         $event = new RegisterComponentTypesEvent([

@@ -24,6 +24,7 @@
             "providers/dailymotion",
             "providers/mux",
             "providers/vimeo",
+            "providers/wistia",
             "providers/youtube"
         ]
     },
