@@ -52,6 +52,18 @@
 }) }}
 
 {{ forms.textField({
+    label: 'Embed Error Cache Duration' | t('video-picker'),
+    instructions: 'How long (in seconds) to remember a failed Twig embed crawl so the same URL is not retried every request. Default 60. Set to 0 to disable.' | t('video-picker'),
+    id: 'embedErrorCacheDuration',
+    name: 'embedErrorCacheDuration',
+    value: settings.embedErrorCacheDuration,
+    size: 10,
+    unit: 'seconds' | t('app'),
+    errors: settings.getErrors('embedErrorCacheDuration'),
+    warning: macros.configWarning('embedErrorCacheDuration', 'video-picker'),
+}) }}
+
+{{ forms.textField({
     label: 'Video Cache Duration' | t('video-picker'),
     instructions: 'How long (in seconds) to trust selected-video metadata in the database before revalidating. Expired entries still show the last snapshot while a refresh is attempted. Minimum 3600 (1 hour).' | t('video-picker'),
     id: 'videoCacheDuration',

@@ -3,6 +3,7 @@ namespace verbb\videopicker\variables;
 
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\base\SourceInterface;
+use verbb\videopicker\helpers\Plugin as PluginHelper;
 use verbb\videopicker\models\Video;
 
 use Throwable;
@@ -71,6 +72,11 @@ class VideoPickerVariable
     public function getEmbedData(string $url): array
     {
         return VideoPicker::$plugin->getVideos()->getEmbedData($url);
+    }
+
+    public function registerCpStyles(): void
+    {
+        PluginHelper::registerCpStyles();
     }
     
 }

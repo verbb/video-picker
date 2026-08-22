@@ -228,22 +228,16 @@ class Videos extends Component
         /* @var Settings $settings */
         $settings = VideoPicker::$plugin->getSettings();
 
+        $cacheKey = $this->_embedCacheKey($url, $settings);
+        $cached = Craft::$app->getCache()->get($cacheKey);
+
+        // Success and short-lived error payloads share this key.
+        if ($cached !== false && is_array($cached)) {
+            return $cached;
+        }
+
         try {
             EmbedUrl::assertAllowed($url, $settings->embedAllowedDomains);
-
-            $cacheKey = 'video-picker:embed:' . md5(Json::encode([
-                $url,
-                $settings->embedAllowedDomains,
-                $settings->embedClientSettings,
-                $settings->embedDetectorsSettings,
-                $settings->resolveHiResEmbedImage,
-            ]));
-
-            $cached = Craft::$app->getCache()->get($cacheKey);
-
-            if ($cached !== false && is_array($cached)) {
-                return $cached;
-            }
 
             if (class_exists(CurlClient::class)) {
                 // Handle Embed v4 support
@@ -297,12 +291,7 @@ class Videos extends Component
                     $data['code'] = '<iframe src="' . $info->url . '"></iframe>';
                 }
 
-                Craft::$app->getCache()->set(
-                    $cacheKey,
-                    $data,
-                    max(60, (int)$settings->embedCacheDuration),
-                    new TagDependency(['tags' => ['video-picker-embed']]),
-                );
+                $this->_storeEmbedCache($cacheKey, $data, max(60, (int)$settings->embedCacheDuration));
 
                 return $data;
             }
@@ -338,12 +327,7 @@ class Videos extends Component
                 $data['code'] = '<iframe src="' . $info->url . '"></iframe>';
             }
 
-            Craft::$app->getCache()->set(
-                $cacheKey,
-                $data,
-                max(60, (int)$settings->embedCacheDuration),
-                new TagDependency(['tags' => ['video-picker-embed']]),
-            );
+            $this->_storeEmbedCache($cacheKey, $data, max(60, (int)$settings->embedCacheDuration));
 
             return $data;
         } catch (Throwable $e) {
@@ -356,16 +340,46 @@ class Videos extends Component
 
             VideoPicker::error($error);
 
-            return ['error' => Craft::t('video-picker', 'Unable to fetch embed data for “{url}”: “{message}”', [
+            $payload = ['error' => Craft::t('video-picker', 'Unable to fetch embed data for “{url}”: “{message}”', [
                 'url' => $url,
                 'message' => $e->getMessage(),
             ])];
+
+            // Short negative TTL — avoids hammering dead URLs every Twig render (D06).
+            $errorTtl = max(0, (int)$settings->embedErrorCacheDuration);
+
+            if ($errorTtl > 0) {
+                $this->_storeEmbedCache($cacheKey, $payload, $errorTtl);
+            }
+
+            return $payload;
         }
     }
 
 
     // Private Methods
     // =========================================================================
+
+    private function _embedCacheKey(string $url, Settings $settings): string
+    {
+        return 'video-picker:embed:' . md5(Json::encode([
+            $url,
+            $settings->embedAllowedDomains,
+            $settings->embedClientSettings,
+            $settings->embedDetectorsSettings,
+            $settings->resolveHiResEmbedImage,
+        ]));
+    }
+
+    private function _storeEmbedCache(string $cacheKey, array $data, int $duration): void
+    {
+        Craft::$app->getCache()->set(
+            $cacheKey,
+            $data,
+            $duration,
+            new TagDependency(['tags' => ['video-picker-embed']]),
+        );
+    }
 
     /**
      * @param SourceInterface[] $sources

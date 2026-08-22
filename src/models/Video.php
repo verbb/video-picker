@@ -104,6 +104,10 @@ class Video extends Model
 
     public function getFormattedDuration(): string
     {
+        if ($this->duration === null) {
+            return '';
+        }
+
         $hours = intdiv($this->duration, 3600);
         $minutes = intdiv($this->duration % 3600, 60);
         $seconds = $this->duration % 60;
@@ -122,6 +126,10 @@ class Video extends Model
 
     public function getDuration8601(): string
     {
+        if ($this->duration === null) {
+            return '';
+        }
+
         $hours = intdiv($this->duration, 3600);
         $minutes = intdiv($this->duration % 3600, 60);
         $seconds = $this->duration % 60;
@@ -141,20 +149,37 @@ class Video extends Model
 
     public function getThumbnail(int $width = 600): ?string
     {
+        if (!$this->thumbnails) {
+            return null;
+        }
+
         $closestThumbnail = null;
         $smallestDifference = PHP_INT_MAX;
+        $firstUrl = null;
 
-        // Find the thumbnail that most closely matches the width
+        // Find the thumbnail that most closely matches the width when dimensions exist.
         foreach ($this->thumbnails as $thumbnail) {
-            $difference = abs($thumbnail['width'] - $width);
+            $url = $thumbnail['url'] ?? null;
+
+            if (!$url) {
+                continue;
+            }
+
+            $firstUrl ??= $url;
+
+            if (!isset($thumbnail['width'])) {
+                continue;
+            }
+
+            $difference = abs((int)$thumbnail['width'] - $width);
 
             if ($difference < $smallestDifference) {
                 $smallestDifference = $difference;
-                $closestThumbnail = $thumbnail['url'];
+                $closestThumbnail = $url;
             }
         }
 
-        return $closestThumbnail;
+        return $closestThumbnail ?? $firstUrl;
     }
 
     public function getEmbedHtml(array $options = []): ?string

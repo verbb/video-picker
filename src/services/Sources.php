@@ -121,9 +121,8 @@ class Sources extends Component
      * Each source’s `fields` setting: `*` / null → all fields; `[]` → none;
      * otherwise a list of field UIDs.
      *
-     * @param bool $usableOnly When true (default), only configured + connected sources
-     *                         (explorer / URL fetch). Pass false to include disconnected
-     *                         sources for messaging / admin checks.
+     * @param bool $usableOnly When true (default), only sources that are configured and
+     *                         ready to use (OAuth connected, or credentials saved).
      * @return SourceInterface[]
      */
     public function getSourcesForField(?Field $field, bool $usableOnly = true): array
@@ -149,7 +148,7 @@ class Sources extends Component
         // Explorer + URL resolve need a live provider session — not merely enabled.
         return array_values(array_filter(
             $sources,
-            static fn(SourceInterface $source) => $source->isConfigured() && $source->isConnected(),
+            static fn(SourceInterface $source) => $source->isUsable(),
         ));
     }
 
@@ -273,6 +272,7 @@ class Sources extends Component
 
             if ($previousType !== get_class($source) || $prevComparable != $newComparable) {
                 $source->clearExplorerCache();
+                $source->clearConnectionCache();
             }
         }
 
@@ -341,7 +341,9 @@ class Sources extends Component
 
         try {
             // Drop OAuth tokens + tagged provider cache before the row goes away.
-            Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
+            if ($source::supportsConnection()) {
+                Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
+            }
             $source->clearLocalCache();
 
             Craft::$app->getDb()->createCommand()

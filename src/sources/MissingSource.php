@@ -7,8 +7,6 @@ use Craft;
 use craft\base\MissingComponentInterface;
 use craft\base\MissingComponentTrait;
 
-use yii\base\NotSupportedException;
-
 class MissingSource extends Source implements MissingComponentInterface
 {
     // Traits
@@ -23,11 +21,6 @@ class MissingSource extends Source implements MissingComponentInterface
     public static function displayName(): string
     {
         return Craft::t('video-picker', 'Missing Source');
-    }
-
-    public static function getOAuthProviderClass(): string
-    {
-        throw new NotSupportedException('getOAuthProviderClass() is not implemented.');
     }
 
 

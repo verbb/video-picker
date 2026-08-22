@@ -153,26 +153,54 @@
         {% endif %}
     </div>
 
-    {% if source.isConnected %}
-        <div class="field lightswitch-field vp-connect">
-            <div class="heading">
-                <span class="status on"></span>{{ 'Connected' | t('video-picker') }}
-            </div>
+    {% if source.id and source.supportsConnection() %}
+        {% if source.supportsOAuthConnection() %}
+            {% if source.isConnected %}
+                <div class="field lightswitch-field vp-connect vp-connect-oauth">
+                    <div class="heading">
+                        <span class="status on"></span>{{ 'Connected' | t('video-picker') }}
+                    </div>
 
-            <div class="input ltr">
-                <a class="btn small formsubmit" data-action="video-picker/auth/disconnect" data-param="source" data-value="{{ source.handle }}" data-redirect="{{ saveShortcutRedirect | hash }}">{{ 'Disconnect' | t('video-picker') }}</a>
-            </div>
-        </div>
-    {% else %}
-        <div class="field lightswitch-field vp-connect">
-            <div class="heading">
-                <span class="status disabled"></span><span class="light">{{ 'Not Connected' | t('video-picker') }}</span>
-            </div>
+                    <div class="input ltr">
+                        <a class="btn small formsubmit" data-action="video-picker/auth/disconnect" data-param="source" data-value="{{ source.handle }}" data-redirect="{{ saveShortcutRedirect | hash }}">{{ 'Disconnect' | t('video-picker') }}</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="field lightswitch-field vp-connect vp-connect-oauth">
+                    <div class="heading">
+                        <span class="status disabled"></span><span class="light">{{ 'Not Connected' | t('video-picker') }}</span>
+                    </div>
 
-            <div class="input ltr">
-                <a class="btn small formsubmit" data-action="video-picker/auth/connect" data-param="source" data-value="{{ source.handle }}" data-redirect="{{ '{cpEditUrl}' | hash }}">{{ 'Connect' | t('video-picker') }}</a>
+                    <div class="input ltr">
+                        <a class="btn small formsubmit" data-action="video-picker/auth/connect" data-param="source" data-value="{{ source.handle }}" data-redirect="{{ '{cpEditUrl}' | hash }}">{{ 'Connect' | t('video-picker') }}</a>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            {% set connectionStatus = source.getConnectionStatus() %}
+            <div class="field lightswitch-field vp-connect vp-connect-credentials" data-connection-status="{{ connectionStatus }}">
+                <div class="heading">
+                    <pk-status
+                        status="{% if connectionStatus == 'connected' %}on{% elseif connectionStatus == 'error' %}off{% else %}disabled{% endif %}"
+                        class="vp-connect-status-icon"
+                    ></pk-status><span class="vp-connect-status{% if connectionStatus != 'connected' and connectionStatus != 'error' %} light{% endif %}">
+                        {% if connectionStatus == 'connected' %}
+                            {{ 'Connected' | t('video-picker') }}
+                        {% elseif connectionStatus == 'error' %}
+                            {{ 'Error' | t('video-picker') }}
+                        {% else %}
+                            {{ 'Not Connected' | t('video-picker') }}
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="input ltr">
+                    <pk-button type="button" size="xs" variant="default" class="vp-connect-refresh" spinner-size="xs">
+                        {{ connectionStatus == 'connected' ? 'Refresh' | t('video-picker') : 'Connect' | t('video-picker') }}
+                    </pk-button>
+                </div>
             </div>
-        </div>
+        {% endif %}
     {% endif %}
 </div>
 
@@ -201,18 +229,50 @@
 
 {% endblock %}
 
+{% if source.id and source.supportsConnection() and not source.supportsOAuthConnection() %}
+    {% set sourceConnectSettings = {
+        sourceId: source.id,
+        type: className(source),
+        status: source.getConnectionStatus(),
+        connectedLabel: 'Connected' | t('video-picker'),
+        notConnectedLabel: 'Not Connected' | t('video-picker'),
+        connectingLabel: 'Connecting…' | t('video-picker'),
+        errorLabel: 'Error' | t('video-picker'),
+        connectLabel: 'Connect' | t('video-picker'),
+        refreshLabel: 'Refresh' | t('video-picker'),
+        saveToConnectLabel: 'Save this source to connect.' | t('video-picker'),
+        errorHeadingLabel: 'Connection error' | t('video-picker'),
+        genericErrorLabel: 'Unable to connect to the provider.' | t('video-picker'),
+    } %}
+{% endif %}
+
 {% js %}
+{% if sourceConnectSettings is defined %}
+(() => {
+    const settings = {{ sourceConnectSettings | json_encode | raw }};
+    const mount = () => {
+        if (!customElements.get('pk-button') || !customElements.get('pk-status')) {
+            window.setTimeout(mount, 25);
+            return;
+        }
+
+        new Craft.VideoPicker.SourceConnect(document.querySelector('.vp-connect-credentials'), settings);
+    };
+
+    mount();
+})();
+{% endif %}
 
 // Add event listeners to all form inputs, to detect a change. Show a message to save when changed.
 $(document).ready(function() {
     var html = '<div class="heading"><span class="warning with-icon">{{ 'Save this source to connect.' | t('video-picker') }}</span></div>';
     
     $('#main-form').find('input, select, textarea').on('input', function() {
-        $('.vp-connect').html(html);
+        $('.vp-connect-oauth').html(html);
     });
 
     $('#main-form').find('.lightswitch').on('change', function() {
-        $('.vp-connect').html(html);
+        $('.vp-connect-oauth').html(html);
     });
 });
 

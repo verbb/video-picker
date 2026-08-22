@@ -15,7 +15,34 @@ abstract class OAuthSource extends Source implements OAuthProviderInterface
     // =========================================================================
 
     use OAuthProviderTrait;
-    
+
+
+    // Static Methods
+    // =========================================================================
+
+    public static function supportsConnection(): bool
+    {
+        return true;
+    }
+
+    public static function supportsOAuthConnection(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Required by Auth {@see OAuthProviderTrait} — not part of the base Source contract.
+     */
+    abstract public static function getOAuthProviderClass(): string;
+
+
+    // Properties
+    // =========================================================================
+
+    // Set via config files
+    public array $authorizationOptions = [];
+    public array $scopes = [];
+
 
     // Public Methods
     // =========================================================================
@@ -26,6 +53,7 @@ abstract class OAuthSource extends Source implements OAuthProviderInterface
         $attributes = parent::settingsAttributes();
         $attributes[] = 'clientId';
         $attributes[] = 'clientSecret';
+        $attributes[] = 'scopes';
 
         return $attributes;
     }
@@ -51,6 +79,16 @@ abstract class OAuthSource extends Source implements OAuthProviderInterface
     public function isConnected(): bool
     {
         return (bool)$this->getToken();
+    }
+
+    public function supportsBrowse(): bool
+    {
+        return true;
+    }
+
+    public function supportsSearch(): bool
+    {
+        return true;
     }
 
     public function getRedirectUri(): ?string
@@ -89,5 +127,10 @@ abstract class OAuthSource extends Source implements OAuthProviderInterface
         }
 
         return null;
+    }
+
+    public function checkConnection(bool $useCache = true): bool
+    {
+        return $this->isConnected();
     }
 }

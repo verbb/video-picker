@@ -27,8 +27,28 @@ use GuzzleHttp\Exception\RequestException;
 
 abstract class Source extends SavableComponent implements SourceInterface
 {
+    // Constants
+    // =========================================================================
+
+    public const TYPE_CREDENTIALS = 'credentials';
+    public const TYPE_OAUTH = 'oauth';
+
+    public const CONNECT_SUCCESS = 'success';
+    public const CONNECT_FAIL = 'fail';
+
+
     // Static Methods
     // =========================================================================
+
+    public static function supportsConnection(): bool
+    {
+        return false;
+    }
+
+    public static function supportsOAuthConnection(): bool
+    {
+        return false;
+    }
 
     public static function apiError($source, $exception, $throwError = true): void
     {
@@ -69,18 +89,8 @@ abstract class Source extends SavableComponent implements SourceInterface
      */
     public mixed $fields = '*';
 
-    // Set via config files
-    public array $authorizationOptions = [];
-    public array $scopes = [];
-
     /** Request-local page size override from a field setting (D02 / S-F02). */
     private ?int $_videosPerPageOverride = null;
-
-
-    // Abstract Methods
-    // =========================================================================
-
-    abstract public static function getOAuthProviderClass(): string;
 
 
     // Public Methods
@@ -168,9 +178,14 @@ abstract class Source extends SavableComponent implements SourceInterface
         return UrlHelper::cpUrl('video-picker/sources/' . $this->handle);
     }
 
+    public function supportsBrowse(): bool
+    {
+        return false;
+    }
+
     public function supportsSearch(): bool
     {
-        return true;
+        return false;
     }
 
     public function isConnected(): bool
@@ -184,6 +199,46 @@ abstract class Source extends SavableComponent implements SourceInterface
     public function isConfigured(): bool
     {
         return false;
+    }
+
+    public function isUsable(): bool
+    {
+        return $this->isConfigured() && (!$this->supportsConnection() || $this->isConnected());
+    }
+
+    public function checkConnection(bool $useCache = true): bool
+    {
+        return false;
+    }
+
+    /**
+     * CP sidebar status: connected, disconnected, or error (credentials check failed).
+     */
+    public function getConnectionStatus(): string
+    {
+        if (!$this->supportsConnection()) {
+            return $this->isConnected() ? 'connected' : 'disconnected';
+        }
+
+        if ($this::supportsOAuthConnection()) {
+            return $this->isConnected() ? 'connected' : 'disconnected';
+        }
+
+        if (!$this->isConfigured()) {
+            return 'disconnected';
+        }
+
+        $cached = $this->getConnectionCache();
+
+        if ($cached === self::CONNECT_SUCCESS) {
+            return 'connected';
+        }
+
+        if ($cached === self::CONNECT_FAIL) {
+            return 'error';
+        }
+
+        return 'disconnected';
     }
 
     public function getSettingsHtml(): ?string
@@ -201,37 +256,41 @@ abstract class Source extends SavableComponent implements SourceInterface
      */
     public function getExplorerData(bool $clearCache = false, bool $includeSections = true): array
     {
+        $explorerSections = $includeSections
+            ? $this->getExplorerSections($clearCache)
+            : $this->_getExplorerCache();
+
         return [
             'name' => $this->name,
             'handle' => $this->handle,
+            'supportsBrowse' => $this->supportsBrowse(),
             'supportsSearch' => $this->supportsSearch(),
             // Lazy explorer: skip provider collection discovery unless this source is hydrated.
-            'sections' => $includeSections
-                ? $this->getExplorerSections($clearCache)
-                : ($this->cache ?: []),
+            'sections' => $explorerSections,
         ];
     }
 
     public function getExplorerSections(bool $clearCache = false): array
     {
         if ($clearCache) {
-            $this->cache = [];
+            $this->_setExplorerCache([]);
 
             // Clear the data cache as well for locally cached items
             TagDependency::invalidate(Craft::$app->getCache(), $this->_getLocalCacheTag());
+            $this->_persistSourceCache();
         }
+
+        $explorerCache = $this->_getExplorerCache();
 
         // Use the cache of explorer data, if available
-        if ($this->cache) {
-            return $this->cache;
+        if ($explorerCache) {
+            return $explorerCache;
         }
 
-        $this->cache = $this->fetchExplorerSections();
+        $this->_setExplorerCache($this->fetchExplorerSections());
+        $this->_persistSourceCache();
 
-        // Direct DB update to keep it out of PC, plus speed
-        Db::update('{{%video_picker_sources}}', ['cache' => Json::encode($this->cache)], ['id' => $this->id]);
-
-        return $this->cache;
+        return $this->_getExplorerCache();
     }
 
     public function getVideos(string $method, array $options = [], ?int $videosPerPage = null): array
@@ -472,13 +531,19 @@ abstract class Source extends SavableComponent implements SourceInterface
      */
     public function clearExplorerCache(): void
     {
-        $this->cache = [];
-
-        if ($this->id) {
-            Db::update('{{%video_picker_sources}}', ['cache' => null], ['id' => $this->id]);
-        }
-
+        $this->_setExplorerCache([]);
+        $this->_persistSourceCache();
         $this->clearLocalCache();
+    }
+
+    /**
+     * Drop persisted credential connection status (Formie `cache.connection` pattern).
+     */
+    public function clearConnectionCache(): void
+    {
+        $this->_setConnectionCache(null);
+        $this->_persistSourceCache();
+        $this->_deleteLegacyConnectionCache();
     }
 
 
@@ -488,6 +553,19 @@ abstract class Source extends SavableComponent implements SourceInterface
     protected function fetchExplorerSections(): array
     {
         return [];
+    }
+
+    protected function getConnectionCache(): ?string
+    {
+        $connection = $this->_getConnectionCache();
+
+        return is_string($connection) ? $connection : null;
+    }
+
+    protected function setConnectionCache(string $status): void
+    {
+        $this->_setConnectionCache($status);
+        $this->_persistSourceCache();
     }
 
 
@@ -519,6 +597,12 @@ abstract class Source extends SavableComponent implements SourceInterface
 
         if (property_exists($this, 'clientId') && $this->clientId) {
             $parts[] = (string)$this->clientId;
+        }
+
+        foreach (['accessToken', 'apiKey', 'apiSecret', 'tokenId', 'tokenSecret', 'channelUser'] as $attr) {
+            if (property_exists($this, $attr) && $this->{$attr}) {
+                $parts[] = md5((string)$this->{$attr});
+            }
         }
 
         if (method_exists($this, 'getToken')) {
@@ -559,5 +643,83 @@ abstract class Source extends SavableComponent implements SourceInterface
         $id = $this->uid ?: $this->handle;
 
         return implode('__', ['video-picker', $id]);
+    }
+
+    private function _getConnectionCacheKey(): string
+    {
+        return 'video-picker:connection:' . ($this->uid ?: $this->handle);
+    }
+
+    /**
+     * Normalize the persisted `cache` column (legacy explorer list → structured bag).
+     */
+    private function _normalizeSourceCache(): void
+    {
+        if (is_string($this->cache)) {
+            $this->cache = Json::decode($this->cache) ?: [];
+        }
+
+        if (!is_array($this->cache)) {
+            $this->cache = [];
+        }
+
+        // Legacy installs stored explorer sections as a root-level list.
+        if ($this->cache !== [] && array_is_list($this->cache)) {
+            $this->cache = [
+                'explorer' => $this->cache,
+                'connection' => null,
+            ];
+        }
+
+        if (!array_key_exists('explorer', $this->cache) || !is_array($this->cache['explorer'])) {
+            $this->cache['explorer'] = [];
+        }
+
+        if (!array_key_exists('connection', $this->cache)) {
+            $this->cache['connection'] = null;
+        }
+    }
+
+    private function _getExplorerCache(): array
+    {
+        $this->_normalizeSourceCache();
+
+        return $this->cache['explorer'];
+    }
+
+    private function _setExplorerCache(array $sections): void
+    {
+        $this->_normalizeSourceCache();
+        $this->cache['explorer'] = $sections;
+    }
+
+    private function _getConnectionCache(): ?string
+    {
+        $this->_normalizeSourceCache();
+        $connection = $this->cache['connection'] ?? null;
+
+        return is_string($connection) ? $connection : null;
+    }
+
+    private function _setConnectionCache(?string $status): void
+    {
+        $this->_normalizeSourceCache();
+        $this->cache['connection'] = $status;
+    }
+
+    private function _persistSourceCache(): void
+    {
+        if (!$this->id) {
+            return;
+        }
+
+        $this->_normalizeSourceCache();
+
+        Db::update('{{%video_picker_sources}}', ['cache' => Json::encode($this->cache)], ['id' => $this->id]);
+    }
+
+    private function _deleteLegacyConnectionCache(): void
+    {
+        Craft::$app->getCache()->delete($this->_getConnectionCacheKey());
     }
 }

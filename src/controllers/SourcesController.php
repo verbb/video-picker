@@ -2,6 +2,7 @@
 namespace verbb\videopicker\controllers;
 
 use verbb\videopicker\VideoPicker;
+use verbb\videopicker\helpers\Plugin as PluginHelper;
 use verbb\videopicker\base\SourceInterface;
 use verbb\videopicker\fields\VideoPickerField;
 
@@ -13,6 +14,8 @@ use craft\web\Controller;
 use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
+
+use Throwable;
 
 class SourcesController extends Controller
 {
@@ -83,6 +86,10 @@ class SourcesController extends Controller
             $title = Craft::t('video-picker', 'Create a new source');
         }
 
+        if ($source->id && $source->supportsConnection() && !$source->supportsOAuthConnection()) {
+            PluginHelper::registerSourceConnectAssets();
+        }
+
         return $this->renderTemplate('video-picker/sources/_edit', [
             'title' => $title,
             'source' => $source,
@@ -130,6 +137,64 @@ class SourcesController extends Controller
         }
 
         return $this->asModelSuccess($source, Craft::t('video-picker', 'Source saved.'), 'source');
+    }
+
+    public function actionCheckConnection(): Response
+    {
+        $this->requirePostRequest();
+        $this->requireAcceptsJson();
+
+        $sourceId = (int)$this->request->getParam('sourceId');
+        $type = (string)$this->request->getParam('type');
+
+        if (!$sourceId) {
+            return $this->asFailure(Craft::t('video-picker', 'No source exists with the ID “{id}”.', ['id' => $sourceId]));
+        }
+
+        $source = VideoPicker::$plugin->getSources()->getSourceById($sourceId);
+
+        if (!$source) {
+            return $this->asFailure(Craft::t('video-picker', 'No source exists with the ID “{id}”.', ['id' => $sourceId]));
+        }
+
+        // Merge posted provider settings so Refresh reflects unsaved form values (Formie pattern).
+        $settings = $this->request->getParam("types.$type", []);
+
+        if ($type && is_array($settings)) {
+            $source = VideoPicker::$plugin->getSources()->createSource([
+                'id' => $source->id,
+                'name' => $this->request->getParam('name', $source->name),
+                'handle' => $this->request->getParam('handle', $source->handle),
+                'enabled' => (bool)$this->request->getParam('enabled', $source->enabled),
+                'fields' => $source->fields,
+                'type' => $type,
+                'settings' => array_merge($source->getSettings(), $settings),
+                'cache' => $source->cache,
+                'uid' => $source->uid,
+            ]);
+        }
+
+        if (!$source::supportsConnection() || $source::supportsOAuthConnection()) {
+            return $this->asFailure(Craft::t('video-picker', 'This source does not support credential refresh.'));
+        }
+
+        if (!$source->isConfigured()) {
+            return $this->asFailure(Craft::t('video-picker', 'Provider credentials are not configured.'));
+        }
+
+        try {
+            $success = $source->checkConnection(false);
+
+            if (!$success) {
+                return $this->asFailure(Craft::t('video-picker', 'Unable to connect to the provider.'));
+            }
+
+            return $this->asJson([
+                'success' => true,
+            ]);
+        } catch (Throwable $e) {
+            throw $e;
+        }
     }
 
     public function actionReorder(): Response

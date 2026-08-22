@@ -1,4 +1,5 @@
-import { formatErrorHtml } from '../utils/ajaxErrors.js';
+import { type AjaxErrorInfo } from '../utils/ajaxErrors.js';
+import { createExplorerErrorPanel, toExplorerError } from '../utils/explorerErrorPanel.js';
 import { createCollectionIcon } from '../utils/collectionIcons.js';
 import { debounce } from '../utils/formatVideo.js';
 import { createVideoGrid, syncVideoCardSelection, type VideoData } from '../video/VideoCard.js';
@@ -21,6 +22,7 @@ type Section = {
 type Source = {
     handle: string;
     name: string;
+    supportsBrowse?: boolean;
     supportsSearch?: boolean;
     sections: Section[];
 };
@@ -48,8 +50,8 @@ export class ExplorerDialog {
     private loadingVideos = false;
     private loadingMore = false;
     private nextPage: unknown = null;
-    private sourcesError: string | null = null;
-    private videosError: string | null = null;
+    private sourcesError: AjaxErrorInfo | null = null;
+    private videosError: AjaxErrorInfo | null = null;
     private query = '';
     /** True while the grid is showing search results (not a sidebar collection). */
     private searching = false;
@@ -207,6 +209,41 @@ export class ExplorerDialog {
         return Boolean(this.currentVideo);
     }
 
+    private resolveVideoMethod(searching = false): string | null {
+        if (searching) {
+            return 'search';
+        }
+
+        if (this.currentCollection?.method) {
+            return this.currentCollection.method;
+        }
+
+        if (this.supportsSearch()) {
+            return 'search';
+        }
+
+        return null;
+    }
+
+    private handleHydrateError(error: unknown): void {
+        this.videos = [];
+        this.nextPage = null;
+        this.loadingVideos = false;
+        this.videosError = toExplorerError(error);
+        this.render();
+    }
+
+    private noBrowseMethodError(): AjaxErrorInfo {
+        return {
+            heading: Craft.t('app', 'Error'),
+            text: Craft.t(
+                'video-picker',
+                'No collections are available for this source. Configure the source or choose another provider.',
+            ),
+            trace: '',
+        };
+    }
+
     private reset(): void {
         this.query = '';
         this.searching = false;
@@ -293,12 +330,19 @@ export class ExplorerDialog {
                 this.currentSource =
                     this.sources.find((s) => s.handle === previousHandle) ?? this.sources[0];
 
-                await this.ensureSourceSections(this.currentSource);
+                try {
+                    await this.ensureSourceSections(this.currentSource);
+                } catch (error: unknown) {
+                    this.sourcesError = toExplorerError(error);
+                    this.render();
+                    return;
+                }
+
                 this.setCollection(this.currentSource?.sections?.[0]?.collections?.[0] ?? null);
                 this.fetchVideos();
             })
             .catch((error: unknown) => {
-                this.sourcesError = formatErrorHtml(error);
+                this.sourcesError = toExplorerError(error);
                 this.loadingSources = false;
                 this.render();
             });
@@ -346,6 +390,18 @@ export class ExplorerDialog {
             return;
         }
 
+        const method = this.resolveVideoMethod(false);
+
+        if (!method) {
+            this.searching = false;
+            this.nextPage = null;
+            this.loadingVideos = false;
+            this.videos = [];
+            this.videosError = this.noBrowseMethodError();
+            this.render();
+            return;
+        }
+
         this.searching = false;
         this.nextPage = null;
         this.loadingVideos = true;
@@ -354,8 +410,8 @@ export class ExplorerDialog {
 
         const data = {
             source: this.currentSource.handle,
-            method: this.currentCollection?.method ?? null,
-            options: this.browseOptions(),
+            method,
+            options: method === 'search' && !this.query.trim() ? {} : this.browseOptions(),
             fieldId: this.options.fieldId,
         };
 
@@ -365,7 +421,7 @@ export class ExplorerDialog {
                 this.nextPage = response.data.nextPage;
             })
             .catch((error: unknown) => {
-                this.videosError = formatErrorHtml(error);
+                this.videosError = toExplorerError(error);
             })
             .finally(() => {
                 this.loadingVideos = false;
@@ -384,18 +440,27 @@ export class ExplorerDialog {
         this.renderMoreState();
 
         const searching = this.searching && Boolean(this.query.trim());
+        const method = this.resolveVideoMethod(searching);
+
+        if (!method) {
+            this.loadingMore = false;
+            this.videosError = this.noBrowseMethodError();
+            this.render();
+            return;
+        }
+
         const options = searching
             ? { q: this.query.trim(), nextPage: this.nextPage }
             : { ...this.browseOptions(), nextPage: this.nextPage };
 
         const data: {
             source: string;
-            method: string | null;
+            method: string;
             options: Record<string, unknown>;
             fieldId?: number | null;
         } = {
             source: this.currentSource.handle,
-            method: searching ? 'search' : (this.currentCollection?.method ?? null),
+            method,
             options,
             fieldId: this.options.fieldId,
         };
@@ -408,7 +473,7 @@ export class ExplorerDialog {
                 this.nextPage = response.data.nextPage;
             })
             .catch((error: unknown) => {
-                this.videosError = formatErrorHtml(error);
+                this.videosError = toExplorerError(error);
             })
             .finally(() => {
                 this.loadingMore = false;
@@ -458,7 +523,7 @@ export class ExplorerDialog {
                 this.nextPage = response.data.nextPage;
             })
             .catch((error: unknown) => {
-                this.videosError = formatErrorHtml(error);
+                this.videosError = toExplorerError(error);
             })
             .finally(() => {
                 this.loadingVideos = false;
@@ -498,12 +563,7 @@ export class ExplorerDialog {
         }
 
         if (this.sourcesError) {
-            const err = document.createElement('div');
-            err.className = 'vp-centered error';
-            err.setAttribute('role', 'alert');
-            err.style.wordBreak = 'break-word';
-            err.innerHTML = this.sourcesError;
-            this.bodyEl.appendChild(err);
+            this.bodyEl.appendChild(createExplorerErrorPanel(this.sourcesError));
             return;
         }
 
@@ -607,11 +667,19 @@ export class ExplorerDialog {
             }
 
             this.currentSource = next;
-            void this.ensureSourceSections(next).then(() => {
-                this.setCollection(this.currentSource?.sections?.[0]?.collections?.[0] ?? null);
-                this.reset();
-                this.fetchVideos();
-            });
+            this.loadingVideos = true;
+            this.videosError = null;
+            this.render();
+
+            void this.ensureSourceSections(next)
+                .then(() => {
+                    this.setCollection(this.currentSource?.sections?.[0]?.collections?.[0] ?? null);
+                    this.reset();
+                    this.fetchVideos();
+                })
+                .catch((error: unknown) => {
+                    this.handleHydrateError(error);
+                });
         });
 
         selectWrap.appendChild(select);
@@ -764,12 +832,7 @@ export class ExplorerDialog {
             // Mount on `main` so absolute centering uses the full panel (search + body), like BEFORE.
             main.appendChild(this.centeredSpinner('md', Craft.t('video-picker', 'Loading videos…')));
         } else if (this.videosError) {
-            const err = document.createElement('div');
-            err.className = 'vp-centered error';
-            err.setAttribute('role', 'alert');
-            err.style.wordBreak = 'break-word';
-            err.innerHTML = this.videosError;
-            main.appendChild(err);
+            main.appendChild(createExplorerErrorPanel(this.videosError));
         } else {
             videosWrap.appendChild(
                 createVideoGrid(this.videos, this.currentVideo?.id ?? null, {

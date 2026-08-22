@@ -1,0 +1,11 @@
+{
+  "src/video-picker-cp.js": {
+    "file": "assets/video-picker-cp-Ctlser00.js",
+    "name": "video-picker-cp",
+    "src": "src/video-picker-cp.js",
+    "isEntry": true,
+    "css": [
+      "assets/video-picker-cp-DjW8j409.css"
+    ]
+  }
+}

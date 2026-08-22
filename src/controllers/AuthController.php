@@ -47,6 +47,10 @@ class AuthController extends Controller
                 return $this->asFailure(Craft::t('video-picker', 'Unable to find source “{source}”.', ['source' => $sourceHandle]));
             }
 
+            if (!$source::supportsOAuthConnection()) {
+                return $this->asFailure(Craft::t('video-picker', 'This source does not use OAuth connect.'));
+            }
+
             // Handle redirection correctly for CP-based requests, as we need to session-store it.
             if ($this->request->getIsCpRequest()) {
                 if ($redirect = $this->request->getValidatedBodyParam('redirect')) {
@@ -138,6 +142,10 @@ class AuthController extends Controller
 
         if (!($source = VideoPicker::$plugin->getSources()->getSourceByHandle($sourceHandle))) {
             return $this->asFailure(Craft::t('video-picker', 'Unable to find source “{source}”.', ['source' => $sourceHandle]));
+        }
+
+        if (!$source::supportsOAuthConnection()) {
+            return $this->asFailure(Craft::t('video-picker', 'This source does not use OAuth connect.'));
         }
 
         // Delete all tokens for this source

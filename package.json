@@ -7,14 +7,21 @@
         "docs"
     ],
     "scripts": {
-        "dev": "vite --port 4035",
-        "build": "vite build",
-        "watch": "vite build --watch",
+        "dev": "npm run dev:field & npm run dev:cp & npm run dev:source-connect",
+        "dev:field": "vite --config vite.config.js",
+        "dev:cp": "vite --config src/web/assets/cp/vite.config.js",
+        "dev:source-connect": "vite --config src/web/assets/source-connect/vite.config.js",
+        "build": "npm run build:field && npm run build:cp && npm run build:source-connect",
+        "build:field": "vite build --config vite.config.js",
+        "build:cp": "vite build --config src/web/assets/cp/vite.config.js",
+        "build:source-connect": "vite build --config src/web/assets/source-connect/vite.config.js",
+        "watch": "npm run build:field && npm run build:cp && npm run build:source-connect",
         "dev:plugin-docs": "npm run docs:dev --prefix docs",
         "docs:screenshots": "npm --prefix docs run docs:screenshots --"
     },
     "devDependencies": {
         "rollup-plugin-analyzer": "^4.0.0",
+        "sass": "^1.103.1",
         "typescript": "^5.7.3",
         "vite": "^8.0.10",
         "vite-plugin-compression": "^0.5.1"

@@ -21,6 +21,7 @@ import {
     lock,
     magnifyingGlass,
     registerIcons,
+    triangleExclamation,
     xmark,
 } from '@verbb/plugin-kit-icons';
 
@@ -42,6 +43,7 @@ registerIcons({
     eye,
     lock,
     magnifyingGlass,
+    triangleExclamation,
     xmark,
     // Preview-card only — BEFORE’s heavier filled paths (see previewActions.ts).
     vpRefresh,

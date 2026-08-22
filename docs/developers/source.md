@@ -18,8 +18,11 @@ Attribute | Description
 Method | Description
 --- | ---
 `isConfigured()` | Whether the source provider has been configured.
-`isConnected()` | Whether the source provider has been connected and has a token.
-`getToken()` | The access token for a source provider.
+`isConnected()` | Whether the source is connected (OAuth token) or ready (credentials saved).
+`isUsable()` | Whether the source can resolve URLs / power the explorer.
+`supportsConnection()` | Whether this source type uses OAuth Connect.
+`supportsBrowse()` | Whether the explorer can list collections.
+`supportsSearch()` | Whether the explorer can search this provider.
 `getVideos($criteria = [])` | Retrieves a list of [Video](docs:developers/video) objects based on specified criteria.
 `getVideoById($id)` | Fetches a [Video](docs:developers/video) object by its ID from this source.
 `getEmbedHtml($videoId, $options = [])` | Returns the HTML embed code for a video, identified by its ID, with optional parameters for customization.

@@ -9,7 +9,16 @@ const YOUTUBE_ID =
 const VIMEO_ID =
     /(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/[\w]+\/|groups\/[\w]+\/videos\/|album\/\d+\/video\/|video\/|)(\d+)/i;
 
-/** True when the string looks like a full YouTube or Vimeo video URL we can resolve. */
+const DAILYMOTION_ID =
+    /(?:https?:\/\/)?(?:www\.)?(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/i;
+
+const MUX_ID =
+    /(?:https?:\/\/)?(?:www\.)?(?:player\.mux\.com|stream\.mux\.com)\/([a-zA-Z0-9]+)/i;
+
+const WISTIA_ID =
+    /(?:https?:\/\/)?(?:[\w.-]+\.)?wistia\.com\/medias\/([a-zA-Z0-9]+)|(?:https?:\/\/)?fast\.wistia\.net\/embed\/iframe\/([a-zA-Z0-9]+)/i;
+
+/** True when the string looks like a full video URL we can resolve. */
 export const isResolvableVideoUrl = (url: string): boolean => {
     const trimmed = url.trim();
 
@@ -17,5 +26,11 @@ export const isResolvableVideoUrl = (url: string): boolean => {
         return false;
     }
 
-    return YOUTUBE_ID.test(trimmed) || VIMEO_ID.test(trimmed);
+    return (
+        YOUTUBE_ID.test(trimmed) ||
+        VIMEO_ID.test(trimmed) ||
+        DAILYMOTION_ID.test(trimmed) ||
+        MUX_ID.test(trimmed) ||
+        WISTIA_ID.test(trimmed)
+    );
 };
