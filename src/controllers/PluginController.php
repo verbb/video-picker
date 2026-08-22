@@ -107,10 +107,8 @@ class PluginController extends Controller
         $this->requirePostRequest();
         $sourceId = $this->request->getRequiredBodyParam('sourceId');
 
-        Db::update('{{%video_picker_sources}}', ['cache' => null], ['id' => $sourceId]);
-
         $source = VideoPicker::$plugin->getSources()->getSourceById((int)$sourceId);
-        $source?->clearLocalCache();
+        $source?->clearExplorerCache();
 
         Craft::$app->getSession()->setNotice(Craft::t('video-picker', 'Source cache cleared.'));
 

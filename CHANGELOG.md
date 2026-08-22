@@ -16,6 +16,7 @@
 - YouTube search uses `cachedRequest` so `providerSearchCacheDuration` applies (was uncached via `request()`).
 - Explorer get-videos options are whitelisted (`id`, `q`, `nextPage`); provider page size is forced after merge so `maxResults` / `per_page` cannot exceed Videos Per Page.
 - Explorer and URL resolve only use sources that are configured and connected; the field warns when sources are allowed but not connected.
+- Saving a source clears explorer section cache + provider application cache when provider settings/credentials change (not merely Available Fields); OAuth connect uses the same path.
 - Require `videoPicker-sources` for source CP actions; OAuth `connect`/`disconnect` require that permission + POST (only `callback` stays anonymous).
 - Field video AJAX requires a valid `fieldId` so source Available Fields scoping cannot be bypassed.
 - Enforce `embedAllowedDomains` (when set), block private/loopback hosts, cache generic embed crawls, and bound hi-res image fetches.

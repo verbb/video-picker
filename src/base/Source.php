@@ -348,6 +348,21 @@ abstract class Source extends SavableComponent implements SourceInterface
         TagDependency::invalidate(Craft::$app->getCache(), $this->_getLocalCacheTag());
     }
 
+    /**
+     * Drop persisted explorer sections + tagged provider application cache.
+     * Call when credentials / account identity change so stale playlists don’t linger.
+     */
+    public function clearExplorerCache(): void
+    {
+        $this->cache = [];
+
+        if ($this->id) {
+            Db::update('{{%video_picker_sources}}', ['cache' => null], ['id' => $this->id]);
+        }
+
+        $this->clearLocalCache();
+    }
+
 
     // Protected Methods
     // =========================================================================

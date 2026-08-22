@@ -231,6 +231,15 @@ class Sources extends Component
         $settings = $source->settings;
 
         $sourceRecord = $this->_getSourceRecordById($source->id);
+        $previousType = $sourceRecord->type;
+        $previousSettings = $sourceRecord->settings;
+        if (is_string($previousSettings)) {
+            $previousSettings = Json::decode($previousSettings) ?: [];
+        }
+        if (!is_array($previousSettings)) {
+            $previousSettings = [];
+        }
+
         $sourceRecord->name = $source->name;
         $sourceRecord->handle = $source->handle;
         $sourceRecord->enabled = $source->enabled;
@@ -253,6 +262,19 @@ class Sources extends Component
 
         // Clear request memo so Available Fields changes apply immediately.
         $this->_sources = null;
+
+        // Credentials / provider settings change: drop explorer section blob + API cache (D04).
+        // Available Fields alone does not affect collections — ignore `fields` for this check.
+        if (!$isNewSource) {
+            $newSettings = is_array($settings) ? $settings : [];
+            $prevComparable = $previousSettings;
+            $newComparable = $newSettings;
+            unset($prevComparable['fields'], $newComparable['fields']);
+
+            if ($previousType !== get_class($source) || $prevComparable != $newComparable) {
+                $source->clearExplorerCache();
+            }
+        }
 
         // Fire an 'afterSaveSource' event
         if ($this->hasEventHandlers(self::EVENT_AFTER_SAVE_SOURCE)) {

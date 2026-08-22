@@ -4,7 +4,6 @@ namespace verbb\videopicker\controllers;
 use verbb\videopicker\VideoPicker;
 
 use Craft;
-use craft\helpers\Db;
 use craft\web\Controller;
 
 use yii\web\Response;
@@ -107,8 +106,8 @@ class AuthController extends Controller
             $token->reference = $source->id;
             Auth::getInstance()->getTokens()->upsertToken($token);
 
-            // Drop any provider responses cached under a previous account/config.
-            $source->clearLocalCache();
+            // Drop explorer sections + provider responses cached under a previous account/config.
+            $source->clearExplorerCache();
         } catch (Throwable $e) {
             $error = Craft::t('video-picker', 'Unable to process callback for “{source}”: “{message}” {file}:{line}', [
                 'source' => $sourceHandle,
@@ -144,9 +143,7 @@ class AuthController extends Controller
         // Delete all tokens for this source
         Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
 
-        // Clear explorer DB cache + tagged application cache for this source
-        Db::update('{{%video_picker_sources}}', ['cache' => null], ['id' => $source->id]);
-        $source->clearLocalCache();
+        $source->clearExplorerCache();
 
         return $this->asModelSuccess($source, Craft::t('video-picker', '{provider} disconnected.', ['provider' => $source->providerName]), 'source');
     }
