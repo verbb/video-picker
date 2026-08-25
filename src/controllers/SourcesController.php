@@ -86,7 +86,7 @@ class SourcesController extends Controller
             $title = Craft::t('video-picker', 'Create a new source');
         }
 
-        if ($source->id && $source->supportsConnection() && !$source->supportsOAuthConnection()) {
+        if ($source->id && $source->supportsConnection()) {
             PluginHelper::registerSourceConnectAssets();
         }
 
