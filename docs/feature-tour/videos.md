@@ -1,12 +1,33 @@
 # Videos
-Video Picker provides users with a slick field type for dealing with videos.
+
+Video Picker provides a field for picking and embedding videos — paste a URL, or browse a connected Source.
+
+![Video Picker field with URL input and selected video preview](/_screenshots/feature-tour/videos.png)
+
+## Field settings
+
+Configure these on the field under **Settings → Fields**:
+
+- **Allow URL Input** — editors can paste a video URL.
+- **Allow Search** — show search in the explorer.
+- **Public Videos Only** — hide private videos in the explorer (where the provider supports it).
+- **Videos Per Page** — optional override of the plugin default for explorer pagination.
+- **Min / Max Duration** — limit which videos can be selected.
+- **Video Sort** — sort order when browsing.
+- **Placeholder** — empty-state text for the URL input.
+- **Show Explorer / Show Preview / Show Provider Icon** — control chrome on the field.
+- **Embed defaults** — Autoplay, Muted, Loop, and Show Controls applied when you embed the selected video. Twig can still override these per call (see [Rendering Videos](docs:template-guides/rendering-videos)).
+
+Sources must be **enabled**, **connected**, and allow this field under the Source’s **Available Fields** setting (see [Sources](docs:feature-tour/sources)).
 
 ## Explorer
-A big feature of Video Picker is (shockingly) to be able to pick videos from your connected source. The field comes with an "explorer" for your videos. Select the source you want to browse (assuming you've created the source, and connected it), and you'll see a list of folders and videos to select.
 
-Once selected, you'll see the video as a preview in the field. You can go ahead and [render the video](docs:template-guides/rendering-videos).
+Browse folders and videos from a connected Source. Select the Source you want (assuming you’ve created and connected it), then pick a video.
+
+![Video explorer browsing a connected Vimeo source](/_screenshots/feature-tour/explorer.png)
+
+Once selected, you’ll see a preview in the field. You can go ahead and [render the video](docs:template-guides/rendering-videos).
 
 ## Direct URL
-Of course, you don't _have_ to use the explorer to use videos, you can enter in the direct URL to a video in the field. Video Picker will look up that video, fetch data and save it as a preview in the field. Once that's done, you can go ahead and [render the video](docs:template-guides/rendering-videos).
 
-Note that video URLs entered here will **only** work for sources that are connected and enabled. The URL must match a supported provider source (or a custom source).
+You don’t have to use the explorer — paste a direct URL and Video Picker will look up the video, fetch data, and show a preview. URLs only work for Sources that are connected and enabled, and whose provider matches the URL.

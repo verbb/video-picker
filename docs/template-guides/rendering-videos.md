@@ -12,11 +12,14 @@ For example, your Video Picker field might have the handle `video`, and you've a
     Title: {{ entry.video.title }}<br>
     Description: {{ entry.video.description }}<br>
     Thumbnail: <img src="{{ entry.video.getThumbnail() }}" alt="{{ entry.video.title }}">
-    Embed: {{ entry.video.getEmbedHtml({ width: 500, height: 300 }) | raw }}
+    {# Field embed defaults (autoplay, muted, …) apply first; options here override them #}
+    Embed: {{ entry.video.getEmbedHtml({ width: 500, height: 300, autoplay: true }) | raw }}
 {% endif %}
 ```
 
 It's always a good idea to check if the field has a value first, before outputting anything about it.
+
+For field videos, options like `autoplay`, `muted`, `loop`, and `controls` are treated as **embed intent** (usually query params on the provider player URL). Size / presentation keys such as `width` and `height` become iframe attributes. The generic helpers `craft.videoPicker.getEmbedHtml(url, options)` / `getEmbedUrl()` use a flatter options bag for non-field crawls — see those methods if you are not using a field value.
 
 ## Without Field
 You can also do much the same thing without a field, directly in your Twig templates. Supply a valid URL for one of your connected and enabled sources and call `craft.videoPicker.getVideoByUrl(url)`. This will return a [Video](docs:developers/video) object.

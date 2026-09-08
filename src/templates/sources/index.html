@@ -29,7 +29,7 @@
         url: url('video-picker/sources/' ~ source.handle),
         handle: source.handle,
         enabled: source.enabled,
-        connected: source.connected,
+        connected: source.isConnected,
         provider: { name: source.providerName | t('site') | e, icon: source.icon, color: source.primaryColor },
     }]) %}
 {% endfor %}

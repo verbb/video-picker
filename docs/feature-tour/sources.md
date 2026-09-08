@@ -1,11 +1,18 @@
 # Sources
-A Source allows you to connect to a video provider to fetch Videos from various platforms. Once a Source is set up, you can retrieve video data, including titles, descriptions, thumbnails, and playback details.
 
-## Provider Settings
-Each provider is different. OAuth sources need Client ID/Secret credentials and an OAuth Connect handshake; credential sources use API tokens you paste into the source settings. Create a source and follow the [provider docs](docs:providers/youtube) for your platform.
+A Source connects Video Picker to a video provider. Once set up, you can browse videos in the field explorer or resolve them by URL.
 
-## Fetching Videos
-To fetch a video from a source, you'll need to provide a URL for the video, and use `source.getVideoByUrl(url)`.
+<img src="/_screenshots/feature-tour/sources.png" width="727" alt="Video Picker Sources index with connected providers." />
+
+## Provider settings
+
+Each provider is different. OAuth Sources need Client ID / Secret and a Connect handshake; credential Sources use API tokens you paste into the Source settings. Create a Source and follow the [provider docs](docs:providers/youtube) for your platform.
+
+## Available Fields
+
+On each Source you can limit which Video Picker fields are allowed to browse it (**Available Fields**). Leave empty to allow all fields. The field must still use a Source that is enabled and connected.
+
+## Fetching videos
 
 ```twig
 {# Get the source by its handle #}
@@ -19,7 +26,7 @@ To fetch a video from a source, you'll need to provide a URL for the video, and 
 {% endfor %}
 ```
 
-You can also use the more convenient `craft.videoPicker.getVideoByUrl(url)` which does the same thing, but automatically determins which source the video is for. This can be more helpful when you don't know which source a video belongs to in advance.
+You can also use `craft.videoPicker.getVideoByUrl(url)`, which picks the right Source for the URL automatically:
 
 ```twig
 {% set video = craft.videoPicker.getVideoByUrl('http://provider.com/video/4b6b2kk32b5h') %}
@@ -33,5 +40,5 @@ You can also use the more convenient `craft.videoPicker.getVideoByUrl(url)` whic
 ```
 
 :::tip
-Check out our guide on [Rendering Videos](docs:template-guides/rendering-videos) for more.
+Check out [Rendering Videos](docs:template-guides/rendering-videos) for more.
 :::

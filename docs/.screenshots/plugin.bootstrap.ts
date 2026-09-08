@@ -1,10 +1,12 @@
 import type { ScreenshotSetupContext } from '@verbb/docs-screenshots/types';
 import { registerPluginBootstrap } from '@verbb/docs-screenshots/api';
 
+import { ensureVideoPickerDocsModule } from './video-picker/fixtures';
+
 export default registerPluginBootstrap({
     id: 'video-picker',
-    async setup(_context: ScreenshotSetupContext) {
-        // Plugin-wide screenshot setup hooks (license, source/OAuth config, etc.).
-        // Per-scenario data is seeded from `.screenshots/video-picker/fixtures.ts`.
+    async setup(context: ScreenshotSetupContext) {
+        await context.runCraft(['migrate/up', '--plugin=video-picker'], { allowFailure: true });
+        await ensureVideoPickerDocsModule(context.installDir);
     },
 });
