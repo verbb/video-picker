@@ -72,6 +72,7 @@ class Settings extends Model
     {
         $rules = parent::defineRules();
 
+        $rules[] = [['pluginName'], 'trim'];
         $rules[] = [['pluginName', 'videosPerPage'], 'required'];
         $rules[] = [['videosPerPage'], 'number', 'integerOnly' => true, 'min' => 1, 'max' => 50];
         $rules[] = [[

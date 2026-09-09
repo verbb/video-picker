@@ -1,28 +1,25 @@
-{% extends 'video-picker/_layouts' %}
+{% extends 'verbb-base/_layouts/settings' %}
 
 {% import '_includes/forms' as forms %}
 {% import 'verbb-base/_macros' as macros %}
 
 {% requireAdmin %}
 
-{% set crumbs = [
-    { label: 'Video Picker' | t('video-picker'), url: url('video-picker') },
-    { label: 'Settings' | t('app'), url: url('video-picker/settings') },
-] %}
+{% do view.registerAssetBundle('verbb\\videopicker\\web\\assets\\cp\\CpAsset') -%}
 
-{% set navItems = {
-    general: { label: 'General Settings' | t('video-picker'), url: url('video-picker/settings') },
-    cache: { label: 'Cache Settings' | t('video-picker'), url: url('video-picker/settings/cache') },
-    embed: { label: 'Embed Settings' | t('video-picker'), url: url('video-picker/settings/embed') },
+{% set crumbs = [
+    { label: 'Settings' | t('app'), url: url('settings') },
+    { label: 'Plugins' | t('app'), url: url('settings/plugins') },
+    { label: craft.videoPicker.getPluginName() | t('video-picker'), url: url('video-picker/settings') },
+] | merge(crumbs ?? []) %}
+
+{% set pageTabs = {
+    general: { title: 'General Settings' | t('video-picker'), url: url('video-picker/settings') },
+    cache: { title: 'Cache Settings' | t('video-picker'), url: url('video-picker/settings/cache') },
+    embed: { title: 'Embed Settings' | t('video-picker'), url: url('video-picker/settings/embed') },
 } %}
 
-{% set title = 'Settings' | t('video-picker') %}
-{% set docTitle = navItems[selectedNavItem].label ~ ' - ' ~ title %}
-
-{% block sidebar %}
-    {% include '_includes/nav' with {
-        label: title,
-        items: navItems,
-        selectedItem: selectedNavItem,
-    } only %}
-{% endblock %}
+{% set pageTitle = pageTitle ?? false %}
+{% if title is not defined and pageTitle %}
+    {% set title = pageTitle %}
+{% endif %}

@@ -4,77 +4,73 @@
 {% import 'verbb-base/_macros' as macros %}
 
 {% set fullPageForm = true %}
-{% set selectedNavItem = 'cache' %}
+{% set selectedTab = 'cache' %}
+{% set pageTitle = 'Cache Settings' | t('video-picker') %}
+{% set pageAction = 'video-picker/plugin/save-settings' %}
+{% set pageUrl = 'video-picker/settings/cache' %}
 
-{% block blockContent %}
+{% block settingsMeta %}
+    {{ hiddenInput('settingsScreen', 'cache') }}
+{% endblock %}
 
-<input type="hidden" name="action" value="video-picker/plugin/save-settings">
-<input type="hidden" name="settingsScreen" value="cache">
-{{ redirectInput('video-picker/settings/cache') }}
+{% block settingsContent %}
+    {{ forms.textField({
+        label: 'Provider Cache Duration' | t('video-picker'),
+        instructions: 'How long (in seconds) to cache provider API responses such as playlists and video lists. Minimum 60.' | t('video-picker'),
+        id: 'providerCacheDuration',
+        name: 'providerCacheDuration',
+        value: settings.providerCacheDuration,
+        size: 10,
+        unit: 'seconds' | t('app'),
+        errors: settings.getErrors('providerCacheDuration'),
+        warning: macros.configWarning('providerCacheDuration', 'video-picker'),
+    }) }}
 
-{% namespace 'settings' %}
+    {{ forms.textField({
+        label: 'Provider Search Cache Duration' | t('video-picker'),
+        instructions: 'How long (in seconds) to cache provider search results. Prefer a shorter value than the main provider cache. Minimum 60.' | t('video-picker'),
+        id: 'providerSearchCacheDuration',
+        name: 'providerSearchCacheDuration',
+        value: settings.providerSearchCacheDuration,
+        size: 10,
+        unit: 'seconds' | t('app'),
+        errors: settings.getErrors('providerSearchCacheDuration'),
+        warning: macros.configWarning('providerSearchCacheDuration', 'video-picker'),
+    }) }}
 
-{{ forms.textField({
-    first: true,
-    label: 'Provider Cache Duration' | t('video-picker'),
-    instructions: 'How long (in seconds) to cache provider API responses such as playlists and video lists. Minimum 60.' | t('video-picker'),
-    id: 'providerCacheDuration',
-    name: 'providerCacheDuration',
-    value: settings.providerCacheDuration,
-    size: 10,
-    unit: 'seconds' | t('app'),
-    errors: settings.getErrors('providerCacheDuration'),
-    warning: macros.configWarning('providerCacheDuration', 'video-picker'),
-}) }}
+    {{ forms.textField({
+        label: 'Embed Cache Duration' | t('video-picker'),
+        instructions: 'How long (in seconds) to cache generic Twig embed helper crawls. Minimum 60.' | t('video-picker'),
+        id: 'embedCacheDuration',
+        name: 'embedCacheDuration',
+        value: settings.embedCacheDuration,
+        size: 10,
+        unit: 'seconds' | t('app'),
+        errors: settings.getErrors('embedCacheDuration'),
+        warning: macros.configWarning('embedCacheDuration', 'video-picker'),
+    }) }}
 
-{{ forms.textField({
-    label: 'Provider Search Cache Duration' | t('video-picker'),
-    instructions: 'How long (in seconds) to cache provider search results. Prefer a shorter value than the main provider cache. Minimum 60.' | t('video-picker'),
-    id: 'providerSearchCacheDuration',
-    name: 'providerSearchCacheDuration',
-    value: settings.providerSearchCacheDuration,
-    size: 10,
-    unit: 'seconds' | t('app'),
-    errors: settings.getErrors('providerSearchCacheDuration'),
-    warning: macros.configWarning('providerSearchCacheDuration', 'video-picker'),
-}) }}
+    {{ forms.textField({
+        label: 'Embed Error Cache Duration' | t('video-picker'),
+        instructions: 'How long (in seconds) to remember a failed Twig embed crawl so the same URL is not retried every request. Default 60. Set to 0 to disable.' | t('video-picker'),
+        id: 'embedErrorCacheDuration',
+        name: 'embedErrorCacheDuration',
+        value: settings.embedErrorCacheDuration,
+        size: 10,
+        unit: 'seconds' | t('app'),
+        errors: settings.getErrors('embedErrorCacheDuration'),
+        warning: macros.configWarning('embedErrorCacheDuration', 'video-picker'),
+    }) }}
 
-{{ forms.textField({
-    label: 'Embed Cache Duration' | t('video-picker'),
-    instructions: 'How long (in seconds) to cache generic Twig embed helper crawls. Minimum 60.' | t('video-picker'),
-    id: 'embedCacheDuration',
-    name: 'embedCacheDuration',
-    value: settings.embedCacheDuration,
-    size: 10,
-    unit: 'seconds' | t('app'),
-    errors: settings.getErrors('embedCacheDuration'),
-    warning: macros.configWarning('embedCacheDuration', 'video-picker'),
-}) }}
-
-{{ forms.textField({
-    label: 'Embed Error Cache Duration' | t('video-picker'),
-    instructions: 'How long (in seconds) to remember a failed Twig embed crawl so the same URL is not retried every request. Default 60. Set to 0 to disable.' | t('video-picker'),
-    id: 'embedErrorCacheDuration',
-    name: 'embedErrorCacheDuration',
-    value: settings.embedErrorCacheDuration,
-    size: 10,
-    unit: 'seconds' | t('app'),
-    errors: settings.getErrors('embedErrorCacheDuration'),
-    warning: macros.configWarning('embedErrorCacheDuration', 'video-picker'),
-}) }}
-
-{{ forms.textField({
-    label: 'Video Cache Duration' | t('video-picker'),
-    instructions: 'How long (in seconds) to trust selected-video metadata in the database before revalidating. Expired entries still show the last snapshot while a refresh is attempted. Minimum 3600 (1 hour).' | t('video-picker'),
-    id: 'videoCacheDuration',
-    name: 'videoCacheDuration',
-    value: settings.videoCacheDuration,
-    size: 10,
-    unit: 'seconds' | t('app'),
-    errors: settings.getErrors('videoCacheDuration'),
-    warning: macros.configWarning('videoCacheDuration', 'video-picker'),
-}) }}
-
-{% endnamespace %}
-
+    {{ forms.textField({
+        label: 'Video Cache Duration' | t('video-picker'),
+        instructions: 'How long (in seconds) to trust selected-video metadata in the database before revalidating. Expired entries still show the last snapshot while a refresh is attempted. Minimum 3600 (1 hour).' | t('video-picker'),
+        id: 'videoCacheDuration',
+        name: 'videoCacheDuration',
+        value: settings.videoCacheDuration,
+        size: 10,
+        unit: 'seconds' | t('app'),
+        errors: settings.getErrors('videoCacheDuration'),
+        warning: macros.configWarning('videoCacheDuration', 'video-picker'),
+    }) }}
 {% endblock %}
