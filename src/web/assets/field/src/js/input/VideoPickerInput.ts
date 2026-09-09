@@ -17,6 +17,9 @@ export interface VideoPickerSettings {
     inputId: string;
     inputName: string;
     fieldId?: number | null;
+    /** Owning element for AJAX canView / layout checks (Matrix block or entry). */
+    elementId?: number | null;
+    siteId?: number | null;
     value?: VideoValue | null;
     showExplorer?: boolean;
     showPreview?: boolean;
@@ -590,6 +593,21 @@ export class VideoPickerInput {
         this.syncPreview();
     }
 
+    /** Params that bind AJAX to element canView + layout membership. */
+    private elementContextParams(): Record<string, number> {
+        const params: Record<string, number> = {};
+
+        if (this.settings.elementId) {
+            params.elementId = this.settings.elementId;
+        }
+
+        if (this.settings.siteId) {
+            params.siteId = this.settings.siteId;
+        }
+
+        return params;
+    }
+
     private openExplorer(): void {
         if (this.explorerOpen || !this.enableExplorer) {
             return;
@@ -600,6 +618,8 @@ export class VideoPickerInput {
         new ExplorerDialog({
             mount: this.root,
             fieldId: this.settings.fieldId,
+            elementId: this.settings.elementId,
+            siteId: this.settings.siteId,
             allowSearch: this.allowSearch,
             video: this.currentVideo,
             onSelect: (video) => {
@@ -660,6 +680,7 @@ export class VideoPickerInput {
         const data: Record<string, unknown> = {
             url: requestedUrl,
             fieldId: this.settings.fieldId,
+            ...this.elementContextParams(),
         };
 
         if (refresh) {

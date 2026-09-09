@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- User permission **Explore videos** (`videoPicker-explore`) for field explorer / URL resolve AJAX (separate from **Sources**).
 - Add **Bunny Stream**, **Cloudflare Stream**, **Dailymotion**, **Mux**, **Sprout Video** and **Wistia** sources.
 - Add field setting for optional input placeholder text when no video is selected.
 - Add `CredentialsSource` and `OAuthSource` split to cater for different authentication methods of providers.

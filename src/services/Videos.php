@@ -73,76 +73,132 @@ class Videos extends Component
 
         if ($record) {
             if ($clearCache) {
-                $record->delete();
-                $record = null;
-
-                // Also clear this source's local cache so the next fetch hits the provider
+                // Explicit refresh: fetch first, then replace. Keep last-known-good if
+                // the provider fails (DATA-04) — never delete the row up front.
+                // Exception: field-scoped private snapshots must not leak across accounts.
                 foreach ($allowedSources as $source) {
                     if ($source->getVideoIdFromUrl($videoUrl)) {
                         $source->clearLocalCache();
                         break;
                     }
                 }
-            } else {
+
                 $compatible = $field instanceof VideoPickerField
                     ? $this->_compatibleSourcesForUrl($allowedSources, $videoUrl)
                     : $allowedSources;
+                $revalidateSources = $compatible ?: $allowedSources;
+                $fresh = $this->_fetchLiveVideo($videoUrl, $revalidateSources);
+                $previous = $this->_videoFromRecord($record);
 
-                // Field scoped: wrong provider for this field — fall through to live fetch.
-                if ($field instanceof VideoPickerField && !$compatible) {
-                    // Leave the shared URL row alone; try a live resolve for this field.
-                } else {
-                    $video = $this->_videoFromRecord($record);
+                if ($fresh && !$fresh->hasErrors()) {
+                    $this->saveVideo($fresh);
 
                     if ($field instanceof VideoPickerField) {
-                        $video->sourceHandle = $this->_preferredSourceHandle($compatible, $video->sourceHandle);
+                        $fresh->sourceHandle = $this->_preferredSourceHandle(
+                            $this->_compatibleSourcesForUrl($allowedSources, $videoUrl) ?: $allowedSources,
+                            $fresh->sourceHandle,
+                        );
                     }
 
-                    // Fresh snapshot — serve as-is.
-                    if (!$this->_recordIsExpired($record)) {
-                        return $this->_videosByUrl[$memoKey] = $video;
-                    }
+                    $fresh->cacheStatus = self::CACHE_OK;
 
-                    // Expired — sync revalidate; keep last good on failure (SWR).
-                    $revalidateSources = $compatible ?: $allowedSources;
-                    foreach ($revalidateSources as $source) {
-                        if ($source->getVideoIdFromUrl($videoUrl)) {
-                            // Bust provider app cache so revalidate isn’t served from TTL API cache.
-                            $source->clearLocalCache();
-                            break;
-                        }
-                    }
+                    return $this->_videosByUrl[$memoKey] = $fresh;
+                }
 
-                    $fresh = $this->_fetchLiveVideo($videoUrl, $revalidateSources);
+                $status = ($fresh && $fresh->hasErrors())
+                    ? self::CACHE_UNAVAILABLE
+                    : self::CACHE_STALE;
+                $error = $fresh && $fresh->hasErrors()
+                    ? implode(' ', $fresh->getFirstErrors())
+                    : Craft::t('video-picker', 'Unable to refresh video metadata.');
 
-                    if ($fresh && !$fresh->hasErrors()) {
-                        $this->saveVideo($fresh);
+                $this->_markRevalidateFailure($record, $status, $error);
 
-                        if ($field instanceof VideoPickerField) {
-                            $fresh->sourceHandle = $this->_preferredSourceHandle(
-                                $this->_compatibleSourcesForUrl($allowedSources, $videoUrl) ?: $allowedSources,
-                                $fresh->sourceHandle,
-                            );
-                        }
+                // Private rows are account-sensitive — do not hand another source's
+                // snapshot to this field when live revalidate failed.
+                if ($field instanceof VideoPickerField && $previous->private) {
+                    return $this->_videosByUrl[$memoKey] = $this->_privateCacheMiss($videoUrl, $error, $status);
+                }
 
-                        $fresh->cacheStatus = self::CACHE_OK;
+                $previous->cacheStatus = $status;
+                $previous->cacheError = $error;
 
-                        return $this->_videosByUrl[$memoKey] = $fresh;
-                    }
+                if ($field instanceof VideoPickerField) {
+                    $previous->sourceHandle = $this->_preferredSourceHandle(
+                        $compatible ?: $allowedSources,
+                        $previous->sourceHandle,
+                    );
+                }
 
-                    $status = ($fresh && $fresh->hasErrors())
-                        ? self::CACHE_UNAVAILABLE
-                        : self::CACHE_STALE;
-                    $error = $fresh && $fresh->hasErrors()
-                        ? implode(' ', $fresh->getFirstErrors())
-                        : Craft::t('video-picker', 'Unable to refresh video metadata.');
+                return $this->_videosByUrl[$memoKey] = $previous;
+            }
 
-                    $this->_markRevalidateFailure($record, $status, $error);
-                    $video->cacheStatus = $status;
-                    $video->cacheError = $error;
+            $compatible = $field instanceof VideoPickerField
+                ? $this->_compatibleSourcesForUrl($allowedSources, $videoUrl)
+                : $allowedSources;
 
+            // Field scoped: wrong provider for this field — fall through to live fetch.
+            if ($field instanceof VideoPickerField && !$compatible) {
+                // Leave the shared URL row alone; try a live resolve for this field.
+            } else {
+                $video = $this->_videoFromRecord($record);
+
+                if ($field instanceof VideoPickerField) {
+                    $video->sourceHandle = $this->_preferredSourceHandle($compatible, $video->sourceHandle);
+                }
+
+                $fieldScopedPrivate = $field instanceof VideoPickerField && $video->private;
+
+                // Public + fresh: shared URL cache is fine. Private + field-scoped:
+                // always revalidate with this field's sources (account trust boundary).
+                if (!$this->_recordIsExpired($record) && !$fieldScopedPrivate) {
                     return $this->_videosByUrl[$memoKey] = $video;
                 }
+
+                // Expired (or private field-scoped) — sync revalidate.
+                $revalidateSources = $compatible ?: $allowedSources;
+                foreach ($revalidateSources as $source) {
+                    if ($source->getVideoIdFromUrl($videoUrl)) {
+                        // Bust provider app cache so revalidate isn’t served from TTL API cache.
+                        $source->clearLocalCache();
+                        break;
+                    }
+                }
+
+                $fresh = $this->_fetchLiveVideo($videoUrl, $revalidateSources);
+
+                if ($fresh && !$fresh->hasErrors()) {
+                    $this->saveVideo($fresh);
+
+                    if ($field instanceof VideoPickerField) {
+                        $fresh->sourceHandle = $this->_preferredSourceHandle(
+                            $this->_compatibleSourcesForUrl($allowedSources, $videoUrl) ?: $allowedSources,
+                            $fresh->sourceHandle,
+                        );
+                    }
+
+                    $fresh->cacheStatus = self::CACHE_OK;
+
+                    return $this->_videosByUrl[$memoKey] = $fresh;
+                }
+
+                $status = ($fresh && $fresh->hasErrors())
+                    ? self::CACHE_UNAVAILABLE
+                    : self::CACHE_STALE;
+                $error = $fresh && $fresh->hasErrors()
+                    ? implode(' ', $fresh->getFirstErrors())
+                    : Craft::t('video-picker', 'Unable to refresh video metadata.');
+
+                $this->_markRevalidateFailure($record, $status, $error);
+
+                if ($fieldScopedPrivate) {
+                    return $this->_videosByUrl[$memoKey] = $this->_privateCacheMiss($videoUrl, $error, $status);
+                }
+
+                $video->cacheStatus = $status;
+                $video->cacheError = $error;
+
+                return $this->_videosByUrl[$memoKey] = $video;
             }
         }
 
@@ -167,26 +223,38 @@ class Videos extends Component
             return;
         }
 
-        // Upsert by unique videoUrl (migration m260822_000000 adds the unique index).
-        $record = VideoRecord::findOne([
-            'videoUrl' => $video->url,
-        ]) ?? new VideoRecord();
+        // Upsert by unique videoUrl. Retry once on unique-constraint races (DATA-04).
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $record = VideoRecord::findOne([
+                'videoUrl' => $video->url,
+            ]) ?? new VideoRecord();
 
-        $now = new DateTime();
-        $ttl = max(3600, (int)VideoPicker::$plugin->getSettings()->videoCacheDuration);
-        $expires = (clone $now)->add(new DateInterval('PT' . $ttl . 'S'));
+            $now = new DateTime();
+            $ttl = max(3600, (int)VideoPicker::$plugin->getSettings()->videoCacheDuration);
+            $expires = (clone $now)->add(new DateInterval('PT' . $ttl . 'S'));
 
-        $record->setAttributes([
-            'videoId' => $video->id,
-            'videoUrl' => $video->url,
-            'data' => $video->serializeData(),
-            'fetchedAt' => $now,
-            'expiresAt' => $expires,
-            'status' => self::CACHE_OK,
-            'lastError' => null,
-        ], false);
+            $record->setAttributes([
+                'videoId' => $video->id,
+                'videoUrl' => $video->url,
+                'data' => $video->serializeData(),
+                'fetchedAt' => $now,
+                'expiresAt' => $expires,
+                'status' => self::CACHE_OK,
+                'lastError' => null,
+            ], false);
 
-        $record->save();
+            try {
+                $record->save();
+                return;
+            } catch (Throwable $e) {
+                // Concurrent insert against the unique index — reload and overwrite.
+                if ($attempt === 0) {
+                    continue;
+                }
+
+                throw $e;
+            }
+        }
     }
 
     public function getEmbedUrl(string $url, array $params = []): ?string
@@ -247,6 +315,8 @@ class Videos extends Component
                     'connect_timeout' => 5,
                     'max_redirs' => 3,
                 ], $settings->embedClientSettings);
+                // Force hop-by-hop validation — do not let client settings re-enable auto-follow.
+                $clientSettings['follow_location'] = false;
                 $client->setSettings($clientSettings);
 
                 $crawler = new Crawler($client);
@@ -258,7 +328,8 @@ class Videos extends Component
                 // Override the image detector. Restores Embed v3 behaviour.
                 $embed->getExtractorFactory()->addDetector('image', EmbedImagesExtractor::class);
 
-                $info = $embed->get($url);
+                $fetchUrl = $this->_resolveEmbedRedirects($url, $settings->embedAllowedDomains, 3);
+                $info = $embed->get($fetchUrl);
 
                 // Re-check final URI after redirects against the same policy.
                 if (isset($info->url) && (string)$info->url !== '') {
@@ -360,6 +431,83 @@ class Videos extends Component
     // Private Methods
     // =========================================================================
 
+    /**
+     * Walk redirect hops with FOLLOWLOCATION off, validating each Location against
+     * EmbedUrl policy before connecting (SEC-05).
+     *
+     * @param string[] $allowedDomains
+     */
+    private function _resolveEmbedRedirects(string $url, array $allowedDomains, int $maxRedirs): string
+    {
+        EmbedUrl::assertAllowed($url, $allowedDomains);
+        $current = $url;
+
+        for ($i = 0; $i < $maxRedirs; $i++) {
+            $ch = curl_init($current);
+
+            if ($ch === false) {
+                return $current;
+            }
+
+            curl_setopt_array($ch, [
+                CURLOPT_NOBODY => true,
+                CURLOPT_FOLLOWLOCATION => false,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HEADER => true,
+                CURLOPT_TIMEOUT => 8,
+                CURLOPT_CONNECTTIMEOUT => 5,
+            ]);
+
+            $raw = curl_exec($ch);
+            $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            curl_close($ch);
+
+            if ($status < 300 || $status >= 400 || !is_string($raw)) {
+                return $current;
+            }
+
+            if (!preg_match('/^Location:\s*(.+)$/im', $raw, $matches)) {
+                return $current;
+            }
+
+            $next = trim($matches[1]);
+            $next = $this->_absolutizeUrl($current, $next);
+            EmbedUrl::assertAllowed($next, $allowedDomains);
+            $current = $next;
+        }
+
+        return $current;
+    }
+
+    private function _absolutizeUrl(string $base, string $location): string
+    {
+        if (preg_match('#^https?://#i', $location)) {
+            return $location;
+        }
+
+        $parts = parse_url($base);
+
+        if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+            return $location;
+        }
+
+        $origin = $parts['scheme'] . '://' . $parts['host']
+            . (isset($parts['port']) ? ':' . $parts['port'] : '');
+
+        if (str_starts_with($location, '//')) {
+            return $parts['scheme'] . ':' . $location;
+        }
+
+        if (str_starts_with($location, '/')) {
+            return $origin . $location;
+        }
+
+        $path = $parts['path'] ?? '/';
+        $dir = preg_replace('#/[^/]*$#', '/', $path) ?: '/';
+
+        return $origin . $dir . $location;
+    }
+
     private function _embedCacheKey(string $url, Settings $settings): string
     {
         return 'video-picker:embed:' . md5(Json::encode([
@@ -401,6 +549,21 @@ class Videos extends Component
         $video = new Video(Json::decode(StringHelper::shortcodesToEmoji($record->data)));
         $video->cacheStatus = $record->status ?: self::CACHE_OK;
         $video->cacheError = $record->lastError;
+
+        return $video;
+    }
+
+    /**
+     * Field-scoped miss for a private shared-cache row — URL only, no foreign metadata.
+     */
+    private function _privateCacheMiss(string $videoUrl, string $error, string $status): Video
+    {
+        $video = new Video(['url' => $videoUrl]);
+        $video->addError('url', $error !== ''
+            ? $error
+            : Craft::t('video-picker', 'Unable to verify this private video for the current field’s sources.'));
+        $video->cacheStatus = $status;
+        $video->cacheError = $error;
 
         return $video;
     }

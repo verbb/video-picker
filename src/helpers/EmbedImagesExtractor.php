@@ -53,7 +53,15 @@ class EmbedImagesExtractor extends Detector
         $client = new Client([
             RequestOptions::TIMEOUT => 5,
             RequestOptions::CONNECT_TIMEOUT => 3,
-            RequestOptions::ALLOW_REDIRECTS => ['max' => 3],
+            // Validate every redirect hop against EmbedUrl (SEC-05 secondary fetches).
+            RequestOptions::ALLOW_REDIRECTS => [
+                'max' => 3,
+                'strict' => true,
+                'referer' => true,
+                'on_redirect' => static function($request, $response, $uri) use ($settings): void {
+                    EmbedUrl::assertAllowed((string)$uri, $settings->embedAllowedDomains);
+                },
+            ],
             RequestOptions::HTTP_ERRORS => false,
         ]);
 

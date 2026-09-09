@@ -56,10 +56,10 @@ class VideoPicker extends Plugin
         if (Craft::$app->getRequest()->getIsSiteRequest()) {
             $this->_registerSiteRoutes();
         }
-        
-        if (Craft::$app->getEdition() === Craft::Pro) {
-            $this->_registerPermissions();
-        }
+
+        // User-group permissions (Explore videos / Sources) — register on all editions so
+        // upgrades and Craft-boot tests see the same handles; Solo sites typically use admin.
+        $this->_registerPermissions();
 
         $this->hasCpSection = $this->getSettings()->hasCpSection;
     }
@@ -154,6 +154,7 @@ class VideoPicker extends Plugin
             $event->permissions[] = [
                 'heading' => Craft::t('video-picker', 'Video Picker'),
                 'permissions' => [
+                    'videoPicker-explore' => ['label' => Craft::t('video-picker', 'Explore videos')],
                     'videoPicker-sources' => ['label' => Craft::t('video-picker', 'Sources')],
                 ],
             ];

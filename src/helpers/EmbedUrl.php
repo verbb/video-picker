@@ -30,7 +30,7 @@ class EmbedUrl
             throw new InvalidArgumentException(Craft::t('video-picker', 'Embed URL must use HTTP or HTTPS.'));
         }
 
-        $host = strtolower(rtrim($parts['host'], '.'));
+        $host = self::normalizeHost((string)$parts['host']);
 
         if ($host === '' || self::isBlockedHost($host)) {
             throw new InvalidArgumentException(Craft::t('video-picker', 'Embed URL host is not allowed.'));
@@ -58,13 +58,29 @@ class EmbedUrl
         }
     }
 
+    /**
+     * Strip brackets from IPv6 literals (`[::1]` → `::1`) so FILTER_VALIDATE_IP works.
+     */
+    public static function normalizeHost(string $host): string
+    {
+        $host = strtolower(rtrim($host, '.'));
+
+        if (str_starts_with($host, '[') && str_ends_with($host, ']')) {
+            $host = substr($host, 1, -1);
+        }
+
+        return $host;
+    }
+
     public static function isBlockedHost(string $host): bool
     {
+        $host = self::normalizeHost($host);
+
         if ($host === 'localhost' || str_ends_with($host, '.localhost') || $host === '0.0.0.0') {
             return true;
         }
 
-        // Literal IPs (and IPv6 in brackets stripped by parse_url host).
+        // Literal IPs (IPv6 brackets already stripped).
         if (filter_var($host, FILTER_VALIDATE_IP)) {
             return !filter_var(
                 $host,

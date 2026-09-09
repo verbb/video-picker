@@ -199,10 +199,13 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
 
         // Control id: unsuffixed handle id. CustomField’s namespaceInputs rewrites
         // label[for]; JS syncs pk-input to that for (see associateCraftFieldLabel).
+        // elementId/siteId bind AJAX to canView + layout membership (SEC access boundary).
         $componentSettings = [
             'inputId' => $this->getInputId(),
             'inputName' => $inputName,
             'fieldId' => $this->id,
+            'elementId' => $element?->id,
+            'siteId' => $element?->siteId,
             'value' => $value,
             'showExplorer' => $this->showExplorer,
             'showPreview' => $this->showPreview,
@@ -231,6 +234,11 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
     public function normalizeValue(mixed $value, ?ElementInterface $element = null): ?Video
     {
         if ($value instanceof Video) {
+            // Re-evaluate policy when an existing Video model is reused (drafts, etc.).
+            if ($reason = $this->selectionPolicyError($value)) {
+                $value->addError('url', $reason);
+            }
+
             return $this->applyEmbedDefaults($value);
         }
 
@@ -262,6 +270,32 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
         $video->embedDefaults = $this->getEmbedIntentDefaults();
 
         return $video;
+    }
+
+    public function getElementValidationRules(): array
+    {
+        return ['validateVideoSelection'];
+    }
+
+    /**
+     * Selection policy / resolve failures live on the Video model — copy them to the
+     * owning element so Craft refuses the save (DATA-01).
+     */
+    public function validateVideoSelection(ElementInterface $element): void
+    {
+        $video = $element->getFieldValue($this->handle);
+
+        if (!($video instanceof Video)) {
+            return;
+        }
+
+        if ($reason = $this->selectionPolicyError($video)) {
+            $video->addError('url', $reason);
+        }
+
+        if ($video->hasErrors('url')) {
+            $element->addError($this->handle, (string)$video->getFirstError('url'));
+        }
     }
 
     public function serializeValue(mixed $value, ?ElementInterface $element = null): mixed

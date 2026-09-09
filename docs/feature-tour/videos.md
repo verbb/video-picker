@@ -20,6 +20,8 @@ Configure these on the field under **Settings → Fields**:
 
 Sources must be **enabled**, **connected**, and allow this field under the Source’s **Available Fields** setting (see [Sources](docs:feature-tour/sources)).
 
+Editors need the **Explore videos** permission (under Video Picker in user group permissions) to browse or resolve videos in the field. Configuring providers still uses the separate **Sources** permission.
+
 ## Explorer
 
 Browse folders and videos from a connected Source. Select the Source you want (assuming you’ve created and connected it), then pick a video.

@@ -30,6 +30,8 @@ type Source = {
 export type ExplorerDialogOptions = {
     mount: HTMLElement;
     fieldId?: number | null;
+    elementId?: number | null;
+    siteId?: number | null;
     /** Field setting — ANDed with each source’s supportsSearch. */
     allowSearch?: boolean;
     video?: VideoData | null;
@@ -294,6 +296,21 @@ export class ExplorerDialog {
         return options;
     }
 
+    /** Params that bind AJAX to element canView + layout membership. */
+    private elementContextParams(): Record<string, number> {
+        const params: Record<string, number> = {};
+
+        if (this.options.elementId) {
+            params.elementId = this.options.elementId;
+        }
+
+        if (this.options.siteId) {
+            params.siteId = this.options.siteId;
+        }
+
+        return params;
+    }
+
     // -------------------------------------------------------------------------
     // AJAX
     // -------------------------------------------------------------------------
@@ -305,6 +322,7 @@ export class ExplorerDialog {
 
         const data: Record<string, unknown> = {
             fieldId: this.options.fieldId,
+            ...this.elementContextParams(),
         };
 
         if (refresh) {
@@ -364,6 +382,7 @@ export class ExplorerDialog {
         const data: Record<string, unknown> = {
             fieldId: this.options.fieldId,
             hydrate: source.handle,
+            ...this.elementContextParams(),
         };
 
         if (refresh) {
@@ -413,6 +432,7 @@ export class ExplorerDialog {
             method,
             options: method === 'search' && !this.query.trim() ? {} : this.browseOptions(),
             fieldId: this.options.fieldId,
+            ...this.elementContextParams(),
         };
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
@@ -453,16 +473,12 @@ export class ExplorerDialog {
             ? { q: this.query.trim(), nextPage: this.nextPage }
             : { ...this.browseOptions(), nextPage: this.nextPage };
 
-        const data: {
-            source: string;
-            method: string;
-            options: Record<string, unknown>;
-            fieldId?: number | null;
-        } = {
+        const data: Record<string, unknown> = {
             source: this.currentSource.handle,
             method,
             options,
             fieldId: this.options.fieldId,
+            ...this.elementContextParams(),
         };
 
         const previousCount = this.videos.length;
@@ -515,6 +531,7 @@ export class ExplorerDialog {
             method: 'search',
             options: { q },
             fieldId: this.options.fieldId,
+            ...this.elementContextParams(),
         };
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
