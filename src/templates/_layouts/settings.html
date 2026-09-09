@@ -1,4 +1,4 @@
-{% extends 'video-picker/_layouts' %}
+{% extends 'verbb-base/_layouts/settings' %}
 
 {% import '_includes/forms' as forms %}
 {% import 'verbb-base/_macros' as macros %}
@@ -6,21 +6,20 @@
 {% requireAdmin %}
 
 {% set crumbs = [
-    { label: 'Video Picker' | t('video-picker'), url: url('video-picker') },
-    { label: 'Settings' | t('app'), url: url('video-picker/settings') },
-] %}
+    { label: 'Settings' | t('app'), url: url('settings') },
+    { label: 'Plugins' | t('app'), url: url('settings/plugins') },
+    { label: craft.videoPicker.getPluginName() | t('video-picker'), url: url('video-picker/settings') },
+] | merge(crumbs ?? []) %}
 
-{% set navItems = {
-    general: { label: 'General Settings' | t('video-picker'), url: url('video-picker/settings') },
+{% set pageTabs = {
+    general: { title: 'General Settings' | t('video-picker'), url: url('video-picker/settings') },
 } %}
 
-{% set title = 'Settings' | t('video-picker') %}
-{% set docTitle = navItems[selectedNavItem].label ~ ' - ' ~ title %}
+{% set pageTitle = pageTitle ?? false %}
+{% if title is not defined and pageTitle %}
+    {% set title = pageTitle %}
+{% endif %}
 
-{% block sidebar %}
-    {% include '_includes/nav' with {
-        label: title,
-        items: navItems,
-        selectedItem: selectedNavItem,
-    } only %}
+{% block settingsMeta %}
+    {{ hiddenInput('pluginHandle', 'video-picker') }}
 {% endblock %}
