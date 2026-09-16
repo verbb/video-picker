@@ -224,6 +224,7 @@ class Mux extends CredentialsSource
         $video->raw = $asset;
         $video->sourceHandle = $this->handle;
         $video->id = $playbackId;
+        $video->private = !$this->_playbackIdIsPublic($asset, $playbackId);
         $video->title = $meta['title'] ?? ($passthrough ?: ('Mux asset ' . ($asset['id'] ?? $playbackId)));
         $video->authorName = $meta['creator_id'] ?? $this->_organizationName();
         $video->url = 'https://player.mux.com/' . $playbackId;

@@ -267,6 +267,7 @@ class CloudflareStream extends CredentialsSource
         $video->raw = $data;
         $video->sourceHandle = $this->handle;
         $video->id = $uid;
+        $video->private = (bool)($data['requireSignedURLs'] ?? false);
         $video->title = $meta['name'] ?? ('Stream video ' . $uid);
         $video->description = $meta['description'] ?? null;
         $video->authorName = $this->_authorName($data);

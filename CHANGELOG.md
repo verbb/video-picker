@@ -35,6 +35,7 @@
 - Fixed a high-severity cross-site scripting vulnerability.
 - Fixed a high-severity server-side request forgery vulnerability.
 - Fixed a low-severity broken access control vulnerability.
+- Fixed a moderate-severity information disclosure vulnerability.
 - Generic Twig embed helpers no longer reject valid public URLs because Guzzle omitted peer-IP statistics in streaming mode.
 - Cached video rows are shared by URL across same-provider sources; field scoping gates on provider URL match and rebinds `sourceHandle` to an allowed source (no longer rejects when another source for the same provider originally fetched the row).
 - Explorer search no longer mutates collection options — leaving search or switching collections clears `q` / search pagination so YouTube playlist browse cannot send `q` + `pageToken` together (#6).
