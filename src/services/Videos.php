@@ -63,6 +63,10 @@ class Videos extends Component
 
         $allowedSources = VideoPicker::$plugin->getSources()->getSourcesForField($field);
 
+        if ($field instanceof VideoPickerField && !$this->_compatibleSourcesForUrl($allowedSources, $videoUrl)) {
+            return $this->_videosByUrl[$memoKey] = null;
+        }
+
         // Fetch the video data from our saved database store of videos
         $record = VideoRecord::findOne([
             'videoUrl' => $videoUrl,
