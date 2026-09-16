@@ -48,6 +48,7 @@ class Dailymotion extends CredentialsSource
 
     /** Request-local OAuth access token (Craft cache holds the durable copy). */
     private ?string $_accessToken = null;
+    private ?string $_accessTokenCacheKey = null;
 
 
     // Public Methods
@@ -260,10 +261,6 @@ class Dailymotion extends CredentialsSource
 
     private function _getAccessToken(): string
     {
-        if ($this->_accessToken) {
-            return $this->_accessToken;
-        }
-
         $clientId = App::parseEnv($this->apiKey);
         $clientSecret = App::parseEnv($this->apiSecret);
 
@@ -271,7 +268,15 @@ class Dailymotion extends CredentialsSource
             throw new \Exception(Craft::t('video-picker', 'Dailymotion API key and secret are required.'));
         }
 
-        $cacheKey = $this->_getAccessTokenCacheKey($clientId);
+        $cacheKey = $this->_getAccessTokenCacheKey($clientId, $clientSecret);
+
+        if ($this->_accessToken && $this->_accessTokenCacheKey === $cacheKey) {
+            return $this->_accessToken;
+        }
+
+        // A changed literal or environment credential must obtain its own token.
+        $this->_accessToken = null;
+        $this->_accessTokenCacheKey = $cacheKey;
         $cached = Craft::$app->getCache()->get($cacheKey);
 
         if (is_array($cached) && !empty($cached['token']) && ($cached['expires'] ?? 0) > time()) {
@@ -326,9 +331,11 @@ class Dailymotion extends CredentialsSource
         return $this->_accessToken = (string)$data['access_token'];
     }
 
-    private function _getAccessTokenCacheKey(string $clientId): string
+    private function _getAccessTokenCacheKey(string $clientId, string $clientSecret): string
     {
-        return 'video-picker-dailymotion-token-' . md5(($this->handle ?? '') . ':' . $clientId);
+        return 'video-picker-dailymotion-token-' . hash('sha256', Json::encode([
+            $this->handle, $clientId, $clientSecret, self::OAUTH_SCOPES,
+        ]));
     }
 
     /**
