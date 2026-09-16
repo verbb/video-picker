@@ -190,7 +190,7 @@ class Video extends Model
             return null;
         }
 
-        // Field defaults under Twig/GQL call-site overrides.
+        // Field defaults under Twig call-site overrides.
         return $source->getEmbedHtml($this->id, array_merge($this->embedDefaults, $options));
     }
 

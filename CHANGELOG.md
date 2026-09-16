@@ -10,7 +10,7 @@
 - Add source setting **Available Fields** to control what fields can browse the source.
 - Expose provider/search/embed cache durations, hi-res embed image toggle, and embed allowed domains in plugin settings (advanced embed client arrays stay config-only).
 - Add field selection policies: Allow URL Input, Allow Search, Public Videos Only, optional Videos Per Page override, min/max duration, and per-page Video Sort (no default source/collection — source order remains global).
-- Add field embed intent defaults (Autoplay, Muted, Loop, Show Controls) applied per video provider; Twig/GraphQL options still override.
+- Add field embed intent defaults (Autoplay, Muted, Loop, Show Controls) applied per video provider; Twig options still override.
 - Add YouTube source **Privacy Enhanced Mode** (`youtube-nocookie.com` embeds).
 - Add **Video Cache Duration** (default 7 days, minimum 1 hour) for selected-video DB metadata with stale-while-revalidate and cache status (`ok` / `stale` / `unavailable`).
 - Add **Embed Error Cache Duration** (default 60 seconds; `0` disables) so failed Twig embed crawls are not retried every request.

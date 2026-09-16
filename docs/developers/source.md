@@ -108,7 +108,7 @@ Whether the required settings and connection are ready for provider requests. Th
 
 **Returns:** `bool`
 
-Whether this source type uses OAuth Connect.
+Whether this source type offers a connection action. OAuth sources authorise an account; credential sources verify their API settings.
 :::
 
 ::: reference

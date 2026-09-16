@@ -123,7 +123,7 @@ Whether embed helpers should select the highest-resolution image available. Enab
 
 **Type:** `array` · **Default:** `[]`
 
-Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers. **Config file only.**
+HTTP options for the secure embed client, such as `timeout` and `connect_timeout`. Automatic redirects remain disabled so each redirect can be checked against the allowed hosts. **Config file only.**
 :::
 
 ::: reference
@@ -140,7 +140,7 @@ Image-extraction configuration merged with the plugin's minimum image dimensions
 
 **Type:** `array` · **Default:** `[]`
 
-Define any [headers](https://github.com/oscarotero/Embed#settings) to pass to the Curl Client for embed helpers. **Config file only.**
+HTTP request headers for embed helpers. Authorization and cookie headers are removed when a redirect changes origin. **Config file only.**
 :::
 
 

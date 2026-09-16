@@ -10,7 +10,7 @@ Video lists and search results expire automatically. Adjust their durations unde
 
 ## Selected Videos
 
-Selected videos retain a copy of their metadata for **Video Cache Duration**, which defaults to seven days and has a minimum of one hour. When that period expires, the next read attempts a refresh. If the provider request fails, Video Picker keeps the last successful copy.
+Selected videos retain a copy of their metadata for **Video Cache Duration**, which defaults to seven days and has a minimum of one hour. When that period expires, the next read attempts a refresh. If the provider request fails, Video Picker keeps the last successful copy. Private selections in field inputs still require verified provider access and may report that the video is unavailable.
 
 Use **Refresh** on the field after changing a selected video's title or thumbnail, or clear its URL from **Utilities → Video Picker**. The same URL shares cached metadata across fields, so refreshing it can update other entries that use that video.
 
