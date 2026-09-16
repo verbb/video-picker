@@ -476,7 +476,7 @@ export class ExplorerDialog {
             this.loadingVideos = false;
             this.videos = [];
             this.videosError = this.noBrowseMethodError();
-            this.render();
+            this.render(true);
             return;
         }
 
@@ -484,7 +484,7 @@ export class ExplorerDialog {
         this.nextPage = null;
         this.loadingVideos = true;
         this.videosError = null;
-        this.render();
+        this.render(true);
 
         const data = {
             source: this.currentSource.handle,
@@ -516,7 +516,7 @@ export class ExplorerDialog {
                 }
 
                 this.loadingVideos = false;
-                this.render();
+                this.render(true);
                 this.announceVideoCount();
             });
     }
@@ -538,7 +538,7 @@ export class ExplorerDialog {
         if (!method) {
             this.loadingMore = false;
             this.videosError = this.noBrowseMethodError();
-            this.render();
+            this.render(true);
             return;
         }
 
@@ -582,7 +582,7 @@ export class ExplorerDialog {
                 // rebuild so keyboard nav can continue on the same / selected card.
                 const restoreId = this.captureFocusedVideoId();
                 const scrollTop = this.mainEl?.scrollTop ?? 0;
-                this.render();
+                this.render(true);
                 if (this.mainEl) {
                     this.mainEl.scrollTop = scrollTop;
                 }
@@ -611,7 +611,7 @@ export class ExplorerDialog {
         this.nextPage = null;
         this.loadingVideos = true;
         this.videosError = null;
-        this.render();
+        this.render(true);
 
         const data = {
             source: this.currentSource.handle,
@@ -643,7 +643,7 @@ export class ExplorerDialog {
                 }
 
                 this.loadingVideos = false;
-                this.render();
+                this.render(true);
                 this.announceVideoCount();
             });
     }
@@ -669,9 +669,16 @@ export class ExplorerDialog {
     // DOM
     // -------------------------------------------------------------------------
 
-    private render(): void {
-        this.bodyEl.replaceChildren();
+    private render(preserveNavigation = false): void {
         this.footerSelect.toggleAttribute('disabled', !this.canSelect());
+
+        // Keep connected controls and their focus/caret while asynchronous results change.
+        if (preserveNavigation && !this.loadingSources && !this.sourcesError && this.mainEl?.isConnected) {
+            this.renderVideoResults(this.mainEl);
+            return;
+        }
+
+        this.bodyEl.replaceChildren();
 
         if (this.loadingSources) {
             this.bodyEl.appendChild(this.centeredSpinner('md', Craft.t('video-picker', 'Loading sources…')));
@@ -885,6 +892,11 @@ export class ExplorerDialog {
             if (card instanceof HTMLElement && card.dataset.videoId) {
                 return card.dataset.videoId;
             }
+
+            // The editor may have moved to search or another control during pagination.
+            if (active !== document.body && !active.closest('.vp-videos-more')) {
+                return null;
+            }
         }
 
         return this.currentVideo?.id != null ? String(this.currentVideo.id) : null;
@@ -952,6 +964,18 @@ export class ExplorerDialog {
             main.appendChild(searchWrap);
         }
 
+        this.renderVideoResults(main);
+
+        return main;
+    }
+
+    private renderVideoResults(main: HTMLElement): void {
+        for (const child of Array.from(main.children)) {
+            if (!child.classList.contains('vp-videos-search-wrapper')) {
+                child.remove();
+            }
+        }
+
         const videosWrap = document.createElement('div');
         videosWrap.className = 'vp-videos-wrapper';
 
@@ -1000,8 +1024,6 @@ export class ExplorerDialog {
 
             main.appendChild(videosWrap);
         }
-
-        return main;
     }
 
     /**
