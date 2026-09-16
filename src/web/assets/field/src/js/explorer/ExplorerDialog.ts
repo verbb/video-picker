@@ -71,6 +71,8 @@ export class ExplorerDialog {
     private footerSelect!: HTMLElement;
 
     private mainEl: HTMLElement | null = null;
+    private renderedSource: Source | null = null;
+    private renderedCollection: Collection | null = null;
     private searchInput: (HTMLElement & { value?: string }) | null = null;
     /** Persistent polite region — survives body re-renders (Load More / search). */
     private liveRegion!: HTMLElement;
@@ -673,7 +675,8 @@ export class ExplorerDialog {
         this.footerSelect.toggleAttribute('disabled', !this.canSelect());
 
         // Keep connected controls and their focus/caret while asynchronous results change.
-        if (preserveNavigation && !this.loadingSources && !this.sourcesError && this.mainEl?.isConnected) {
+        if (preserveNavigation && !this.loadingSources && !this.sourcesError && this.mainEl?.isConnected
+            && this.renderedSource === this.currentSource && this.renderedCollection === this.currentCollection) {
             this.renderVideoResults(this.mainEl);
             return;
         }
@@ -692,6 +695,8 @@ export class ExplorerDialog {
 
         const explorer = document.createElement('div');
         explorer.className = 'vp-explorer';
+        this.renderedSource = this.currentSource;
+        this.renderedCollection = this.currentCollection;
 
         explorer.append(this.buildSidebar(), this.buildMain());
         this.bodyEl.appendChild(explorer);
