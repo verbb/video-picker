@@ -4,6 +4,7 @@ namespace verbb\videopicker\controllers;
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\models\Settings;
 use verbb\videopicker\records\Video as VideoRecord;
+use verbb\videopicker\utilities\VideosUtility;
 
 use Craft;
 use craft\helpers\Db;
@@ -11,11 +12,31 @@ use craft\helpers\UrlHelper;
 use craft\web\Controller;
 
 use yii\web\Response;
+use yii\web\ForbiddenHttpException;
 
 class PluginController extends Controller
 {
     // Public Methods
     // =========================================================================
+
+    public function beforeAction($action): bool
+    {
+        if (!parent::beforeAction($action)) {
+            return false;
+        }
+
+        if (in_array($action->id, ['clear-video-cache', 'clear-source-cache'], true)) {
+            $this->requireCpRequest();
+            $this->requirePostRequest();
+
+            // Use the same permission and disabled-utility policy as Craft's utility screen.
+            if (!Craft::$app->getUtilities()->checkAuthorization(VideosUtility::class)) {
+                throw new ForbiddenHttpException('User is not authorized to perform this action.');
+            }
+        }
+
+        return true;
+    }
 
     public function actionSettings(): Response
     {
