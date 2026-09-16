@@ -288,6 +288,10 @@ class YouTube extends OAuthSource
 
     private function _getVideosResponse(array $response, array $videoIds): array
     {
+        if (!$videoIds) {
+            return ['videos' => [], 'nextPage' => $response['nextPageToken'] ?? null];
+        }
+
         $videos = [];
 
         $videosResponse = $this->cachedRequest('GET', 'youtube/v3/videos', [

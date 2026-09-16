@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Handle empty YouTube searches and playlists without an API error.
 - Load all pages of provider folders, playlists and collections in the explorer.
 - Show validation errors for duplicate source names and handles.
 - Ignore obsolete explorer responses after changing sources, collections or searches, or closing the dialog.
