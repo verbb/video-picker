@@ -16,6 +16,7 @@
 - Add **Embed Error Cache Duration** (default 60 seconds; `0` disables) so failed Twig embed crawls are not retried every request.
 
 ### Changed
+- GraphQL `plays` uses `Float` to support video play counts above the 32-bit integer limit.
 - Require Embed 4 and update Plugin Kit and lodash dependencies to their patched releases.
 - Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).
 - `SourceInterface` no longer requires `getOAuthProviderClass()` — OAuth is confined to `OAuthSource`.

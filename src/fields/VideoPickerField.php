@@ -385,7 +385,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
                 ],
                 'plays' => [
                     'name' => 'plays',
-                    'type' => Type::int(),
+                    'type' => Type::float(),
                     'description' => 'The number of plays of the video.',
                 ],
                 'authorName' => [

@@ -79,7 +79,7 @@ Each Video Picker field exposes an object type named from its handle, such as `v
 | `date` | `DateTime` | The video’s publication date. |
 | `duration` | `Int` | Duration in seconds. |
 | `formattedDuration` | `String` | Duration formatted for display. |
-| `plays` | `Int` | The provider’s play count, when available. |
+| `plays` | `Float` | The provider’s play count, when available, including counts above the 32-bit integer limit. |
 | `authorName` | `String` | The author’s display name. |
 | `authorUrl` | `String` | The author’s URL. |
 | `authorUsername` | `String` | The author’s username. |
