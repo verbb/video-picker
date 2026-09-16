@@ -1,6 +1,7 @@
 <?php
 namespace verbb\videopicker\services;
 
+use verbb\videopicker\VideoPicker;
 use verbb\videopicker\sources as sourceTypes;
 use verbb\videopicker\base\SourceInterface;
 use verbb\videopicker\events\SourceEvent;
@@ -236,6 +237,7 @@ class Sources extends Component
         $settings = $source->settings;
 
         $sourceRecord = $this->_getSourceRecordById($source->id);
+        $previousHandle = $sourceRecord->handle;
         $previousType = $sourceRecord->type;
         $previousSettings = $sourceRecord->settings;
         if (is_string($previousSettings)) {
@@ -259,7 +261,22 @@ class Sources extends Component
             $sourceRecord->sortOrder = $maxSortOrder ? $maxSortOrder + 1 : 1;
         }
 
-        $sourceRecord->save(false);
+        // Persist a rename together with its cached video references, so template
+        // output cannot be left pointing at a source handle that no longer exists.
+        $transaction = Craft::$app->getDb()->beginTransaction();
+
+        try {
+            $sourceRecord->save(false);
+
+            if (!$isNewSource && $previousHandle !== $source->handle) {
+                VideoPicker::$plugin->getVideos()->renameSourceHandle($previousHandle, $source->handle);
+            }
+
+            $transaction->commit();
+        } catch (Throwable $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
 
         if (!$source->id) {
             $source->id = $sourceRecord->id;

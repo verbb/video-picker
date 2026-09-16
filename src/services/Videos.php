@@ -280,6 +280,37 @@ class Videos extends Component
         return null;
     }
 
+    /** Update source references without treating a rename as a metadata refresh. */
+    public function renameSourceHandle(string $previousHandle, string $handle): void
+    {
+        $query = VideoRecord::find()
+            ->select(['id', 'data'])
+            ->where(['like', 'data', $previousHandle])
+            ->asArray();
+
+        // Batch snapshots to keep source edits bounded even for a large library.
+        foreach ($query->batch(100) as $rows) {
+            foreach ($rows as $row) {
+                $data = Json::decode($row['data']);
+
+                if (($data['sourceHandle'] ?? null) !== $previousHandle) {
+                    continue;
+                }
+
+                $data['sourceHandle'] = $handle;
+
+                // Do not replace metadata that a concurrent provider refresh wrote.
+                Craft::$app->getDb()->createCommand()->update(
+                    VideoRecord::tableName(),
+                    ['data' => Json::encode($data)],
+                    ['id' => $row['id'], 'data' => $row['data']],
+                )->execute();
+            }
+        }
+
+        $this->_videosByUrl = [];
+    }
+
     public function getEmbedHtml(string $url, array $params = []): string
     {
         $data = $this->getEmbedData($url);
