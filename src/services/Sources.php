@@ -268,6 +268,12 @@ class Sources extends Component
         try {
             $sourceRecord->save(false);
 
+            if (!$isNewSource && $previousType !== get_class($source)) {
+                // A new provider must establish its own connection, even when the
+                // source keeps the same identity and field assignments.
+                Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
+            }
+
             if (!$isNewSource && $previousHandle !== $source->handle) {
                 VideoPicker::$plugin->getVideos()->renameSourceHandle($previousHandle, $source->handle);
             }

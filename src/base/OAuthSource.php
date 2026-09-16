@@ -123,7 +123,10 @@ abstract class OAuthSource extends Source implements OAuthProviderInterface
     public function getToken(): ?Token
     {
         if ($this->id) {
-            return Auth::getInstance()->getTokens()->getTokenByOwnerReference('video-picker', $this->id);
+            $token = Auth::getInstance()->getTokens()->getTokenByOwnerReference('video-picker', $this->id);
+
+            // Also reject stale associations saved before provider changes cleared tokens.
+            return $token && $token->providerType === static::class ? $token : null;
         }
 
         return null;
