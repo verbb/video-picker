@@ -69,6 +69,37 @@ class Vimeo extends OAuthSource
         return is_string($hash) && preg_match('/^[a-zA-Z0-9]+$/', $hash) ? ['h' => $hash] : [];
     }
 
+    public function getVideoIdFromUrl(string $url): ?string
+    {
+        $pattern = '/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/[\w]+\/|groups\/[\w]+\/videos\/|album\/\d+\/video\/|video\/|)(\d+)/';
+
+        if (preg_match($pattern, $url, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    public function getVideoById(string $id): ?Video
+    {
+        $data = $this->cachedRequest('GET', 'videos/' . $id, [
+            'query' => [
+                // Omit download/review_link/files — unused and sensitive when stored in Video::$raw.
+                'fields' => 'created_time,description,duration,height,link,name,pictures,privacy,stats,uri,user,width',
+            ],
+        ]);
+
+        if ($data) {
+            return $this->_parseVideo($data);
+        }
+
+        return null;
+    }
+
+
+    // Protected Methods
+    // =========================================================================
+
     protected function mapEmbedQueryParams(string $videoId, array $intent): array
     {
         $params = [];
@@ -105,37 +136,6 @@ class Vimeo extends OAuthSource
 
         return $start !== null ? $url . '#t=' . (int)$start . 's' : $url;
     }
-
-    public function getVideoIdFromUrl(string $url): ?string
-    {
-        $pattern = '/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/[\w]+\/|groups\/[\w]+\/videos\/|album\/\d+\/video\/|video\/|)(\d+)/';
-        
-        if (preg_match($pattern, $url, $matches)) {
-            return $matches[1];
-        }
-
-        return null;
-    }
-
-    public function getVideoById(string $id): ?Video
-    {
-        $data = $this->cachedRequest('GET', 'videos/' . $id, [
-            'query' => [
-                // Omit download/review_link/files — unused and sensitive when stored in Video::$raw.
-                'fields' => 'created_time,description,duration,height,link,name,pictures,privacy,stats,uri,user,width',
-            ],
-        ]);
-
-        if ($data) {
-            return $this->_parseVideo($data);
-        }
-
-        return null;
-    }
-
-
-    // Protected Methods
-    // =========================================================================
 
     protected function fetchExplorerSections(): array
     {

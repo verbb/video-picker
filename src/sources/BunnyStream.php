@@ -123,6 +123,10 @@ class BunnyStream extends CredentialsSource
         return null;
     }
 
+
+    // Protected Methods
+    // =========================================================================
+
     protected function mapEmbedQueryParams(string $videoId, array $intent): array
     {
         $params = parent::mapEmbedQueryParams($videoId, $intent);
@@ -157,10 +161,6 @@ class BunnyStream extends CredentialsSource
 
         return $url;
     }
-
-
-    // Protected Methods
-    // =========================================================================
 
     protected function fetchExplorerSections(): array
     {
