@@ -39,23 +39,14 @@ class VideosController extends Controller
         $field = $this->_getVideoPickerField();
         $sources = VideoPicker::$plugin->getSources()->getSourcesForField($field);
 
-        // Optional: hydrate sections for one handle only (explorer source switch / refresh).
-        // When omitted, only the first source’s sections are fetched — avoids cold-open N× provider calls.
+        // Keep source selection available even when a provider's collection request fails.
+        // Only explicit hydration requests may perform provider I/O.
         $hydrateHandle = $this->request->getParam('hydrate');
 
         $data = [];
-        $hydratedFirst = false;
 
         foreach ($sources as $source) {
-            $includeSections = false;
-
-            if (is_string($hydrateHandle) && $hydrateHandle !== '') {
-                $includeSections = $source->handle === $hydrateHandle;
-            } elseif (!$hydratedFirst) {
-                $includeSections = true;
-                $hydratedFirst = true;
-            }
-
+            $includeSections = is_string($hydrateHandle) && $source->handle === $hydrateHandle;
             $data[] = $source->getExplorerData($refresh && $includeSections, $includeSections);
         }
 

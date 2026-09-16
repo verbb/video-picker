@@ -344,14 +344,6 @@ export class ExplorerDialog {
             ...this.elementContextParams(),
         };
 
-        if (refresh) {
-            data.refresh = true;
-            // Refresh only the active source’s sections (others stay lightweight).
-            if (this.currentSource?.handle) {
-                data.hydrate = this.currentSource.handle;
-            }
-        }
-
         Craft.sendActionRequest('POST', 'video-picker/videos/get-sources', { data })
             .then(async (response: { data: Source[] }) => {
                 if (!this.isCurrentRequest(version)) {
@@ -379,14 +371,13 @@ export class ExplorerDialog {
                     this.sources.find((s) => s.handle === previousHandle) ?? this.sources[0];
 
                 try {
-                    await this.ensureSourceSections(this.currentSource);
+                    await this.ensureSourceSections(this.currentSource, refresh);
                 } catch (error: unknown) {
                     if (!this.isCurrentRequest(version)) {
                         return;
                     }
 
-                    this.sourcesError = toExplorerError(error);
-                    this.render();
+                    this.handleHydrateError(error);
                     return;
                 }
 
@@ -421,8 +412,8 @@ export class ExplorerDialog {
     }
 
     /**
-     * get-sources only hydrates the first (or requested) source. When switching,
-     * fetch that source’s sections without re-fetching every provider.
+     * Fetch the chosen source's sections separately from the source inventory,
+     * so a provider failure leaves other sources available.
      */
     private async ensureSourceSections(source: Source | null, refresh = false): Promise<void> {
         const version = this.requestVersion;

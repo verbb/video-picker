@@ -32,6 +32,7 @@
 - Fixed cached Bunny videos embedding under a different library.
 - Fixed Refresh reusing stale video metadata when the entered URL is an alias.
 - Fixed explorer searches losing keyboard focus when results update.
+- Keep other sources available in the explorer when a provider fails to load its collections.
 - Fixed Dailymotion connection checks reusing an old access token after credentials change.
 - Apply supported playback options to Dailymotion embeds and document default-player limitations.
 - Let the mute embed option override field playback defaults.

@@ -3,8 +3,9 @@ import { ExplorerDialog } from './ExplorerDialog.js';
 
 function deferred() {
     let resolve!: (value: unknown) => void;
-    const promise = new Promise((res) => { resolve = res; });
-    return { promise, resolve };
+    let reject!: (reason: unknown) => void;
+    const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+    return { promise, resolve, reject };
 }
 
 function fixture() {
@@ -33,6 +34,18 @@ async function settle(request: ReturnType<typeof deferred>, data: unknown) {
 }
 
 afterEach(() => vi.unstubAllGlobals());
+
+it.each([false, true])('keeps source navigation available after provider hydration fails (refresh: %s)', async (refresh) => {
+    const { dialog, requests } = fixture();
+    dialog.fetchSources(refresh);
+    await settle(requests[0], [{ handle: 'first', sections: [] }, { handle: 'healthy', sections: [] }]);
+    requests[1].reject(new Error('Provider unavailable'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(dialog.sourcesError).toBeNull();
+    expect(dialog.loadingSources).toBe(false);
+    expect(dialog.sources.map((source: { handle: string }) => source.handle)).toEqual(['first', 'healthy']);
+    expect(dialog.videosError.text).toContain('Provider unavailable');
+});
 
 it('keeps the latest collection when an earlier response arrives last', async () => {
     const { dialog, requests } = fixture();
@@ -84,9 +97,14 @@ it('refreshes the displayed search in the selected collection', async () => {
     dialog.currentCollection = collection;
     dialog.query = 'matching video';
     dialog.fetchSources(true);
-    await settle(requests[0], [{ handle: 'first', supportsSearch: true, sections: [{ collections: [
+    const sources = [{ handle: 'first', supportsSearch: true, sections: [{ collections: [
         { name: 'Uploads', method: 'uploads' }, collection,
-    ] }] }]);
+    ] }] }];
+    await settle(requests[0], sources);
+    expect(Craft.sendActionRequest).toHaveBeenLastCalledWith('POST', 'video-picker/videos/get-sources', {
+        data: { fieldId: undefined, hydrate: 'first', refresh: true },
+    });
+    await settle(requests[1], sources);
     expect(dialog.currentCollection).toEqual(collection);
     expect(Craft.sendActionRequest).toHaveBeenLastCalledWith('POST', 'video-picker/videos/get-videos', {
         data: { source: 'first', method: 'search', options: { q: 'matching video' }, fieldId: undefined },
@@ -110,10 +128,12 @@ it('retains a refreshed collection with PHP empty-array options', async () => {
     const { dialog, requests } = fixture();
     dialog.currentCollection = { name: 'Likes', method: 'likes', options: {} };
     dialog.fetchSources(true);
-    await settle(requests[0], [{ handle: 'first', sections: [{ collections: [
+    const sources = [{ handle: 'first', sections: [{ collections: [
         { name: 'Uploads', method: 'uploads', options: [] },
         { name: 'Likes', method: 'likes', options: [] },
-    ] }] }]);
+    ] }] }];
+    await settle(requests[0], sources);
+    await settle(requests[1], sources);
     expect(dialog.currentCollection.method).toBe('likes');
     expect(Craft.sendActionRequest).toHaveBeenLastCalledWith('POST', 'video-picker/videos/get-videos', {
         data: { source: 'first', method: 'likes', options: {}, fieldId: undefined },
