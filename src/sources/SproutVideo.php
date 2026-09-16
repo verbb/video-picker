@@ -126,6 +126,28 @@ class SproutVideo extends CredentialsSource
     // Protected Methods
     // =========================================================================
 
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        $params = [];
+
+        foreach (['autoplay' => 'autoPlay', 'loop' => 'loop', 'controls' => 'showControls'] as $key => $parameter) {
+            if (array_key_exists($key, $intent)) {
+                $params[$parameter] = $this->isEmbedTruthy($intent[$key]) ? 'true' : 'false';
+            }
+        }
+
+        // Sprout controls initial muting through its volume parameter.
+        if (array_key_exists('muted', $intent) || array_key_exists('mute', $intent)) {
+            $params['volume'] = $this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null) ? 0 : 1;
+        }
+
+        if (isset($intent['start']) && $intent['start'] !== '') {
+            $params['t'] = (int)$intent['start'];
+        }
+
+        return $params;
+    }
+
     protected function fetchExplorerSections(): array
     {
         $sections = [

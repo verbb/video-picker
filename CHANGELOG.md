@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Apply playback options correctly to SproutVideo embeds.
 - Honor playback defaults and start times in Bunny Stream embeds.
 - Apply playback options correctly to Wistia embeds.
 - Preserve the privacy hash when embedding unlisted Vimeo videos.
