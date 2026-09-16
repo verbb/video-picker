@@ -73,25 +73,37 @@ class Vimeo extends OAuthSource
     {
         $params = [];
 
-        if ($this->isEmbedTruthy($intent['autoplay'] ?? null)) {
-            $params['autoplay'] = 1;
+        if (array_key_exists('autoplay', $intent)) {
+            $params['autoplay'] = (int)$this->isEmbedTruthy($intent['autoplay']);
         }
 
-        if ($this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null)) {
-            $params['muted'] = 1;
+        if (array_key_exists('muted', $intent) || array_key_exists('mute', $intent)) {
+            $params['muted'] = (int)$this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null);
         }
 
-        if ($this->isEmbedTruthy($intent['loop'] ?? null)) {
-            $params['loop'] = 1;
+        if (array_key_exists('loop', $intent)) {
+            $params['loop'] = (int)$this->isEmbedTruthy($intent['loop']);
         }
 
-        if (array_key_exists('controls', $intent) && !$this->isEmbedTruthy($intent['controls'])) {
-            $params['controls'] = 0;
+        if (array_key_exists('controls', $intent)) {
+            $params['controls'] = (int)$this->isEmbedTruthy($intent['controls']);
         }
 
-        // Vimeo start time is usually a hash (#t=); ignore generic `start` intent.
+        if (isset($intent['start']) && $intent['start'] !== '') {
+            $params['start'] = (int)$intent['start'];
+        }
 
         return $params;
+    }
+
+    protected function buildEmbedUrl(string $videoId, array $queryParams): string
+    {
+        // Vimeo's timecode belongs in the fragment, after any privacy/query options.
+        $start = $queryParams['start'] ?? null;
+        unset($queryParams['start']);
+        $url = parent::buildEmbedUrl($videoId, $queryParams);
+
+        return $start !== null ? $url . '#t=' . (int)$start . 's' : $url;
     }
 
     public function getVideoIdFromUrl(string $url): ?string

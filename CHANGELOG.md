@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Honor playback overrides and start times in Vimeo embeds.
 - Apply start times to Mux embeds.
 - Apply start times to Cloudflare Stream embeds.
 - Apply playback options correctly to SproutVideo embeds.

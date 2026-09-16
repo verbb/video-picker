@@ -42,3 +42,11 @@ it('preserves Vimeo privacy hashes across model and cached embeds', function(str
     'player link' => ['https://player.vimeo.com/video/123456789?h=913062c8ff', '913062c8ff'],
     'public share link' => ['https://vimeo.com/123456789', null],
 ]);
+
+it('honors explicit Vimeo playback overrides', function() {
+    $source = new Vimeo(['handle' => 'vimeo']);
+    parse_str(parse_url($source->getEmbedUrl('123456789', ['background' => 1, 'muted' => false, 'autoplay' => false, 'loop' => false, 'controls' => true]), PHP_URL_QUERY) ?? '', $query);
+    expect($query)->toMatchArray(['background' => '1', 'muted' => '0', 'autoplay' => '0', 'loop' => '0', 'controls' => '1']);
+    expect($source->getEmbedUrl('123456789', ['start' => 12, 'h' => 'hash']))->toBe('https://player.vimeo.com/video/123456789?h=hash#t=12s')
+        ->and($source->getEmbedHtml('123456789', ['start' => 0]))->toContain('#t=0s');
+});
