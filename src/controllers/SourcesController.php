@@ -212,9 +212,8 @@ class SourcesController extends Controller
     public function actionDelete(): Response
     {
         $this->requirePostRequest();
-        $this->requireAcceptsJson();
 
-        $sourceId = $this->request->getRequiredBodyParam('id');
+        $sourceId = $this->request->getBodyParam('id') ?? $this->request->getRequiredBodyParam('sourceId');
 
         VideoPicker::$plugin->getSources()->deleteSourceById($sourceId);
 

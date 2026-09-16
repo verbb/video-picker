@@ -26,6 +26,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Fix deleting a source from its edit page.
 - Preserve an empty Available Fields selection when saving a source.
 - Reject invalid video URLs when saving content instead of silently clearing the selected video.
 - Source setup links use kebab-cased provider slugs so multiword provider guides resolve correctly.

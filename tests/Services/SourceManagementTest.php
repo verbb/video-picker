@@ -33,3 +33,23 @@ it('preserves no available fields when every checkbox is cleared', function() {
         }
     }
 });
+
+it('deletes a source submitted by the edit form', function() {
+    AdminUser::login();
+    $source = new YouTube(['name' => 'Delete form fixture', 'handle' => 'deleteFormFixture', 'enabled' => false]);
+    expect(VideoPicker::$plugin->getSources()->saveSource($source))->toBeTrue();
+    CpRequestContext::activate('actions/video-picker/sources/delete');
+    $request = Craft::$app->getRequest();
+    $request->setBodyParams([
+        'sourceId' => $source->id,
+        'redirect' => Craft::$app->getSecurity()->hashData('video-picker/sources'),
+    ]);
+    $controller = new SourcesController('sources', VideoPicker::$plugin);
+
+    try {
+        $controller->actionDelete();
+        expect(VideoPicker::$plugin->getSources()->getSourceById($source->id))->toBeNull();
+    } finally {
+        VideoPicker::$plugin->getSources()->deleteSourceById($source->id);
+    }
+});
