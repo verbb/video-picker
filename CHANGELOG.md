@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Fixed a moderate-severity denial-of-service vulnerability.
 - Fixed explorer searches losing keyboard focus when results update.
 - Fixed Dailymotion connection checks reusing an old access token after credentials change.
 - Apply supported playback options to Dailymotion embeds and document default-player limitations.

@@ -5,10 +5,12 @@ use Closure;
 use RuntimeException;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\RequestOptions;
-use GuzzleHttp\TransferStats;
+use GuzzleHttp\Psr7\FnStream;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
+use GuzzleHttp\Psr7\Utils;
+use GuzzleHttp\RequestOptions;
+use GuzzleHttp\TransferStats;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -98,6 +100,7 @@ class PinnedHttpClient implements ClientInterface
         $curlAddress = str_contains($pinnedAddress, ':') ? '[' . $pinnedAddress . ']' : $pinnedAddress;
         $protocols = CURLPROTO_HTTP | CURLPROTO_HTTPS;
         $maxBytes = max(1, (int)($this->_settings['max_bytes'] ?? 5_000_000));
+        $sink = Utils::streamFor('');
 
         $options = [
             RequestOptions::ALLOW_REDIRECTS => false,
@@ -106,9 +109,18 @@ class PinnedHttpClient implements ClientInterface
             RequestOptions::PROXY => '',
             // Guzzle's cURL handler omits handler stats for streamed responses,
             // which makes the peer-IP verification below fail closed even when
-            // CURLOPT_RESOLVE pinned the approved address. The progress callback
-            // still aborts oversized bodies before they exceed the byte budget.
+            // CURLOPT_RESOLVE pinned the approved address.
             RequestOptions::STREAM => false,
+            // Transfer progress can count compressed bytes. Bound the decoded sink too.
+            RequestOptions::SINK => FnStream::decorate($sink, [
+                'write' => static function(string $data) use ($sink, $maxBytes): int {
+                    if ($sink->tell() + strlen($data) > $maxBytes) {
+                        throw new RuntimeException('Embed response exceeded the download limit.');
+                    }
+
+                    return $sink->write($data);
+                },
+            ]),
             RequestOptions::TIMEOUT => (float)($this->_settings['timeout'] ?? 8),
             RequestOptions::VERIFY => $this->_settings['ssl_verify_peer'] ?? true,
             RequestOptions::CURL => [
