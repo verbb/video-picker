@@ -122,6 +122,38 @@ class Wistia extends CredentialsSource
     // Protected Methods
     // =========================================================================
 
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        $params = [];
+
+        if (array_key_exists('autoplay', $intent)) {
+            $params['autoPlay'] = $this->isEmbedTruthy($intent['autoplay']) ? 'true' : 'false';
+        }
+
+        if (array_key_exists('muted', $intent) || array_key_exists('mute', $intent)) {
+            $params['muted'] = $this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null) ? 'true' : 'false';
+        }
+
+        if (array_key_exists('loop', $intent)) {
+            $params['endVideoBehavior'] = $this->isEmbedTruthy($intent['loop']) ? 'loop' : 'default';
+        }
+
+        // Wistia exposes each player control separately, rather than a controls flag.
+        if (array_key_exists('controls', $intent)) {
+            $visible = $this->isEmbedTruthy($intent['controls']) ? 'true' : 'false';
+
+            foreach (['playbar', 'playButton', 'smallPlayButton', 'fullscreenButton', 'volumeControl', 'settingsControl'] as $control) {
+                $params[$control] = $visible;
+            }
+        }
+
+        if (isset($intent['start']) && $intent['start'] !== '') {
+            $params['time'] = (int)$intent['start'];
+        }
+
+        return $params;
+    }
+
     protected function fetchExplorerSections(): array
     {
         $sections = [
