@@ -98,18 +98,18 @@ class BunnyStream extends CredentialsSource
 
     public function getVideoIdFromUrl(string $url): ?string
     {
-        $patterns = [
-            '/(?:https?:\/\/)?(?:player|iframe)\.mediadelivery\.net\/embed\/\d+\/([a-f0-9-]{36})/i',
-            '/(?:https?:\/\/)?video\.bunnycdn\.com\/play\/\d+\/([a-f0-9-]{36})/i',
-        ];
+        $identity = $this->_getVideoUrlIdentity($url);
 
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $url, $matches)) {
-                return $matches[1];
-            }
-        }
+        return $identity && $identity['libraryId'] === (string)App::parseEnv($this->libraryId)
+            ? $identity['id']
+            : null;
+    }
 
-        return null;
+    public function getVideoEmbedOptions(Video $video): array
+    {
+        $identity = $this->_getVideoUrlIdentity($video->url ?? '');
+
+        return $identity ? ['libraryId' => $identity['libraryId']] : [];
     }
 
     public function getVideoById(string $id): ?Video
@@ -152,7 +152,8 @@ class BunnyStream extends CredentialsSource
 
     protected function buildEmbedUrl(string $videoId, array $queryParams): string
     {
-        $libraryId = App::parseEnv($this->libraryId);
+        // A selected video keeps its library even if this source is reconfigured.
+        $libraryId = ArrayHelper::remove($queryParams, 'libraryId', App::parseEnv($this->libraryId));
         $url = 'https://player.mediadelivery.net/embed/' . rawurlencode((string)$libraryId) . '/' . rawurlencode($videoId);
 
         if ($queryParams) {
@@ -250,6 +251,22 @@ class BunnyStream extends CredentialsSource
 
     // Private Methods
     // =========================================================================
+
+    private function _getVideoUrlIdentity(string $url): ?array
+    {
+        $patterns = [
+            '/(?:https?:\/\/)?(?:player|iframe)\.mediadelivery\.net\/embed\/(\d+)\/([a-f0-9-]{36})/i',
+            '/(?:https?:\/\/)?video\.bunnycdn\.com\/play\/(\d+)\/([a-f0-9-]{36})/i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $url, $matches)) {
+                return ['libraryId' => $matches[1], 'id' => $matches[2]];
+            }
+        }
+
+        return null;
+    }
 
     private function _performVideosRequest(string $uri, array $params = []): array
     {
