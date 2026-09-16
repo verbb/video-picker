@@ -397,6 +397,18 @@ export class VideoPickerInput {
         this.previewHost.replaceChildren();
         this.syncBusyState();
 
+        const errors = this.collectErrors();
+        const hasPreview = this.hasSources() && !this.loadingVideo && errors.length === 0
+            && this.currentVideo && this.enablePreview;
+
+        // Browse-only inputs cannot be emptied by typing. Keep a clear action
+        // available when no preview card can supply its normal Remove button.
+        if (!this.allowUrlInput && this.videoUrl && !hasPreview) {
+            const remove = this.createRemoveButton();
+            remove.textContent = Craft.t('video-picker', 'Remove');
+            this.previewHost.appendChild(remove);
+        }
+
         if (!this.hasSources()) {
             const warning = document.createElement('div');
             warning.className = 'vp-source-warning';
@@ -418,8 +430,6 @@ export class VideoPickerInput {
             this.previewHost.appendChild(loading);
             return;
         }
-
-        const errors = this.collectErrors();
 
         if (errors.length) {
             const errWrap = document.createElement('div');
@@ -542,13 +552,7 @@ export class VideoPickerInput {
             this.fetchVideo(true);
         });
 
-        const remove = this.iconButton('vp-remove', Craft.t('video-picker', 'Remove'));
-        remove.addEventListener('click', (event) => {
-            event.preventDefault();
-            this.removeVideo();
-        });
-
-        buttons.append(open, refresh, remove);
+        buttons.append(open, refresh, this.createRemoveButton());
         meta.append(titleRow, details);
 
         // A03: surface stale / unavailable after a failed revalidate (last snapshot still shown).
@@ -592,6 +596,16 @@ export class VideoPickerInput {
     /** Visible link text plus an AT cue that target=_blank opens a new tab (A14). */
     private newTabLabel(label: string): string {
         return Craft.t('video-picker', '{label} (opens in a new tab)', { label });
+    }
+
+    private createRemoveButton(): HTMLElement {
+        const remove = this.iconButton('vp-remove', Craft.t('video-picker', 'Remove'));
+        remove.addEventListener('click', (event) => {
+            event.preventDefault();
+            this.removeVideo();
+        });
+
+        return remove;
     }
 
     private removeVideo(): void {

@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Allow clearing browse-only fields when the preview is hidden or unavailable.
 - Resolve custom provider URLs when committing the field input.
 - Preserve cached video embeds when changing a source handle.
 - Keep the selected video preview responsive when URL lookups overlap or a video is chosen from the explorer.

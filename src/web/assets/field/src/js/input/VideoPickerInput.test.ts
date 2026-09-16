@@ -11,7 +11,7 @@ vi.mock('../explorer/ExplorerDialog.js', () => ({
 
 function fixture() {
     const requests: { resolve: (value: unknown) => void; reject: (error: unknown) => void }[] = [];
-    vi.stubGlobal('Craft', { sendActionRequest: vi.fn(() => new Promise((resolve, reject) => {
+    vi.stubGlobal('Craft', { t: (_category: string, message: string) => message, sendActionRequest: vi.fn(() => new Promise((resolve, reject) => {
         requests.push({ resolve, reject });
     })) });
     // Keep the real field actions and request handlers; rendering is exercised in Craft.
@@ -90,4 +90,31 @@ it('resolves a custom provider URL when the editor commits the input', async () 
     requests[0].resolve({ data: { url, title: 'Custom provider video' } });
     await settle();
     expect(input.currentVideo.title).toBe('Custom provider video');
+});
+
+it.each([
+    { state: 'the preview is hidden', sourceCount: 1, showPreview: false, errors: {} },
+    { state: 'sources are unavailable', sourceCount: 0, showPreview: true, errors: {} },
+    { state: 'the preview has an error', sourceCount: 1, showPreview: true, errors: { url: ['Unavailable'] } },
+])('allows clearing browse-only selections when $state', ({ sourceCount, showPreview, errors }) => {
+    const { input } = fixture();
+    vi.stubGlobal('document', { createElement: () => ({ setAttribute: vi.fn(), appendChild: vi.fn() }) });
+    input.settings.sourceCount = sourceCount;
+    input.allowUrlInput = false;
+    input.enablePreview = showPreview;
+    input.currentVideo = { url: input.videoUrl, errors };
+    input.previewHost = { replaceChildren: vi.fn(), appendChild: vi.fn() };
+    input.syncBusyState = vi.fn();
+    const remove = { addEventListener: vi.fn() };
+    input.iconButton = vi.fn(() => remove);
+    // Render the actual field branches, replacing only DOM/control primitives.
+    delete input.syncPreview;
+    input.syncPreview();
+
+    expect(input.previewHost.appendChild).toHaveBeenCalledWith(remove);
+    const [, onClick] = remove.addEventListener.mock.calls[0];
+    onClick({ preventDefault: vi.fn() });
+    expect(input.valueInput.value).toBe('');
+    expect(input.currentVideo).toBeNull();
+    expect(input.valueInput.dispatchEvent).toHaveBeenCalled();
 });
