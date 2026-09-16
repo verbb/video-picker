@@ -124,6 +124,18 @@ class CloudflareStream extends CredentialsSource
     // Protected Methods
     // =========================================================================
 
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        $params = parent::mapEmbedQueryParams($videoId, $intent);
+
+        if (array_key_exists('start', $params)) {
+            $params['startTime'] = $params['start'];
+            unset($params['start']);
+        }
+
+        return $params;
+    }
+
     protected function fetchExplorerSections(): array
     {
         return [
