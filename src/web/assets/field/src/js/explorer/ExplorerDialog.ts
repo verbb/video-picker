@@ -360,6 +360,13 @@ export class ExplorerDialog {
                 this.loadingSources = false;
 
                 if (!this.sources.length) {
+                    this.currentSource = null;
+                    this.setCollection(null);
+                    this.currentVideo = null;
+                    this.videos = [];
+                    this.nextPage = null;
+                    this.loadingVideos = false;
+                    this.videosError = null;
                     this.render();
                     return;
                 }
@@ -385,8 +392,20 @@ export class ExplorerDialog {
                     return;
                 }
 
-                this.setCollection(this.currentSource?.sections?.[0]?.collections?.[0] ?? null);
-                this.fetchVideos();
+                const collections = this.currentSource?.sections?.flatMap((section) => section.collections ?? []) ?? [];
+                const previousCollection = refresh && this.currentSource?.handle === previousHandle
+                    ? collections.find((collection) => collection.method === this.currentCollection?.method
+                        && JSON.stringify(Array.isArray(collection.options) ? {} : collection.options ?? {})
+                            === JSON.stringify(this.currentCollection?.options ?? {}))
+                    : null;
+                this.setCollection(previousCollection ?? collections[0] ?? null);
+
+                if (this.query.trim() && this.supportsSearch()) {
+                    this.searchVideos();
+                } else {
+                    this.query = '';
+                    this.fetchVideos();
+                }
             })
             .catch((error: unknown) => {
                 if (!this.isCurrentRequest(version)) {

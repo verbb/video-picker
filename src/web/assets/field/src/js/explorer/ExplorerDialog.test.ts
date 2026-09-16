@@ -77,3 +77,45 @@ it('ignores requests that finish after the explorer closes', async () => {
     expect(dialog.videos).toEqual([]);
     expect(dialog.render).not.toHaveBeenCalled();
 });
+
+it('refreshes the displayed search in the selected collection', async () => {
+    const { dialog, requests } = fixture();
+    const collection = { name: 'My playlist', method: 'playlist', options: { id: 'chosen' } };
+    dialog.currentCollection = collection;
+    dialog.query = 'matching video';
+    dialog.fetchSources(true);
+    await settle(requests[0], [{ handle: 'first', supportsSearch: true, sections: [{ collections: [
+        { name: 'Uploads', method: 'uploads' }, collection,
+    ] }] }]);
+    expect(dialog.currentCollection).toEqual(collection);
+    expect(Craft.sendActionRequest).toHaveBeenLastCalledWith('POST', 'video-picker/videos/get-videos', {
+        data: { source: 'first', method: 'search', options: { q: 'matching video' }, fieldId: undefined },
+    });
+});
+
+it('clears obsolete results and selection when refreshed sources are no longer available', async () => {
+    const { dialog, requests } = fixture();
+    dialog.videos = [{ id: 'old' }];
+    dialog.currentVideo = dialog.videos[0];
+    dialog.fetchSources(true);
+    await settle(requests[0], []);
+    expect(dialog.currentSource).toBeNull();
+    expect(dialog.currentCollection).toBeNull();
+    expect(dialog.currentVideo).toBeNull();
+    expect(dialog.videos).toEqual([]);
+    expect(dialog.nextPage).toBeNull();
+});
+
+it('retains a refreshed collection with PHP empty-array options', async () => {
+    const { dialog, requests } = fixture();
+    dialog.currentCollection = { name: 'Likes', method: 'likes', options: {} };
+    dialog.fetchSources(true);
+    await settle(requests[0], [{ handle: 'first', sections: [{ collections: [
+        { name: 'Uploads', method: 'uploads', options: [] },
+        { name: 'Likes', method: 'likes', options: [] },
+    ] }] }]);
+    expect(dialog.currentCollection.method).toBe('likes');
+    expect(Craft.sendActionRequest).toHaveBeenLastCalledWith('POST', 'video-picker/videos/get-videos', {
+        data: { source: 'first', method: 'likes', options: {}, fieldId: undefined },
+    });
+});

@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Preserve the current collection and search when refreshing the explorer, and clear results when its sources are no longer available.
 - Preserve query parameters when extracting generic embed URLs from HTML.
 - Handle empty YouTube searches and playlists without an API error.
 - Load all pages of provider folders, playlists and collections in the explorer.
@@ -65,7 +66,7 @@
 - GraphQL `ArrayType` serialization returns `toArray()` results correctly.
 - Element thumb `srcset` no longer emits an empty 2× candidate.
 - Explorer video cards are keyboard-operable (listbox/option, arrow keys, Enter/Space).
-- Explorer / preview dialogs now response properly on tablet/mobile.
+- Explorer / preview dialogs now respond properly on tablet/mobile.
 - Play control is a real button (explorer + field: glyph on hover/focus; explorer also `P` on the focused card; field: full-thumb hit target). Coarse pointers keep a faint explorer rest glyph.
 - Preview dialog exposes an accessible name (video title, or “Video preview”) even with `without-header`.
 - URL `pk-input` picks up the Craft field label (host id matches `label[for]`; shadow textbox gets `aria-label`) instead of using the placeholder as its accessible name.
