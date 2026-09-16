@@ -67,6 +67,15 @@ class Videos extends Component
             return $this->_videosByUrl[$memoKey] = null;
         }
 
+        // Aliases may have no exact snapshot row, but Refresh must bypass provider caches.
+        if ($clearCache) {
+            foreach ($allowedSources as $source) {
+                if ($source->getVideoIdFromUrl($videoUrl)) {
+                    $source->clearLocalCache();
+                }
+            }
+        }
+
         // Fetch the video data from our saved database store of videos
         $record = VideoRecord::findOne([
             'videoUrl' => $videoUrl,
@@ -77,12 +86,6 @@ class Videos extends Component
                 // Explicit refresh: fetch first, then replace. Keep last-known-good if
                 // the provider fails (DATA-04) — never delete the row up front.
                 // Exception: field-scoped private snapshots must not leak across accounts.
-                foreach ($allowedSources as $source) {
-                    if ($source->getVideoIdFromUrl($videoUrl)) {
-                        $source->clearLocalCache();
-                    }
-                }
-
                 $compatible = $field instanceof VideoPickerField
                     ? $this->_compatibleSourcesForUrl($allowedSources, $videoUrl)
                     : $allowedSources;
@@ -249,6 +252,8 @@ class Videos extends Component
 
             try {
                 $record->save();
+                // Other URL aliases and field contexts may have memoized this snapshot.
+                $this->_videosByUrl = [];
                 return;
             } catch (Throwable $e) {
                 // Concurrent insert against the unique index — reload and overwrite.
