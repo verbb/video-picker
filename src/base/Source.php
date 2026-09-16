@@ -3,6 +3,7 @@ namespace verbb\videopicker\base;
 
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\models\Video;
+use verbb\videopicker\records\Source as SourceRecord;
 
 use Craft;
 use craft\base\Field;
@@ -109,6 +110,10 @@ abstract class Source extends SavableComponent implements SourceInterface
         $rules = parent::defineRules();
 
         $rules[] = [['name', 'handle'], 'required'];
+        $rules[] = [['name', 'handle'], 'unique',
+            'targetClass' => SourceRecord::class,
+            'filter' => fn($query) => $query->andWhere(['not', ['id' => $this->id]]),
+        ];
         $rules[] = [['id'], 'number', 'integerOnly' => true];
 
         $rules[] = [

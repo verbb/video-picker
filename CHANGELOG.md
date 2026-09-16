@@ -26,6 +26,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Show validation errors for duplicate source names and handles.
 - Ignore obsolete explorer responses after changing sources, collections or searches, or closing the dialog.
 - Preserve video cache expiry and refresh errors when saving content without fetching new metadata.
 - Preserve named image properties in generic embed data.

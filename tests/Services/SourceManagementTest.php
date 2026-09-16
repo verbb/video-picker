@@ -53,3 +53,20 @@ it('deletes a source submitted by the edit form', function() {
         VideoPicker::$plugin->getSources()->deleteSourceById($source->id);
     }
 });
+
+it('validates duplicate source names and handles without a database error', function(string $attribute) {
+    AdminUser::login();
+    $sources = VideoPicker::$plugin->getSources();
+    $source = new YouTube(['name' => 'Unique fixture', 'handle' => 'uniqueFixture', 'enabled' => false]);
+    expect($sources->saveSource($source))->toBeTrue();
+
+    try {
+        $duplicate = new YouTube(['name' => 'Other fixture', 'handle' => 'otherFixture', 'enabled' => false]);
+        $duplicate->$attribute = $source->$attribute;
+        expect($sources->saveSource($duplicate))->toBeFalse()
+            ->and($duplicate->getErrors($attribute))->not->toBeEmpty()
+            ->and($sources->saveSource($source))->toBeTrue();
+    } finally {
+        $sources->deleteSource($source);
+    }
+})->with(['name', 'handle']);
