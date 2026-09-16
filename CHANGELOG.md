@@ -26,6 +26,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Reject invalid video URLs when saving content instead of silently clearing the selected video.
 - Source setup links use kebab-cased provider slugs so multiword provider guides resolve correctly.
 - Fixed a high-severity cross-site scripting vulnerability.
 - Fixed a high-severity server-side request forgery vulnerability.

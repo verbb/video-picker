@@ -254,9 +254,13 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             return $this->_applyEmbedDefaults($value);
         }
 
-        if ($value && is_string($value) && filter_var(trim($value), FILTER_VALIDATE_URL)) {
+        if (is_string($value) && trim($value) !== '') {
+            $value = trim($value);
+
             // Only resolve against sources that allow this field (source Available Fields).
-            $video = VideoPicker::$plugin->getVideos()->getVideoByUrl($value, false, $this);
+            $video = filter_var($value, FILTER_VALIDATE_URL)
+                ? VideoPicker::$plugin->getVideos()->getVideoByUrl($value, false, $this)
+                : null;
 
             if ($video) {
                 if ($reason = $this->selectionPolicyError($video)) {
@@ -266,6 +270,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
                 return $this->_applyEmbedDefaults($video);
             }
 
+            // Preserve invalid input so validation refuses the save instead of clearing content.
             $video = new Video();
             $video->url = $value;
             $video->addError('url', Craft::t('video-picker', 'Unable to find the video.'));
