@@ -349,29 +349,34 @@ class YouTube extends OAuthSource
         $collections = [];
 
         try {
-            $data = $this->cachedRequest('GET', 'youtube/v3/playlists', [
-                'query' => [
-                    'part' => 'snippet',
-                    'mine' => 'true',
-                    'maxResults' => 50,
-                ],
-            ]);
+            $pageToken = null;
 
-            foreach (($data['items'] ?? []) as $item) {
-                $collection = [];
-                $collection['id'] = $item['id'] ?? '';
-                $collection['title'] = $item['snippet']['title'] ?? '';
-                $collection['totalVideos'] = 0;
-                $collection['url'] = 'title';
+            do {
+                $data = $this->cachedRequest('GET', 'youtube/v3/playlists', [
+                    'query' => [
+                        'part' => 'snippet',
+                        'mine' => 'true',
+                        'maxResults' => 50,
+                        'pageToken' => $pageToken,
+                    ],
+                ]);
 
-                $collections[] = $collection;
-            }
+                foreach (($data['items'] ?? []) as $item) {
+                    $collection = [];
+                    $collection['id'] = $item['id'] ?? '';
+                    $collection['title'] = $item['snippet']['title'] ?? '';
+                    $collection['totalVideos'] = 0;
+                    $collection['url'] = 'title';
+
+                    $collections[] = $collection;
+                }
+
+                $pageToken = $data['nextPageToken'] ?? null;
+            } while ($pageToken);
         } catch (Throwable $e) {
             // A fatal error will be thrown for an account with no playlists yet...
-            if ($e instanceof RequestException && $e->getResponse()) {
-                if ($e->getResponse()->getStatusCode() !== 404) {
-                    throw $e;
-                }
+            if (!$e instanceof RequestException || !$e->getResponse() || $e->getResponse()->getStatusCode() !== 404) {
+                throw $e;
             }
         }
 

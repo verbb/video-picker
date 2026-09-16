@@ -309,13 +309,22 @@ class SproutVideo extends CredentialsSource
 
     private function _getFolders(): array
     {
-        $response = $this->cachedRequest('GET', 'folders', [
-            'query' => [
-                'per_page' => 50,
-            ],
-        ]);
+        $collections = [];
+        $page = 1;
 
-        return is_array($response['folders'] ?? null) ? $response['folders'] : [];
+        do {
+            $response = $this->cachedRequest('GET', 'folders', [
+                'query' => [
+                    'page' => $page++,
+                    'per_page' => 50,
+                ],
+            ]);
+            $items = $response['folders'] ?? [];
+            $items = is_array($items) ? $items : [];
+            array_push($collections, ...$items);
+        } while (!empty($response['next_page']));
+
+        return $collections;
     }
 
     private function _folderName(?string $folderId): ?string

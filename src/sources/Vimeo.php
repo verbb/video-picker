@@ -304,13 +304,10 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'name,uri';
 
-        $data = $this->cachedRequest('GET', 'me/folders', [
-            'query' => $query,
-        ]);
-
+        $items = $this->_getCollectionItems('me/folders', $query);
         $collections = [];
 
-        foreach (($data['data'] ?? []) as $data) {
+        foreach ($items as $data) {
             $collections[] = [
                 'id' => substr($data['uri'], strpos($data['uri'], '/projects/') + \strlen('/projects/')),
                 'url' => $data['uri'],
@@ -327,13 +324,10 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'name,uri,stats';
 
-        $data = $this->cachedRequest('GET', 'me/albums', [
-            'query' => $query,
-        ]);
-
+        $items = $this->_getCollectionItems('me/albums', $query);
         $collections = [];
 
-        foreach (($data['data'] ?? []) as $data) {
+        foreach ($items as $data) {
             $collections[] = [
                 'id' => substr($data['uri'], strpos($data['uri'], '/albums/') + \strlen('/albums/')),
                 'url' => $data['uri'],
@@ -350,13 +344,10 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'name,uri';
 
-        $data = $this->cachedRequest('GET', 'me/channels', [
-            'query' => $query,
-        ]);
-
+        $items = $this->_getCollectionItems('me/channels', $query);
         $collections = [];
 
-        foreach (($data['data'] ?? []) as $data) {
+        foreach ($items as $data) {
             $collections[] = [
                 'id' => substr($data['uri'], strpos($data['uri'], '/channels/') + \strlen('/channels/')),
                 'url' => $data['uri'],
@@ -366,6 +357,20 @@ class Vimeo extends OAuthSource
         }
 
         return $collections;
+    }
+
+    private function _getCollectionItems(string $uri, array $query): array
+    {
+        $items = [];
+        $query['per_page'] = 100;
+
+        do {
+            $response = $this->cachedRequest('GET', $uri, ['query' => $query]);
+            array_push($items, ...($response['data'] ?? []));
+            $query['page']++;
+        } while (!empty($response['paging']['next']));
+
+        return $items;
     }
 
     private function _queryFromParams(array $params = []): array

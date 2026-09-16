@@ -334,13 +334,22 @@ class Wistia extends CredentialsSource
 
     private function _getProjects(): array
     {
-        $response = $this->cachedRequest('GET', 'projects.json', [
-            'query' => [
-                'per_page' => 50,
-            ],
-        ]);
+        $collections = [];
+        $page = 1;
 
-        return is_array($response) ? $response : [];
+        do {
+            $response = $this->cachedRequest('GET', 'projects.json', [
+                'query' => [
+                    'page' => $page++,
+                    'per_page' => 50,
+                ],
+            ]);
+            $items = $response;
+            $items = is_array($items) ? $items : [];
+            array_push($collections, ...$items);
+        } while (count($items) >= 50);
+
+        return $collections;
     }
 
     private function _queryFromParams(array $params = []): array

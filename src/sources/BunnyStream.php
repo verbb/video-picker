@@ -283,14 +283,22 @@ class BunnyStream extends CredentialsSource
 
     private function _getCollections(): array
     {
-        $response = $this->cachedRequest('GET', 'library/' . $this->_libraryId() . '/collections', [
-            'query' => [
-                'page' => 1,
-                'itemsPerPage' => 50,
-            ],
-        ]);
+        $collections = [];
+        $page = 1;
 
-        return is_array($response['items'] ?? null) ? $response['items'] : [];
+        do {
+            $response = $this->cachedRequest('GET', 'library/' . $this->_libraryId() . '/collections', [
+                'query' => [
+                    'page' => $page++,
+                    'itemsPerPage' => 50,
+                ],
+            ]);
+            $items = $response['items'] ?? [];
+            $items = is_array($items) ? $items : [];
+            array_push($collections, ...$items);
+        } while (!empty($items) && count($collections) < (int)($response['totalItems'] ?? 0));
+
+        return $collections;
     }
 
     private function _collectionName(?string $collectionId): ?string
