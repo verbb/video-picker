@@ -271,7 +271,7 @@ class Videos extends Component
             return null;
         }
 
-        $embedUrl = $matches[2] ?? '';
+        $embedUrl = html_entity_decode($matches[2] ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         if ($embedUrl) {
             return UrlHelper::urlWithParams($embedUrl, $params);
