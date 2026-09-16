@@ -117,9 +117,10 @@ class SourcesController extends Controller
         }
 
         // Available Fields lives on the source (not the field) so prod can grant fields without PC.
-        $fields = $this->request->getBodyParam('fields');
-        if ($fields === null || $fields === '') {
-            $fields = '*';
+        $fields = $this->request->getBodyParam('fields', $oldSource->fields ?? '*');
+        if ($fields === '') {
+            // Craft posts an empty string when every checkbox, including All, is unchecked.
+            $fields = [];
         }
 
         $source = $sourcesService->createSource([

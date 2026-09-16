@@ -10,7 +10,7 @@ OAuth Sources need a client ID, client secret and connection handshake. Credenti
 
 ## Available Fields
 
-On each Source you can limit which Video Picker fields are allowed to browse it (**Available Fields**). Leave empty to allow all fields. The field must still use a Source that is enabled and connected.
+On each Source you can limit which Video Picker fields are allowed to browse it (**Available Fields**). Select **All** to allow every field, choose individual fields to limit access, or clear every checkbox to allow none. The field must still use a Source that is enabled and connected.
 
 Editors need **Explore videos** to browse an allowed Source or resolve a pasted URL through the field. Give **Sources** permission only to users who manage provider credentials and connections.
 
