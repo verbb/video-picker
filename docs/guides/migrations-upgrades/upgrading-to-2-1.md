@@ -10,6 +10,8 @@ Open an existing entry as an editor, browse a connected Source and resolve a sav
 
 ## Cache Behaviour
 
+Credential-based Sources may show **Not Connected** after the update. Open each Source and click **Connect** to verify its saved API settings again. OAuth connections are retained. Repeat the connection check after changing credentials through environment variables.
+
 Selected-video metadata now expires according to **Video Cache Duration**, which defaults to seven days. A read after expiry attempts to refresh it, so providers can receive requests while rendering existing content. Check provider connectivity in each deployment environment and adjust the duration under **Settings → Video Picker → Cache Settings** if needed.
 
 The update merges duplicate cache rows for the same URL, retaining the most recently updated copy. Saved field URLs remain unchanged. See [Cache](docs:feature-tour/cache) for refresh controls and unavailable-provider behaviour.

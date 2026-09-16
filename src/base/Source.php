@@ -8,6 +8,7 @@ use verbb\videopicker\records\Source as SourceRecord;
 use Craft;
 use craft\base\Field;
 use craft\base\SavableComponent;
+use craft\helpers\App;
 use craft\helpers\Db;
 use craft\helpers\Html;
 use craft\helpers\Json;
@@ -567,9 +568,7 @@ abstract class Source extends SavableComponent implements SourceInterface
 
     protected function getConnectionCache(): ?string
     {
-        $connection = $this->_getConnectionCache();
-
-        return is_string($connection) ? $connection : null;
+        return $this->_getConnectionCache();
     }
 
     protected function setConnectionCache(string $status): void
@@ -603,26 +602,22 @@ abstract class Source extends SavableComponent implements SourceInterface
      */
     private function _accountCacheGeneration(): string
     {
-        $parts = [];
+        $settings = $this->getSettings();
+        unset($settings['fields']);
 
-        if (property_exists($this, 'clientId') && $this->clientId) {
-            $parts[] = (string)$this->clientId;
-        }
-
-        foreach (['accessToken', 'apiKey', 'apiSecret', 'tokenId', 'tokenSecret', 'channelUser'] as $attr) {
-            if (property_exists($this, $attr) && $this->{$attr}) {
-                $parts[] = md5((string)$this->{$attr});
+        foreach ($settings as $name => $value) {
+            if (is_string($value)) {
+                $settings[$name] = App::parseEnv($value);
             }
         }
 
-        if (method_exists($this, 'getToken')) {
-            $token = $this->getToken();
-            if ($token && isset($token->id)) {
-                $parts[] = (string)$token->id;
-            }
+        $identity = [get_class($this), $settings];
+
+        if (method_exists($this, 'getToken') && ($token = $this->getToken())) {
+            $identity[] = [$token->id, $token->resourceOwnerId];
         }
 
-        return $parts ? md5(implode(':', $parts)) : '0';
+        return hash('sha256', Json::encode($identity));
     }
 
     private function _cacheDurationForRequest(string $uri, array $options): int
@@ -694,13 +689,16 @@ abstract class Source extends SavableComponent implements SourceInterface
     {
         $this->_normalizeSourceCache();
 
-        return $this->cache['explorer'];
+        return ($this->cache['explorerIdentity'] ?? null) === $this->_accountCacheGeneration()
+            ? $this->cache['explorer']
+            : [];
     }
 
     private function _setExplorerCache(array $sections): void
     {
         $this->_normalizeSourceCache();
         $this->cache['explorer'] = $sections;
+        $this->cache['explorerIdentity'] = $this->_accountCacheGeneration();
     }
 
     private function _getConnectionCache(): ?string
@@ -708,13 +706,16 @@ abstract class Source extends SavableComponent implements SourceInterface
         $this->_normalizeSourceCache();
         $connection = $this->cache['connection'] ?? null;
 
-        return is_string($connection) ? $connection : null;
+        return is_string($connection) && ($this->cache['connectionIdentity'] ?? null) === $this->_accountCacheGeneration()
+            ? $connection
+            : null;
     }
 
     private function _setConnectionCache(?string $status): void
     {
         $this->_normalizeSourceCache();
         $this->cache['connection'] = $status;
+        $this->cache['connectionIdentity'] = $this->_accountCacheGeneration();
     }
 
     private function _persistSourceCache(): void
