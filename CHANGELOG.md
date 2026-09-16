@@ -16,13 +16,20 @@
 - Add **Embed Error Cache Duration** (default 60 seconds; `0` disables) so failed Twig embed crawls are not retried every request.
 
 ### Changed
+- Require Embed 4 and update Plugin Kit and lodash dependencies to their patched releases.
 - Field input rebuilt on [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) (web components).
 - `SourceInterface` no longer requires `getOAuthProviderClass()` — OAuth is confined to `OAuthSource`.
 - Source embeds split intent/query params from iframe attributes (no longer merge query options onto the iframe tag).
 - Selected-video field preview can show the provider brand icon on the thumbnail via **Show Provider Icon** (off by default), plus a private lock beside the title when needed and an explicit open-on-provider action.
 - Selected-video DB rows are no longer indefinite: expired snapshots revalidate on read and keep the last good data if refresh fails.
+- Clarify field and provider setup, URL embed error handling, Source responses and migration paths in the documentation, and document the complete GraphQL video type.
+- Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Source setup links use kebab-cased provider slugs so multiword provider guides resolve correctly.
+- Fixed a high-severity cross-site scripting vulnerability.
+- Fixed a high-severity server-side request forgery vulnerability.
+- Generic Twig embed helpers no longer reject valid public URLs because Guzzle omitted peer-IP statistics in streaming mode.
 - Cached video rows are shared by URL across same-provider sources; field scoping gates on provider URL match and rebinds `sourceHandle` to an allowed source (no longer rejects when another source for the same provider originally fetched the row).
 - Explorer search no longer mutates collection options — leaving search or switching collections clears `q` / search pagination so YouTube playlist browse cannot send `q` + `pageToken` together (#6).
 - YouTube search uses `cachedRequest` so `providerSearchCacheDuration` applies (was uncached via `request()`).
@@ -32,7 +39,8 @@
 - Field URL input debounces get-video and only requests once the value matches a supported provider URL pattern (or on blur/Enter); posted URL still updates every keystroke for save.
 - Require `videoPicker-sources` for source CP actions; OAuth `connect`/`disconnect` require that permission + POST (only `callback` stays anonymous).
 - Field video AJAX requires a valid `fieldId` so source Available Fields scoping cannot be bypassed.
-- Enforce `embedAllowedDomains` (when set), block private/loopback hosts, cache generic embed crawls, and bound hi-res image fetches.
+- Enforce `embedAllowedDomains` (when set), block private/loopback hosts, validate every generic-embed redirect hop, cache generic embed crawls, and bound hi-res image fetches.
+- Strip authorization and cookie headers when a generic embed redirect crosses origins.
 - Provider `cachedRequest` uses bounded TTLs, account/config-aware keys, and treats empty responses as cacheable.
 - Field `normalizeValue` memoizes video URL lookups per request.
 - Explorer cold-open hydrates collections for one source at a time (others use DB cache until selected).

@@ -163,6 +163,11 @@ abstract class Source extends SavableComponent implements SourceInterface
         return static::$providerHandle;
     }
 
+    public function getProviderDocsHandle(): string
+    {
+        return StringHelper::toKebabCase(static::$providerHandle);
+    }
+
     public function getPrimaryColor(): ?string
     {
         return ProviderHelper::getPrimaryColor(static::$providerHandle);

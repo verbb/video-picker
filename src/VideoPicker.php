@@ -23,17 +23,17 @@ use yii\base\Event;
 
 class VideoPicker extends Plugin
 {
+    // Traits
+    // =========================================================================
+
+    use PluginTrait;
+
+
     // Properties
     // =========================================================================
 
     public bool $hasCpSettings = true;
     public string $schemaVersion = '1.1.1';
-
-
-    // Traits
-    // =========================================================================
-
-    use PluginTrait;
 
 
     // Public Methods

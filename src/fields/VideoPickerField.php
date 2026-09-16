@@ -28,8 +28,8 @@ use yii\helpers\Markdown;
 
 use Throwable;
 
-use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\Type;
 
 class VideoPickerField extends Field implements ThumbableFieldInterface, PreviewableFieldInterface
 {
@@ -44,6 +44,18 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
     public static function icon(): string
     {
         return '@verbb/videopicker/icon-mask.svg';
+    }
+
+    /** Craft select options for the client-side video sort. */
+    public static function videoSortOptions(): array
+    {
+        return [
+            '' => Craft::t('video-picker', 'Provider order'),
+            'dateDesc' => Craft::t('video-picker', 'Newest first'),
+            'dateAsc' => Craft::t('video-picker', 'Oldest first'),
+            'playsDesc' => Craft::t('video-picker', 'Most plays'),
+            'titleAsc' => Craft::t('video-picker', 'Title A–Z'),
+        ];
     }
 
 
@@ -145,7 +157,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
 
         if (!$thumbUrl) {
             return '';
-        } 
+        }
 
         return Html::tag('div', '', [
             'class' => 'thumb',
@@ -239,7 +251,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
                 $value->addError('url', $reason);
             }
 
-            return $this->applyEmbedDefaults($value);
+            return $this->_applyEmbedDefaults($value);
         }
 
         if ($value && is_string($value) && filter_var(trim($value), FILTER_VALIDATE_URL)) {
@@ -251,25 +263,17 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
                     $video->addError('url', $reason);
                 }
 
-                return $this->applyEmbedDefaults($video);
+                return $this->_applyEmbedDefaults($video);
             }
 
             $video = new Video();
             $video->url = $value;
             $video->addError('url', Craft::t('video-picker', 'Unable to find the video.'));
 
-            return $this->applyEmbedDefaults($video);
+            return $this->_applyEmbedDefaults($video);
         }
 
         return null;
-    }
-
-    /** Stamp field embed intent onto the Video so getEmbedHtml/Url pick it up. */
-    private function applyEmbedDefaults(Video $video): Video
-    {
-        $video->embedDefaults = $this->getEmbedIntentDefaults();
-
-        return $video;
     }
 
     public function getElementValidationRules(): array
@@ -472,20 +476,6 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
     }
 
     /**
-     * @return string[] Craft select options for videoSort.
-     */
-    public static function videoSortOptions(): array
-    {
-        return [
-            '' => Craft::t('video-picker', 'Provider order'),
-            'dateDesc' => Craft::t('video-picker', 'Newest first'),
-            'dateAsc' => Craft::t('video-picker', 'Oldest first'),
-            'playsDesc' => Craft::t('video-picker', 'Most plays'),
-            'titleAsc' => Craft::t('video-picker', 'Title A–Z'),
-        ];
-    }
-
-    /**
      * Whether a resolved video may be selected under this field’s policy.
      */
     public function selectionPolicyError(?Video $video): ?string
@@ -513,12 +503,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
         return null;
     }
 
-    /**
-     * Filter + sort Video models for explorer pages (best-effort on the current page).
-     *
-     * @param Video[] $videos
-     * @return Video[]
-     */
+    /** Filter and sort Video models for explorer pages, best-effort on the current page. */
     public function applyExplorerVideoPolicy(array $videos): array
     {
         $filtered = [];
@@ -538,10 +523,6 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
         return $this->sortVideos($filtered);
     }
 
-    /**
-     * @param Video[] $videos
-     * @return Video[]
-     */
     public function sortVideos(array $videos): array
     {
         $sort = $this->videoSort;
@@ -598,4 +579,15 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
         }
     }
 
+
+    // Private Methods
+    // =========================================================================
+
+    /** Stamp field embed intent onto the Video so getEmbedHtml/Url pick it up. */
+    private function _applyEmbedDefaults(Video $video): Video
+    {
+        $video->embedDefaults = $this->getEmbedIntentDefaults();
+
+        return $video;
+    }
 }

@@ -6,14 +6,16 @@ use verbb\videopicker\models\Settings;
 
 use Embed\Detectors\Detector;
 use Embed\Detectors\Image;
-
-use GuzzleHttp\Client;
-use GuzzleHttp\RequestOptions;
+use GuzzleHttp\Psr7\Request;
 
 class EmbedImagesExtractor extends Detector
 {
+    // Constants
+    // =========================================================================
+
     private const MAX_CANDIDATES = 5;
     private const MAX_BYTES = 2_000_000;
+
 
     // Public Methods
     // =========================================================================
@@ -44,25 +46,17 @@ class EmbedImagesExtractor extends Detector
             $metas->url('og:image', 'og:image:url', 'og:image:secure_url', 'twitter:image', 'twitter:image:src', 'lp:image'),
             $document->link('image_src'),
             $ld->url('image.url'),
-            $this->detectFromContentType(),
+            $this->_detectFromContentType(),
         ])));
 
         // Cap candidates — unbounded sequential fetches were a memory/latency footgun.
         $imageUrls = array_slice($imageUrls, 0, self::MAX_CANDIDATES);
 
-        $client = new Client([
-            RequestOptions::TIMEOUT => 5,
-            RequestOptions::CONNECT_TIMEOUT => 3,
-            // Validate every redirect hop against EmbedUrl (SEC-05 secondary fetches).
-            RequestOptions::ALLOW_REDIRECTS => [
-                'max' => 3,
-                'strict' => true,
-                'referer' => true,
-                'on_redirect' => static function($request, $response, $uri) use ($settings): void {
-                    EmbedUrl::assertAllowed((string)$uri, $settings->embedAllowedDomains);
-                },
-            ],
-            RequestOptions::HTTP_ERRORS => false,
+        $client = new PinnedHttpClient($settings->embedAllowedDomains, [
+            'timeout' => 5,
+            'connect_timeout' => 3,
+            'max_redirs' => 3,
+            'max_bytes' => self::MAX_BYTES,
         ]);
 
         $largestImage = null;
@@ -72,9 +66,7 @@ class EmbedImagesExtractor extends Detector
             try {
                 EmbedUrl::assertAllowed((string)$imageUrl, $settings->embedAllowedDomains);
 
-                $response = $client->get((string)$imageUrl, [
-                    RequestOptions::STREAM => true,
-                ]);
+                $response = $client->sendRequest(new Request('GET', (string)$imageUrl));
 
                 if ($response->getStatusCode() >= 400) {
                     continue;
@@ -121,7 +113,7 @@ class EmbedImagesExtractor extends Detector
     // Private Methods
     // =========================================================================
 
-    private function detectFromContentType()
+    private function _detectFromContentType()
     {
         if (!$this->extractor->getResponse()->hasHeader('content-type')) {
             return null;

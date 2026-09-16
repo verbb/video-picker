@@ -51,6 +51,11 @@ class YouTube extends OAuthSource
         return App::parseBooleanEnv($this->proxyRedirect);
     }
 
+    public function getProviderDocsHandle(): string
+    {
+        return 'youtube';
+    }
+
     public function getRedirectUri(): ?string
     {
         $uri = parent::getRedirectUri();

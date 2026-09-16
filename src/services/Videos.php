@@ -6,6 +6,7 @@ use verbb\videopicker\base\SourceInterface;
 use verbb\videopicker\fields\VideoPickerField;
 use verbb\videopicker\helpers\EmbedImagesExtractor;
 use verbb\videopicker\helpers\EmbedUrl;
+use verbb\videopicker\helpers\PinnedHttpClient;
 use verbb\videopicker\models\Settings;
 use verbb\videopicker\models\Video;
 use verbb\videopicker\records\Video as VideoRecord;
@@ -14,21 +15,19 @@ use Craft;
 use craft\base\Component;
 use craft\base\Field;
 use craft\helpers\DateTimeHelper;
-use craft\helpers\Json;
 use craft\helpers\Html;
+use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\Template;
 use craft\helpers\UrlHelper;
 
-use DateInterval;
-use DateTime;
-
-use Embed\Http\Crawler;
-use Embed\Http\CurlClient;
-
 use yii\caching\TagDependency;
 
+use DateInterval;
+use DateTime;
 use Throwable;
+
+use Embed\Http\Crawler;
 
 class Videos extends Component
 {
@@ -46,16 +45,14 @@ class Videos extends Component
     // Properties
     // =========================================================================
 
-    /** @var array<string, Video|null> Request-local memo for normalize / repeated lookups. */
+    /** Request-local memo for normalization and repeated lookups. */
     private array $_videosByUrl = [];
 
 
     // Public Methods
     // =========================================================================
 
-    /**
-     * @param Field|null $field When a VideoPickerField, only match sources that allow that field.
-     */
+    /** When given a Video Picker field, only match sources that allow that field. */
     public function getVideoByUrl(string $videoUrl, bool $clearCache = false, ?Field $field = null): ?Video
     {
         $memoKey = $videoUrl . "\0" . ($field instanceof VideoPickerField ? (string)$field->id : '*');
@@ -271,7 +268,7 @@ class Videos extends Component
         if ($embedUrl) {
             return UrlHelper::urlWithParams($embedUrl, $params);
         }
-        
+
         return null;
     }
 
@@ -307,9 +304,8 @@ class Videos extends Component
         try {
             EmbedUrl::assertAllowed($url, $settings->embedAllowedDomains);
 
-            if (class_exists(CurlClient::class)) {
+            if (class_exists(Crawler::class)) {
                 // Handle Embed v4 support
-                $client = new CurlClient();
                 $clientSettings = array_merge([
                     'timeout' => 8,
                     'connect_timeout' => 5,
@@ -317,7 +313,7 @@ class Videos extends Component
                 ], $settings->embedClientSettings);
                 // Force hop-by-hop validation — do not let client settings re-enable auto-follow.
                 $clientSettings['follow_location'] = false;
-                $client->setSettings($clientSettings);
+                $client = new PinnedHttpClient($settings->embedAllowedDomains, $clientSettings);
 
                 $crawler = new Crawler($client);
                 $crawler->addDefaultHeaders($settings->embedHeaders);
@@ -328,8 +324,7 @@ class Videos extends Component
                 // Override the image detector. Restores Embed v3 behaviour.
                 $embed->getExtractorFactory()->addDetector('image', EmbedImagesExtractor::class);
 
-                $fetchUrl = $this->_resolveEmbedRedirects($url, $settings->embedAllowedDomains, 3);
-                $info = $embed->get($fetchUrl);
+                $info = $embed->get($url);
 
                 // Re-check final URI after redirects against the same policy.
                 if (isset($info->url) && (string)$info->url !== '') {
@@ -367,40 +362,7 @@ class Videos extends Component
                 return $data;
             }
 
-            // Handle Embed v3 support
-            $dispatcher = new \Embed\Http\CurlDispatcher($settings->embedClientSettings);
-
-            $info = \Embed\Embed::create($url, $settings->getEmbedClientConfig(), $dispatcher);
-
-            if (isset($info->url) && (string)$info->url !== '') {
-                EmbedUrl::assertAllowed((string)$info->url, $settings->embedAllowedDomains);
-            }
-
-            $data = Json::decode(Json::encode([
-                'title' => $info->title,
-                'description' => $info->description,
-                'url' => $info->url,
-                'image' => $info->image,
-                'code' => Template::raw($info->code ?: ''),
-                'authorName' => $info->authorName,
-                'authorUrl' => $info->authorUrl,
-                'providerName' => $info->providerName,
-                'providerUrl' => $info->providerUrl,
-                'icon' => $info->providerIcon,
-                'favicon' => $info->providerIcon,
-                'publishedTime' => $info->publishedTime instanceof DateTime ? $info->publishedTime->format('c') : $info->publishedTime,
-                'license' => $info->license,
-                'feeds' => $info->feeds,
-            ]));
-
-            // If no embed code, create it
-            if (!trim($data['code'])) {
-                $data['code'] = '<iframe src="' . $info->url . '"></iframe>';
-            }
-
-            $this->_storeEmbedCache($cacheKey, $data, max(60, (int)$settings->embedCacheDuration));
-
-            return $data;
+            throw new \RuntimeException('Secure generic embeds require Embed 4.');
         } catch (Throwable $e) {
             $error = Craft::t('video-picker', 'Unable to fetch embed data for “{url}”: “{message}” {file}:{line}', [
                 'url' => $url,
@@ -431,83 +393,6 @@ class Videos extends Component
     // Private Methods
     // =========================================================================
 
-    /**
-     * Walk redirect hops with FOLLOWLOCATION off, validating each Location against
-     * EmbedUrl policy before connecting (SEC-05).
-     *
-     * @param string[] $allowedDomains
-     */
-    private function _resolveEmbedRedirects(string $url, array $allowedDomains, int $maxRedirs): string
-    {
-        EmbedUrl::assertAllowed($url, $allowedDomains);
-        $current = $url;
-
-        for ($i = 0; $i < $maxRedirs; $i++) {
-            $ch = curl_init($current);
-
-            if ($ch === false) {
-                return $current;
-            }
-
-            curl_setopt_array($ch, [
-                CURLOPT_NOBODY => true,
-                CURLOPT_FOLLOWLOCATION => false,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HEADER => true,
-                CURLOPT_TIMEOUT => 8,
-                CURLOPT_CONNECTTIMEOUT => 5,
-            ]);
-
-            $raw = curl_exec($ch);
-            $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-            curl_close($ch);
-
-            if ($status < 300 || $status >= 400 || !is_string($raw)) {
-                return $current;
-            }
-
-            if (!preg_match('/^Location:\s*(.+)$/im', $raw, $matches)) {
-                return $current;
-            }
-
-            $next = trim($matches[1]);
-            $next = $this->_absolutizeUrl($current, $next);
-            EmbedUrl::assertAllowed($next, $allowedDomains);
-            $current = $next;
-        }
-
-        return $current;
-    }
-
-    private function _absolutizeUrl(string $base, string $location): string
-    {
-        if (preg_match('#^https?://#i', $location)) {
-            return $location;
-        }
-
-        $parts = parse_url($base);
-
-        if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
-            return $location;
-        }
-
-        $origin = $parts['scheme'] . '://' . $parts['host']
-            . (isset($parts['port']) ? ':' . $parts['port'] : '');
-
-        if (str_starts_with($location, '//')) {
-            return $parts['scheme'] . ':' . $location;
-        }
-
-        if (str_starts_with($location, '/')) {
-            return $origin . $location;
-        }
-
-        $path = $parts['path'] ?? '/';
-        $dir = preg_replace('#/[^/]*$#', '/', $path) ?: '/';
-
-        return $origin . $dir . $location;
-    }
-
     private function _embedCacheKey(string $url, Settings $settings): string
     {
         return 'video-picker:embed:' . md5(Json::encode([
@@ -529,9 +414,6 @@ class Videos extends Component
         );
     }
 
-    /**
-     * @param SourceInterface[] $sources
-     */
     private function _fetchLiveVideo(string $videoUrl, array $sources): ?Video
     {
         foreach ($sources as $source) {
@@ -593,10 +475,7 @@ class Videos extends Component
     }
 
     /**
-     * Sources that can parse this URL (same provider grammar as a live fetch).
-     *
-     * @param SourceInterface[] $sources
-     * @return SourceInterface[]
+     * Sources that can parse this URL using the same provider grammar as a live fetch.
      */
     private function _compatibleSourcesForUrl(array $sources, string $videoUrl): array
     {
@@ -607,9 +486,7 @@ class Videos extends Component
     }
 
     /**
-     * Keep the cached stamp when that source is still allowed; otherwise first compatible.
-     *
-     * @param SourceInterface[] $compatible
+     * Keep the cached stamp when that source is still allowed; otherwise use the first compatible source.
      */
     private function _preferredSourceHandle(array $compatible, ?string $cachedHandle): string
     {

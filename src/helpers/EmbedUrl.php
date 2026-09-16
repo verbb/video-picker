@@ -10,12 +10,10 @@ use yii\base\InvalidArgumentException;
  */
 class EmbedUrl
 {
-    // Public Methods
+    // Static Methods
     // =========================================================================
 
-    /**
-     * @param string[] $allowedDomains Empty = any public host allowed (historical default).
-     */
+    /** An empty allowed-domain list preserves the historical any-public-host default. */
     public static function assertAllowed(string $url, array $allowedDomains = []): void
     {
         $parts = parse_url($url);
@@ -32,7 +30,7 @@ class EmbedUrl
 
         $host = self::normalizeHost((string)$parts['host']);
 
-        if ($host === '' || self::isBlockedHost($host)) {
+        if ($host === '') {
             throw new InvalidArgumentException(Craft::t('video-picker', 'Embed URL host is not allowed.'));
         }
 
@@ -56,6 +54,45 @@ class EmbedUrl
                 throw new InvalidArgumentException(Craft::t('video-picker', 'Embed URL host is not in the allowed domains list.'));
             }
         }
+
+        if (self::isBlockedHost($host)) {
+            throw new InvalidArgumentException(Craft::t('video-picker', 'Embed URL host is not allowed.'));
+        }
+    }
+
+    /** Resolve the approved host to public addresses that an HTTP client can pin. */
+    public static function resolvePublicAddresses(string $url, array $allowedDomains = []): array
+    {
+        self::assertAllowed($url, $allowedDomains);
+
+        $host = self::normalizeHost((string)parse_url($url, PHP_URL_HOST));
+
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return [$host];
+        }
+
+        $records = @dns_get_record($host, DNS_A + DNS_AAAA) ?: [];
+        $addresses = [];
+
+        foreach ($records as $record) {
+            $ip = $record['ip'] ?? $record['ipv6'] ?? null;
+
+            if (!$ip) {
+                continue;
+            }
+
+            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                throw new InvalidArgumentException(Craft::t('video-picker', 'Embed URL host is not allowed.'));
+            }
+
+            $addresses[] = $ip;
+        }
+
+        if (!$addresses) {
+            throw new InvalidArgumentException(Craft::t('video-picker', 'Embed URL host could not be resolved.'));
+        }
+
+        return array_values(array_unique($addresses));
     }
 
     /**

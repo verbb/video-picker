@@ -422,7 +422,9 @@ export class VideoPickerInput {
 
             for (const error of errors) {
                 const row = document.createElement('div');
-                row.innerHTML = error;
+                // Provider errors are external input. Keep them as text even when the
+                // upstream response body contains markup.
+                row.textContent = error;
                 errWrap.appendChild(row);
             }
 
