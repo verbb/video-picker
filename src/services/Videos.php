@@ -218,7 +218,7 @@ class Videos extends Component
         return $this->_videosByUrl[$memoKey] = null;
     }
 
-    public function saveVideo(Video $video): void
+    public function saveVideo(Video $video, bool $replaceExisting = true): void
     {
         if (!$video->id || !$video->url || $video->hasErrors()) {
             return;
@@ -229,6 +229,10 @@ class Videos extends Component
             $record = VideoRecord::findOne([
                 'videoUrl' => $video->url,
             ]) ?? new VideoRecord();
+
+            if (!$replaceExisting && !$record->getIsNewRecord()) {
+                return;
+            }
 
             $now = new DateTime();
             $ttl = max(3600, (int)VideoPicker::$plugin->getSettings()->videoCacheDuration);

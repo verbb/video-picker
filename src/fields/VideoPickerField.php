@@ -341,8 +341,9 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             return;
         }
 
-        // Save or update our cached video data in a separate table
-        VideoPicker::$plugin->getVideos()->saveVideo($value);
+        // Seed programmatically assigned videos, but only a provider fetch may
+        // replace an existing snapshot or extend its expiry.
+        VideoPicker::$plugin->getVideos()->saveVideo($value, false);
     }
 
     public function getContentGqlType(): array|Type

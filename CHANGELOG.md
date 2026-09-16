@@ -26,6 +26,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Preserve video cache expiry and refresh errors when saving content without fetching new metadata.
 - Preserve named image properties in generic embed data.
 - Fix browsing additional pages of Mux videos.
 - Fix deleting a source from its edit page.
