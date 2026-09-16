@@ -78,3 +78,16 @@ it('does not end loading when an older duplicate lookup finishes first', async (
     expect(input.loadingVideo).toBe(false);
     expect(input.currentVideo.title).toBe('Refreshed metadata');
 });
+
+it('resolves a custom provider URL when the editor commits the input', async () => {
+    const { input, requests } = fixture();
+    const url = 'https://videos.example.com/watch/custom-123';
+    input.setPostedUrl(url);
+    input.commitVideoFetch();
+    expect(Craft.sendActionRequest).toHaveBeenCalledWith('POST', 'video-picker/videos/get-video', {
+        data: { url, fieldId: undefined },
+    });
+    requests[0].resolve({ data: { url, title: 'Custom provider video' } });
+    await settle();
+    expect(input.currentVideo.title).toBe('Custom provider video');
+});

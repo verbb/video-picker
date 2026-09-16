@@ -27,6 +27,16 @@ const BUNNY_STREAM_ID =
 const SPROUT_VIDEO_ID =
     /(?:https?:\/\/)?videos\.sproutvideo\.com\/embed\/([a-z0-9]+)(?:\/[a-z0-9]+)?|(?:https?:\/\/)?(?:www\.)?sproutvideo\.com\/videos\/([a-z0-9]+)/i;
 
+/** Custom providers own URL matching on the server; allow them on explicit commit. */
+export const isHttpVideoUrl = (url: string): boolean => {
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+    } catch {
+        return false;
+    }
+};
+
 /** True when the string looks like a full video URL we can resolve. */
 export const isResolvableVideoUrl = (url: string): boolean => {
     const trimmed = url.trim();

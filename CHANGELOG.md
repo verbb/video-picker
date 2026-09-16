@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Resolve custom provider URLs when committing the field input.
 - Preserve cached video embeds when changing a source handle.
 - Keep the selected video preview responsive when URL lookups overlap or a video is chosen from the explorer.
 - Preserve the current collection and search when refreshing the explorer, and clear results when its sources are no longer available.

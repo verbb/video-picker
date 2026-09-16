@@ -8,7 +8,7 @@ import { ExplorerDialog } from '../explorer/ExplorerDialog.js';
 import { PreviewDialog } from '../preview/PreviewDialog.js';
 import { formatErrorHtml } from '../utils/ajaxErrors.js';
 import { debounce, formatPlays, formatTimeAgo } from '../utils/formatVideo.js';
-import { isResolvableVideoUrl } from '../utils/videoUrl.js';
+import { isHttpVideoUrl, isResolvableVideoUrl } from '../utils/videoUrl.js';
 import { createVideoThumb, type VideoData } from '../video/VideoCard.js';
 
 export type VideoValue = VideoData;
@@ -345,7 +345,7 @@ export class VideoPickerInput {
         this.debouncedFetchVideo();
     }
 
-    /** Blur / Enter — fetch immediately when the URL is resolvable. */
+    /** Blur / Enter — let the server resolve URLs from registered custom providers too. */
     private commitVideoFetch(): void {
         this.debouncedFetchVideo.cancel();
         const url = (this.urlInput.value || '').trim();
@@ -358,7 +358,7 @@ export class VideoPickerInput {
             return;
         }
 
-        if (!isResolvableVideoUrl(url)) {
+        if (!isResolvableVideoUrl(url) && !isHttpVideoUrl(url)) {
             this.videoError = null;
             this.syncPreview();
             return;
@@ -671,8 +671,9 @@ export class VideoPickerInput {
 
         const requestedUrl = (this.videoUrl || '').trim();
 
-        // Guard: debounce/commit should only call for resolvable URLs; refresh always allowed.
-        if (!refresh && requestedUrl && !isResolvableVideoUrl(requestedUrl)) {
+        // Typing only debounces known patterns; an explicit commit can resolve any
+        // HTTP URL through the server's configured providers. Refresh is always allowed.
+        if (!refresh && requestedUrl && !isResolvableVideoUrl(requestedUrl) && !isHttpVideoUrl(requestedUrl)) {
             return;
         }
 
