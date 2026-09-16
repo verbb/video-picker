@@ -12,7 +12,7 @@ Follow these steps to configure Bunny Stream for Video Picker.
 1. Save the source, then click **Connect** to verify the credentials.
 
 ### Explorer and URLs
-- The video explorer lists **All Videos** and any **Collections** in the library.
-- **Search** uses Bunny’s `search` query parameter.
-- Paste URLs from `player.mediadelivery.net`, `iframe.mediadelivery.net`, or `video.bunnycdn.com/play/…` into a Video Picker field.
-- Field preview **owner** uses the video’s collection name when set, otherwise **Library {id}** for the configured library (the Stream API key cannot read the library display name from Bunny’s core API).
+
+After connecting, open a Video Picker field and browse **All Videos** or a collection in the library. Search for a known video, select it and save the entry to verify access.
+
+You can also paste URLs from `player.mediadelivery.net`, `iframe.mediadelivery.net` or `video.bunnycdn.com/play/…`. The preview identifies the owner by collection name when available, otherwise by the configured library ID.

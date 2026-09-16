@@ -13,8 +13,9 @@ Follow these steps to configure Mux for Video Picker.
 1. Save the source, then click **Connect** to verify the credentials.
 
 ### Explorer and URLs
-- The video explorer lists **Assets** from your Mux account.
-- Thumbnails use `image.mux.com` with the asset’s **public** playback ID. Assets that only have **signed** playback IDs will not show thumbnails until signed image URLs are supported.
-- **Owner** in the field preview uses the asset’s `creator_id` metadata when set; otherwise the Mux **organization name** from your access token.
-- Mux does not support a video description field — only `title`, `creator_id`, and `external_id` in asset metadata.
-- Paste URLs from `player.mux.com` or `stream.mux.com` into a Video Picker field to resolve videos by URL.
+
+After connecting, open a Video Picker field and browse **Assets**. Select a known asset with a public playback ID, save the entry and check its thumbnail and player.
+
+Assets with only signed playback IDs do not have a thumbnail available through this integration. Verify that your chosen assets can be played with their intended access settings before making the Source available to editors.
+
+You can paste URLs from `player.mux.com` or `stream.mux.com`. The preview uses creator metadata or the account's organisation name for the owner. Mux videos do not supply a description.

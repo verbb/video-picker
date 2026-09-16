@@ -14,6 +14,7 @@ Follow these steps to configure Dailymotion for Video Picker.
 1. Save the source, then click **Connect** to verify the credentials.
 
 ### Explorer and URLs
-- **Search** is available in the video explorer when an API key is configured.
-- **Channel Uploads** appears in the explorer only when **Channel Username** is set.
-- Paste URLs from `dailymotion.com` or `dai.ly` into a Video Picker field to resolve videos by URL.
+
+After connecting, open a Video Picker field and search for a known video. Set **Channel Username** on the Source when editors need a **Channel Uploads** collection to browse. Select a result, save the entry and check its player.
+
+You can also paste a `dailymotion.com` or `dai.ly` video URL into the field.

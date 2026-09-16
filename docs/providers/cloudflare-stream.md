@@ -14,8 +14,9 @@ Follow these steps to configure Cloudflare Stream for Video Picker.
 1. Save the source, then click **Connect** to verify the credentials.
 
 ### Explorer and URLs
-- The video explorer lists **Videos** from your Stream library.
-- **Search** uses Cloudflare’s `search` query parameter (matches video names).
-- Thumbnails and preview URLs come from the Stream API response. Signed-only videos may not show thumbnails without token signing.
-- **Owner** uses the video’s `creator` ID when set (Cloudflare’s creator field on upload), optional `meta.creator` / `meta.author`, otherwise your Cloudflare account name or **Cloudflare Stream**.
-- Paste URLs from `videodelivery.net`, `iframe.videodelivery.net`, or `*.cloudflarestream.com` into a Video Picker field.
+
+After connecting, open a Video Picker field and browse **Videos**, or search by video name. Select a known video and check its preview before saving the entry.
+
+You can paste URLs from `videodelivery.net`, `iframe.videodelivery.net` or `*.cloudflarestream.com`. Videos requiring signed access may lack a thumbnail or usable player without provider-specific signing. Test the access settings of the videos your editors will select.
+
+The preview uses the video's creator information when available, falling back to the account name or Cloudflare Stream.

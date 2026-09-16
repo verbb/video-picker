@@ -11,8 +11,7 @@ Follow these steps to configure Sprout Video for Video Picker.
 1. Save the source, then click **Connect** to verify the credentials.
 
 ### Explorer and URLs
-- The video explorer lists **All Videos** and any **Folders** in your account.
-- **Search** filters the current page by title (Sprout has no keyword search API).
-- Field preview **owner** uses the video’s folder name when available, otherwise your account **company** name, account holder name, or email from `GET /account`.
-- Descriptions are stripped to plain text when stored as HTML.
-- Paste URLs from `sproutvideo.com/videos/…` or `videos.sproutvideo.com/embed/…` into a Video Picker field.
+
+After connecting, open a Video Picker field and browse **All Videos** or a folder. Search filters titles on the current page, so browse to the relevant folder or page if a known video is missing. Select it and save the entry to verify access.
+
+You can paste URLs from `sproutvideo.com/videos/…` or `videos.sproutvideo.com/embed/…`. The preview uses the folder or account details for the owner and displays descriptions as plain text.

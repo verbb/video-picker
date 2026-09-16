@@ -1,39 +1,36 @@
 # Rendering Videos
-There are two main ways to render videos in your template. If you're using the Video Picker field, you'll be using that, but you can also render videos without the field.
 
-## From Field
-When you get the value of a Video Picker field in the context of an element, you'll be dealing with a [Video](docs:developers/video) object, or a `null` value.
+A populated Video Picker field returns a [Video](docs:developers/video) object. Use its details to build a video card, or follow [Embedding Videos](docs:template-guides/embedding-videos) to show a player.
 
-For example, your Video Picker field might have the handle `video`, and you've attached it to an Entry.
+## Render a Field Selection
+
+This example assumes an entry field with the handle `featuredVideo`. Place it in the template that renders the entry. It shows a linked thumbnail and title, and a duration when the provider supplies one:
 
 ```twig
-{% if entry.video %}
-    ID: {{ entry.video.id }}<br>
-    Title: {{ entry.video.title }}<br>
-    Description: {{ entry.video.description }}<br>
-    Thumbnail: <img src="{{ entry.video.getThumbnail() }}" alt="{{ entry.video.title }}">
-    {# Field embed defaults (autoplay, muted, …) apply first; options here override them #}
-    Embed: {{ entry.video.getEmbedHtml({ width: 500, height: 300, autoplay: true }) | raw }}
+{% set video = entry.featuredVideo %}
+
+{% if video and not video.hasErrors() %}
+    {% set thumbnail = video.getThumbnail(640) %}
+
+    <article class="video-card">
+        <a href="{{ video.url }}">
+            {% if thumbnail %}
+                <img src="{{ thumbnail }}" alt="" loading="lazy">
+            {% endif %}
+            <h2>{{ video.title }}</h2>
+        </a>
+
+        {% if video.duration %}
+            <p>Duration: {{ video.formattedDuration }}</p>
+        {% endif %}
+    </article>
 {% endif %}
 ```
 
-It's always a good idea to check if the field has a value first, before outputting anything about it.
+The image has an empty `alt` because the linked title names the same destination. A missing thumbnail leaves a text link, and an empty field or failed video lookup omits the card. Save an entry with a video and check the page, then test an entry with no selection.
 
-For field videos, options like `autoplay`, `muted`, `loop`, and `controls` are treated as **embed intent** (usually query params on the provider player URL). Size / presentation keys such as `width` and `height` become iframe attributes. The generic helpers `craft.videoPicker.getEmbedHtml(url, options)` / `getEmbedUrl()` use a flatter options bag for non-field crawls — see those methods if you are not using a field value.
+Keep Twig's escaping enabled for titles, descriptions and URLs. The [Video reference](docs:developers/video) lists the available metadata and explains which values can be absent.
 
-## Without Field
-You can also do much the same thing without a field, directly in your Twig templates. Supply a valid URL for one of your connected and enabled sources and call `craft.videoPicker.getVideoByUrl(url)`. This will return a [Video](docs:developers/video) object.
+## Render a Supported URL
 
-Note that this will **only** work for sources that are connected and enabled. For example, you can't put the URL of any video provider in `getVideoByUrl()`, as it has to be with a provider that Video Picker supports.
-
-```twig
-{% set video = craft.videoPicker.getVideoByUrl('https://www.youtube.com/watch?v=jfKfPfyJRdk') %}
-
-{% if video %}
-    ID: {{ video.id }}<br>
-    Title: {{ video.title }}<br>
-    Description: {{ video.description }}<br>
-    Thumbnail: <img src="{{ video.getThumbnail() }}" alt="{{ video.title }}">
-    Embed: {{ video.getEmbedHtml({ width: 500, height: 300 }) | raw }}
-{% endif %}
-```
+If your URL is stored in a Plain Text field instead of a Video Picker field, use [Rendering Videos from URLs](docs:template-guides/rendering-videos-from-urls). That guide covers both configured Sources and generic embed discovery.

@@ -1,57 +1,35 @@
 # Embedding Videos
-You can also use Video Picker to embed **any** video, thanks to our usage of the [embed/embed](https://github.com/oscarotero/Embed) package.
 
-## URL
-By providing the URL to a video or embeddable media, you'll be returned with the embeddable URL. This often differs from the URL of a video, which doesn't always allow being embedded in HTML.
+Use a selected Video Picker field to add a player to an entry page. The example below assumes a field with the handle `featuredVideo`; place it in the template that renders the entry.
 
 ```twig
-{% set url = craft.videoPicker.getEmbedUrl('https://www.youtube.com/watch?v=jfKfPfyJRdk') %}
+{% set video = entry.featuredVideo %}
+{% set embedHtml = video and not video.hasErrors()
+    ? video.getEmbedHtml({
+        width: 640,
+        height: 360,
+        title: video.title,
+        loading: 'lazy'
+    })
+    : null %}
 
-{# Example output #}
-{# https://www.youtube.com/embed/jfKfPfyJRdk?feature=oembed #}
+{% if embedHtml %}
+    {{ embedHtml | raw }}
+{% elseif video %}
+    <p>The video is unavailable.</p>
+{% endif %}
 ```
 
-You can also pass a second argument with a list of query params to append to the URL.
+A selected video produces a player. An empty field produces no output, while a video that cannot produce embed markup shows the fallback message. Apply `raw` only to the markup returned by `getEmbedHtml()`; continue to escape titles, descriptions and other content.
 
-```twig
-{% set url = craft.videoPicker.getEmbedUrl('https://www.youtube.com/watch?v=jfKfPfyJRdk', { autoplay: 1, rel: 0, theme: 'dark' }) %}
+## Set Playback Options
 
-{# Example output #}
-{# https://www.youtube.com/embed/jfKfPfyJRdk?feature=oembed&autoplay=1&rel=0&theme=dark #}
-```
+The field's **Autoplay**, **Muted**, **Loop** and **Show Controls** settings provide defaults. Pass an option to `getEmbedHtml()` when a particular page needs different behaviour. For example, add `autoplay: false` and `controls: true` to the options above for a player visitors start themselves.
 
-## Embed HTML
-Rather than just the URL to the embeddable media, you can opt to generate the HTML to render it.
+Video Picker translates playback options for the selected provider. Options such as `width`, `height`, `class`, `title` and `loading` become iframe attributes. Provider support and browser playback restrictions still apply, so check the actual player after changing an option.
 
-```twig
-{% set html = craft.videoPicker.getEmbedHtml('https://www.youtube.com/watch?v=jfKfPfyJRdk', { autoplay: 1 }) %}
+Test a saved selection, an empty field and an unavailable video. Check the player's size and controls on the rendered page; use your site's CSS to adapt its dimensions to smaller screens.
 
-{{ html | raw }}
+## Embed a Stored URL
 
-{# Example output #}
-{# <iframe src="https://www.youtube.com/embed/jfKfPfyJRdk?feature=oembed" width="200" height="150" title="lofi hip hop radio 📚 beats to relax/study to" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen autoplay="1"></iframe> #}
-```
-
-You can also pass a second argument with a list of HTML attributes to add to the `<iframe>` element.
-
-## Embed Data
-You can also grab the entire embed data to use in templates.
-
-```twig
-{% set embedData = craft.videoPicker.getEmbedData('https://www.youtube.com/watch?v=jfKfPfyJRdk') %}
-
-{# Example output #}
-{# [
-    "title" => "lofi hip hop radio 📚 beats to relax/study to"
-    "description" => "🎼 | Listen on Spotify, Apple music and more→ https://fanlink.tv/lofigirl-music 🎄 | New Christmas Radio is out now!→ https://www.youtube.com/watch?v=pfiCN..."
-    "url" => "https://www.youtube.com/watch?v=jfKfPfyJRdk"
-    "code" => "<iframe width="200" height="150" src="https://www.youtube.com/embed/jfKfPfyJRdk?feature=oembed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; ▶"
-    "authorName" => "Lofi Girl"
-    "authorUrl" => "https://www.youtube.com/@LofiGirl"
-    "providerName" => "YouTube"
-    "providerUrl" => "https://www.youtube.com/"
-    "icon" => "https://www.youtube.com/s/desktop/b5305900/img/logos/favicon_144x144.png"
-    "favicon" => "https://www.youtube.com/s/desktop/b5305900/img/logos/favicon.ico"
-    "publishedTime" => "2022-07-12T05:12:29-07:00"
-] #}
-```
+For a URL stored outside a Video Picker field, follow [Rendering Videos from URLs](docs:template-guides/rendering-videos-from-urls). It explains how to resolve the URL, restrict generic embed hosts and check for discovery errors before rendering a player.

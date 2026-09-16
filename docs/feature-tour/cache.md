@@ -1,25 +1,23 @@
 # Cache
 
-Video Picker caches in a few different places so you stay under API limits and keep the control panel snappy.
+Video Picker keeps copies of provider data so editors can browse quickly without requesting the same information repeatedly. Refresh the relevant cache when a video, folder or playlist has changed at the provider.
 
-## Explorer sections
+## Explorer Sections
 
-When you browse folders and playlists in the explorer, those section lists are stored in the database indefinitely. Renames or new folders won’t show up until you **Refresh** in the explorer, or clear cache from **Utilities → Video Picker**.
+Folder and playlist lists stay cached until refreshed. If you rename a folder or create a playlist, use **Refresh** in the explorer or clear the cache from **Utilities → Video Picker**, then reopen the collection to check it appears.
 
-Provider video *pages* (paginated lists / search) use the application cache with TTLs from **Settings → Video Picker → Cache Settings** (`providerCacheDuration` / `providerSearchCacheDuration`). See [Configuration](docs:get-started/configuration).
+Video lists and search results expire automatically. Adjust their durations under **Settings → Video Picker → Cache Settings** when editors need provider changes to appear sooner. Shorter durations make more provider requests; [Configuration](docs:get-started/configuration) gives the defaults.
 
-## Selected videos
+## Selected Videos
 
-Whenever you pick a video, we store a copy of its data in the database, keyed by URL. That snapshot is trusted for **Video Cache Duration** (default 7 days, minimum 1 hour). After it expires, Video Picker revalidates from the provider on the next read and keeps showing the last good snapshot if refresh fails.
+Selected videos retain a copy of their metadata for **Video Cache Duration**, which defaults to seven days and has a minimum of one hour. When that period expires, the next read attempts a refresh. If the provider request fails, Video Picker keeps the last successful copy.
 
-Force a refresh with the **Refresh** control on the field, or clear a URL from **Utilities → Video Picker**.
+Use **Refresh** on the field after changing a selected video's title or thumbnail, or clear its URL from **Utilities → Video Picker**. The same URL shares cached metadata across fields, so refreshing it can update other entries that use that video.
 
-If the same video URL is used in multiple places, they share one cached row.
+## Embed Helpers
 
-## Embed helpers
+Generic URL embeds have a separate cache. After changing the remote page or fixing a rejected URL, allow its cached result to expire or clear Craft's application cache before checking again. Failed discovery is cached briefly to avoid repeated requests for the same unavailable URL.
 
-The generic Twig embed helpers (`craft.videoPicker.getEmbedHtml()`, etc.) use a separate embed crawl cache (`embedCacheDuration`). Failed crawls can be cached briefly via `embedErrorCacheDuration` so the same bad URL isn’t retried every request.
+## Database vs File Cache
 
-## Database vs file cache
-
-Selected-video and explorer section data live in the database so a normal deploy-time file-cache clear doesn’t wipe them. Provider / search / embed TTLs use Craft’s application cache.
+Clearing Craft's application cache removes cached provider pages, search results and generic embed discovery. It does not remove selected-video metadata or folder and playlist lists, which are stored in the database. Use the Video Picker utility when those need refreshing.
