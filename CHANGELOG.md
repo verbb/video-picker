@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Keep the selected video preview responsive when URL lookups overlap or a video is chosen from the explorer.
 - Preserve the current collection and search when refreshing the explorer, and clear results when its sources are no longer available.
 - Preserve query parameters when extracting generic embed URLs from HTML.
 - Handle empty YouTube searches and playlists without an API error.

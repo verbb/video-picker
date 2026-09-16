@@ -62,6 +62,7 @@ export class VideoPickerInput {
     private allowUrlInput = true;
     private allowSearch = true;
     private currentVideo: VideoData | null = null;
+    private requestVersion = 0;
 
     private wrap!: HTMLElement;
     /** Visible chrome only — nameless so it never participates in FormObserver serialize. */
@@ -260,6 +261,11 @@ export class VideoPickerInput {
      */
     private setPostedUrl(url: string | null, options: { notifyForm?: boolean } = {}): void {
         const next = url ?? '';
+
+        if (next !== (this.videoUrl ?? '')) {
+            this.cancelVideoFetch();
+        }
+
         this.videoUrl = next || null;
 
         if (this.urlInput.value !== next) {
@@ -589,6 +595,7 @@ export class VideoPickerInput {
     }
 
     private removeVideo(): void {
+        this.cancelVideoFetch();
         this.currentVideo = null;
         this.videoError = null;
         this.setPostedUrl(null, { notifyForm: true });
@@ -625,6 +632,7 @@ export class VideoPickerInput {
             allowSearch: this.allowSearch,
             video: this.currentVideo,
             onSelect: (video) => {
+                this.cancelVideoFetch();
                 this.currentVideo = video;
                 this.videoError = null;
                 this.setPostedUrl(video.url ?? null, { notifyForm: true });
@@ -668,6 +676,8 @@ export class VideoPickerInput {
             return;
         }
 
+        this.cancelVideoFetch();
+        const requestVersion = this.requestVersion;
         this.loadingVideo = true;
         this.currentVideo = null;
         this.videoError = null;
@@ -691,8 +701,8 @@ export class VideoPickerInput {
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-video', { data })
             .then((response: { data: VideoData & { error?: string } }) => {
-                // Ignore stale responses if the user kept typing.
-                if ((this.videoUrl || '').trim() !== requestedUrl) {
+                // A later lookup or selection owns the result, even for the same URL.
+                if (this.requestVersion !== requestVersion) {
                     return;
                 }
 
@@ -703,19 +713,25 @@ export class VideoPickerInput {
                 }
             })
             .catch((error: unknown) => {
-                if ((this.videoUrl || '').trim() !== requestedUrl) {
+                if (this.requestVersion !== requestVersion) {
                     return;
                 }
 
                 this.videoError = formatErrorHtml(error);
             })
             .finally(() => {
-                if ((this.videoUrl || '').trim() !== requestedUrl) {
+                if (this.requestVersion !== requestVersion) {
                     return;
                 }
 
                 this.loadingVideo = false;
                 this.syncPreview();
             });
+    }
+
+    private cancelVideoFetch(): void {
+        this.debouncedFetchVideo.cancel();
+        this.requestVersion++;
+        this.loadingVideo = false;
     }
 }
