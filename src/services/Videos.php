@@ -80,7 +80,6 @@ class Videos extends Component
                 foreach ($allowedSources as $source) {
                     if ($source->getVideoIdFromUrl($videoUrl)) {
                         $source->clearLocalCache();
-                        break;
                     }
                 }
 
@@ -162,7 +161,6 @@ class Videos extends Component
                     if ($source->getVideoIdFromUrl($videoUrl)) {
                         // Bust provider app cache so revalidate isn’t served from TTL API cache.
                         $source->clearLocalCache();
-                        break;
                     }
                 }
 
@@ -455,13 +453,22 @@ class Videos extends Component
 
     private function _fetchLiveVideo(string $videoUrl, array $sources): ?Video
     {
+        $firstError = null;
+
         foreach ($sources as $source) {
             if ($video = $source->getVideoByUrl($videoUrl)) {
+                // A matching URL may belong to a later allowed account. Keep the
+                // first error for recovery only if none of those accounts can resolve it.
+                if ($video->hasErrors()) {
+                    $firstError ??= $video;
+                    continue;
+                }
+
                 return $video;
             }
         }
 
-        return null;
+        return $firstError;
     }
 
     private function _videoFromRecord(VideoRecord $record): Video

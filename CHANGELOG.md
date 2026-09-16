@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Resolve and refresh videos through later allowed accounts when an earlier account cannot access them.
 - Allow clearing browse-only fields when the preview is hidden or unavailable.
 - Resolve custom provider URLs when committing the field input.
 - Preserve cached video embeds when changing a source handle.
