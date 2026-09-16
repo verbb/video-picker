@@ -56,6 +56,19 @@ class Vimeo extends OAuthSource
         return 'https://player.vimeo.com/video/{id}';
     }
 
+    public function getVideoEmbedOptions(Video $video): array
+    {
+        $url = $video->url ?? '';
+        parse_str(parse_url($url, PHP_URL_QUERY) ?: '', $query);
+        $hash = $query['h'] ?? null;
+
+        if (!$hash && preg_match('~^/' . preg_quote($video->id ?? '', '~') . '/([a-zA-Z0-9]+)(?:/|$)~', parse_url($url, PHP_URL_PATH) ?: '', $matches)) {
+            $hash = $matches[1];
+        }
+
+        return is_string($hash) && preg_match('/^[a-zA-Z0-9]+$/', $hash) ? ['h' => $hash] : [];
+    }
+
     protected function mapEmbedQueryParams(string $videoId, array $intent): array
     {
         $params = [];

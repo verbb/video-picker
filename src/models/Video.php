@@ -190,8 +190,7 @@ class Video extends Model
             return null;
         }
 
-        // Field defaults under Twig call-site overrides.
-        return $source->getEmbedHtml($this->id, array_merge($this->embedDefaults, $options));
+        return $source->getEmbedHtml($this->id, $this->_getEmbedOptions($source, $options));
     }
 
     public function getEmbedUrl(array $options = []): ?string
@@ -202,7 +201,7 @@ class Video extends Model
             return null;
         }
 
-        return $source->getEmbedUrl($this->id, array_merge($this->embedDefaults, $options));
+        return $source->getEmbedUrl($this->id, $this->_getEmbedOptions($source, $options));
     }
 
     public function getSource(): ?SourceInterface
@@ -219,5 +218,18 @@ class Video extends Model
         // Handle emoji's in some values
         return StringHelper::emojiToShortcodes(Json::encode($this));
     }
-    
+
+
+    // Private Methods
+    // =========================================================================
+
+    private function _getEmbedOptions(SourceInterface $source, array $options): array
+    {
+        // Derive required provider metadata even for snapshots saved before the
+        // option existed. Keep custom interface implementations without this hook usable.
+        $providerOptions = method_exists($source, 'getVideoEmbedOptions') ? $source->getVideoEmbedOptions($this) : [];
+
+        return array_merge($providerOptions, $this->embedDefaults, $options);
+    }
+
 }

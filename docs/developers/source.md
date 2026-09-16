@@ -177,3 +177,11 @@ Returns the HTML embed code for a string video ID. The options array may include
 
 Returns the embed URL for a string video ID with optional provider intent and query parameters.
 :::
+
+::: reference
+### `getVideoEmbedOptions(video)`
+
+**Returns:** `array`
+
+Returns provider options derived from a Video's metadata, such as Vimeo's unlisted privacy hash. Video embed methods apply these automatically, beneath field defaults and explicit options. Custom providers extending `Source` can override this method when their players need metadata beyond the video ID.
+:::

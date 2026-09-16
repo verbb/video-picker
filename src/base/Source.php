@@ -404,6 +404,12 @@ abstract class Source extends SavableComponent implements SourceInterface
         );
     }
 
+    /** Provider options derived from video metadata, beneath field and call-site options. */
+    public function getVideoEmbedOptions(Video $video): array
+    {
+        return [];
+    }
+
     /**
      * Iframe HTML for a video id. Intent/query options shape `src`; iframe keys become attributes.
      */
