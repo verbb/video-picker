@@ -240,6 +240,7 @@ class Videos extends Component
                 'videoId' => $video->id,
                 'videoUrl' => $video->url,
                 'data' => $video->serializeData(),
+                'dataVersion' => 1,
                 'fetchedAt' => $now,
                 'expiresAt' => $expires,
                 'status' => self::CACHE_OK,
@@ -300,7 +301,7 @@ class Videos extends Component
                 // Do not replace metadata that a concurrent provider refresh wrote.
                 Craft::$app->getDb()->createCommand()->update(
                     VideoRecord::tableName(),
-                    ['data' => Json::encode($data)],
+                    ['data' => Json::encode($data, 0)],
                     ['id' => $row['id'], 'data' => $row['data']],
                 )->execute();
             }
@@ -473,8 +474,11 @@ class Videos extends Component
 
     private function _videoFromRecord(VideoRecord $record): Video
     {
-        // Handle emoji's in video content
-        $video = new Video(Json::decode(StringHelper::shortcodesToEmoji($record->data)));
+        // Existing snapshots used shortcode encoding; new JSON is already lossless.
+        $data = (int)$record->dataVersion === 0
+            ? StringHelper::shortcodesToEmoji($record->data)
+            : $record->data;
+        $video = new Video(Json::decode($data));
         $video->cacheStatus = $record->status ?: self::CACHE_OK;
         $video->cacheError = $record->lastError;
 

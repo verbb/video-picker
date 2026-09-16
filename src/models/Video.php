@@ -8,7 +8,6 @@ use verbb\videopicker\helpers\Videos;
 use craft\base\Model;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Json;
-use craft\helpers\StringHelper;
 use craft\helpers\Template;
 
 use DateTime;
@@ -215,8 +214,8 @@ class Video extends Model
 
     public function serializeData(): string
     {
-        // Handle emoji's in some values
-        return StringHelper::emojiToShortcodes(Json::encode($this));
+        // JSON Unicode escapes preserve emoji without rewriting literal shortcode text.
+        return Json::encode($this, 0);
     }
 
 

@@ -56,6 +56,7 @@ class Install extends Migration
             'videoId' => $this->string()->notNull(),
             'videoUrl' => $this->string()->notNull(),
             'data' => $this->text(),
+            'dataVersion' => $this->smallInteger()->notNull()->defaultValue(0),
             'fetchedAt' => $this->dateTime()->null(),
             'expiresAt' => $this->dateTime()->null(),
             'status' => $this->string(32)->notNull()->defaultValue('ok'),
