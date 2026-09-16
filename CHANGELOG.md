@@ -26,6 +26,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Preserve named image properties in generic embed data.
 - Fix browsing additional pages of Mux videos.
 - Fix deleting a source from its edit page.
 - Preserve an empty Available Fields selection when saving a source.

@@ -331,7 +331,7 @@ class Videos extends Component
                     EmbedUrl::assertAllowed((string)$info->url, $settings->embedAllowedDomains);
                 }
 
-                $image = array_values($info->image ?? []);
+                $image = $info->image ?? [];
 
                 $data = Json::decode(Json::encode([
                     'title' => $info->title,
