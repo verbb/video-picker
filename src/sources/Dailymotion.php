@@ -152,6 +152,23 @@ class Dailymotion extends CredentialsSource
     // Protected Methods
     // =========================================================================
 
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        // The default-player redirect supports these playback options. Autoplay,
+        // controls and initial muting require a configured Dailymotion Player.
+        $params = [];
+
+        if (array_key_exists('loop', $intent)) {
+            $params['loop'] = $this->isEmbedTruthy($intent['loop']) ? 'true' : 'false';
+        }
+
+        if (isset($intent['start']) && $intent['start'] !== '') {
+            $params['startTime'] = (int)$intent['start'];
+        }
+
+        return $params;
+    }
+
     protected function fetchExplorerSections(): array
     {
         $sections = [];

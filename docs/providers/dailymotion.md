@@ -18,3 +18,7 @@ Follow these steps to configure Dailymotion for Video Picker.
 After connecting, open a Video Picker field and search for a known video. Set **Channel Username** on the Source when editors need a **Channel Uploads** collection to browse. Select a result, save the entry and check its player.
 
 You can also paste a `dailymotion.com` or `dai.ly` video URL into the field.
+
+### Playback Options
+
+Video Picker uses Dailymotion's default iframe player. The neutral `start` and `loop` embed options control its start time and looping. Autoplay, Muted and Show Controls field defaults do not customize this player: Dailymotion requires a configured Player for those settings, and Video Picker does not select a custom Player ID. See Dailymotion's [player migration guide](https://developers.dailymotion.com/v0/reference/migration-guide-new-embed-endpoint) and [initial mute settings](https://developers.dailymotion.com/changelog/web-android-ios-sdks-mute-deprecation) before choosing this provider for a background or muted autoplay video.

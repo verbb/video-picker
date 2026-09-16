@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Apply supported playback options to Dailymotion embeds and document default-player limitations.
 - Let the mute embed option override field playback defaults.
 - Honor playback overrides and start times in Vimeo embeds.
 - Apply start times to Mux embeds.
