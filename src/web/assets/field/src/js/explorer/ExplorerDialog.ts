@@ -63,6 +63,7 @@ export class ExplorerDialog {
     private currentCollection: Collection | null = null;
     private currentVideo: VideoData | null = null;
     private closed = false;
+    private requestVersion = 0;
 
     private bodyEl!: HTMLElement;
     private footerRefresh!: HTMLElement;
@@ -169,12 +170,17 @@ export class ExplorerDialog {
     open(): void {
         this.render();
         requestAnimationFrame(() => {
+            if (this.closed) {
+                return;
+            }
+
             this.dialog.open = true;
             this.fetchSources();
         });
     }
 
     close(): void {
+        this.invalidateRequests();
         this.dialog.open = false;
     }
 
@@ -184,8 +190,7 @@ export class ExplorerDialog {
         }
 
         this.closed = true;
-        this.debouncedSearch.cancel();
-        this.debouncedFetchVideos.cancel();
+        this.invalidateRequests();
         window.setTimeout(() => this.dialog.remove(), 0);
         this.options.onClosed();
     }
@@ -315,7 +320,19 @@ export class ExplorerDialog {
     // AJAX
     // -------------------------------------------------------------------------
 
+    private invalidateRequests(): number {
+        this.debouncedSearch.cancel();
+        this.debouncedFetchVideos.cancel();
+        this.loadingMore = false;
+        return ++this.requestVersion;
+    }
+
+    private isCurrentRequest(version: number): boolean {
+        return !this.closed && version === this.requestVersion;
+    }
+
     private fetchSources(refresh = false): void {
+        const version = this.invalidateRequests();
         this.loadingSources = true;
         this.sourcesError = null;
         this.render();
@@ -335,6 +352,10 @@ export class ExplorerDialog {
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-sources', { data })
             .then(async (response: { data: Source[] }) => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.sources = response.data ?? [];
                 this.loadingSources = false;
 
@@ -351,8 +372,16 @@ export class ExplorerDialog {
                 try {
                     await this.ensureSourceSections(this.currentSource);
                 } catch (error: unknown) {
+                    if (!this.isCurrentRequest(version)) {
+                        return;
+                    }
+
                     this.sourcesError = toExplorerError(error);
                     this.render();
+                    return;
+                }
+
+                if (!this.isCurrentRequest(version)) {
                     return;
                 }
 
@@ -360,6 +389,10 @@ export class ExplorerDialog {
                 this.fetchVideos();
             })
             .catch((error: unknown) => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.sourcesError = toExplorerError(error);
                 this.loadingSources = false;
                 this.render();
@@ -371,6 +404,7 @@ export class ExplorerDialog {
      * fetch that source’s sections without re-fetching every provider.
      */
     private async ensureSourceSections(source: Source | null, refresh = false): Promise<void> {
+        const version = this.requestVersion;
         if (!source) {
             return;
         }
@@ -392,6 +426,10 @@ export class ExplorerDialog {
         const response = await Craft.sendActionRequest('POST', 'video-picker/videos/get-sources', {
             data,
         });
+        if (!this.isCurrentRequest(version)) {
+            return;
+        }
+
         const list = (response.data ?? []) as Source[];
         const hydrated = list.find((s) => s.handle === source.handle);
 
@@ -405,7 +443,9 @@ export class ExplorerDialog {
     }
 
     private fetchVideos(): void {
-        if (!this.currentSource) {
+        const version = this.invalidateRequests();
+
+        if (!this.currentSource || this.closed) {
             return;
         }
 
@@ -437,13 +477,25 @@ export class ExplorerDialog {
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
             .then((response: { data: { videos: VideoData[]; nextPage: unknown } }) => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.videos = response.data.videos ?? [];
                 this.nextPage = response.data.nextPage;
             })
             .catch((error: unknown) => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.videosError = toExplorerError(error);
             })
             .finally(() => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.loadingVideos = false;
                 this.render();
                 this.announceVideoCount();
@@ -451,7 +503,9 @@ export class ExplorerDialog {
     }
 
     private fetchMoreVideos(): void {
-        if (!this.currentSource) {
+        const version = this.requestVersion;
+
+        if (!this.currentSource || this.closed || this.loadingMore || this.loadingVideos || !this.nextPage) {
             return;
         }
 
@@ -485,13 +539,25 @@ export class ExplorerDialog {
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
             .then((response: { data: { videos: VideoData[]; nextPage: unknown } }) => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.videos = this.videos.concat(response.data.videos ?? []);
                 this.nextPage = response.data.nextPage;
             })
             .catch((error: unknown) => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.videosError = toExplorerError(error);
             })
             .finally(() => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.loadingMore = false;
                 // Full re-render replaces the grid (and kills focus). Capture before
                 // rebuild so keyboard nav can continue on the same / selected card.
@@ -507,7 +573,9 @@ export class ExplorerDialog {
     }
 
     private searchVideos(): void {
-        if (!this.currentSource) {
+        const version = this.invalidateRequests();
+
+        if (!this.currentSource || this.closed) {
             return;
         }
 
@@ -536,13 +604,25 @@ export class ExplorerDialog {
 
         Craft.sendActionRequest('POST', 'video-picker/videos/get-videos', { data })
             .then((response: { data: { videos: VideoData[]; nextPage: unknown } }) => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.videos = response.data.videos ?? [];
                 this.nextPage = response.data.nextPage;
             })
             .catch((error: unknown) => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.videosError = toExplorerError(error);
             })
             .finally(() => {
+                if (!this.isCurrentRequest(version)) {
+                    return;
+                }
+
                 this.loadingVideos = false;
                 this.render();
                 this.announceVideoCount();
@@ -683,6 +763,7 @@ export class ExplorerDialog {
                 return;
             }
 
+            const version = this.invalidateRequests();
             this.currentSource = next;
             this.loadingVideos = true;
             this.videosError = null;
@@ -690,11 +771,19 @@ export class ExplorerDialog {
 
             void this.ensureSourceSections(next)
                 .then(() => {
+                    if (!this.isCurrentRequest(version)) {
+                        return;
+                    }
+
                     this.setCollection(this.currentSource?.sections?.[0]?.collections?.[0] ?? null);
                     this.reset();
                     this.fetchVideos();
                 })
                 .catch((error: unknown) => {
+                    if (!this.isCurrentRequest(version)) {
+                        return;
+                    }
+
                     this.handleHydrateError(error);
                 });
         });
@@ -731,7 +820,8 @@ export class ExplorerDialog {
                     a.append(document.createTextNode(collection.name));
                     a.addEventListener('click', (event) => {
                         event.preventDefault();
-                        this.debouncedSearch.cancel();
+                        this.invalidateRequests();
+                        this.loadingVideos = true;
                         this.setCollection(collection);
                         // Leave search mode so browse never inherits q / search pageToken (GH-6).
                         this.query = '';
@@ -828,6 +918,7 @@ export class ExplorerDialog {
             });
 
             search.addEventListener('input', () => {
+                this.invalidateRequests();
                 this.query = search.value ?? '';
                 this.debouncedSearch();
             });
