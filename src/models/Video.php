@@ -225,6 +225,12 @@ class Video extends Model
 
     private function _getEmbedOptions(SourceInterface $source, array $options): array
     {
+        // Normalize call-site aliases before merging so a field's canonical default
+        // cannot override an explicitly requested mute value.
+        if (array_key_exists('mute', $options) && !array_key_exists('muted', $options)) {
+            $options['muted'] = $options['mute'];
+        }
+
         // Derive required provider metadata even for snapshots saved before the
         // option existed. Keep custom interface implementations without this hook usable.
         $providerOptions = method_exists($source, 'getVideoEmbedOptions') ? $source->getVideoEmbedOptions($this) : [];
