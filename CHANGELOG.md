@@ -26,6 +26,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Fix browsing additional pages of Mux videos.
 - Fix deleting a source from its edit page.
 - Preserve an empty Available Fields selection when saving a source.
 - Reject invalid video URLs when saving content instead of silently clearing the selected video.

@@ -190,12 +190,9 @@ class Mux extends CredentialsSource
             }
         }
 
-        $nextPage = null;
-
-        if (!empty($response['next_page'])) {
-            parse_str((string)parse_url($response['next_page'], PHP_URL_QUERY), $qs);
-            $nextPage = $qs['page'] ?? null;
-        }
+        // Page-number pagination has no next-page URL. Count all assets, including
+        // those without playback IDs, so an unpublished asset cannot hide later pages.
+        $nextPage = count($response['data'] ?? []) >= $query['limit'] ? $query['page'] + 1 : null;
 
         return [
             'videos' => $videos,
