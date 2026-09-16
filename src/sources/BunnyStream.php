@@ -123,6 +123,29 @@ class BunnyStream extends CredentialsSource
         return null;
     }
 
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        $params = parent::mapEmbedQueryParams($videoId, $intent);
+
+        // Bunny defaults autoplay to true and permits explicit per-embed overrides.
+        foreach (['autoplay', 'loop'] as $key) {
+            if (array_key_exists($key, $intent)) {
+                $params[$key] = (int)$this->isEmbedTruthy($intent[$key]);
+            }
+        }
+
+        if (array_key_exists('muted', $intent) || array_key_exists('mute', $intent)) {
+            $params['muted'] = (int)$this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null);
+        }
+
+        if (array_key_exists('start', $params)) {
+            $params['t'] = $params['start'];
+            unset($params['start']);
+        }
+
+        return $params;
+    }
+
     protected function buildEmbedUrl(string $videoId, array $queryParams): string
     {
         $libraryId = App::parseEnv($this->libraryId);

@@ -27,6 +27,7 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Honor playback defaults and start times in Bunny Stream embeds.
 - Apply playback options correctly to Wistia embeds.
 - Preserve the privacy hash when embedding unlisted Vimeo videos.
 - Resolve and refresh videos through later allowed accounts when an earlier account cannot access them.
