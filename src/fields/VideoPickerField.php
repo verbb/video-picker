@@ -142,7 +142,7 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             $value->url,
         ]);
 
-        return implode(' - ', $content);
+        return Html::encode(implode(' - ', $content));
     }
 
     public function getThumbHtml(mixed $value, ElementInterface $element, int $size): ?string

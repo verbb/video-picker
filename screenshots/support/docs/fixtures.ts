@@ -3,7 +3,7 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { ScreenshotSetupContext } from '@verbb/docs-screenshots/types';
+import type { ScreenshotSetupContext } from '@verbb/craft-screenshots/types';
 
 export type VideoPickerDocsFixture = {
     fieldId: number;
@@ -21,7 +21,7 @@ const seedScript = readFileSync(join(fixtureDir, 'seed-docs-field.php'), 'utf8')
  */
 export async function seedVideoPickerDocsFixture(context: ScreenshotSetupContext): Promise<VideoPickerDocsFixture> {
     await ensureVideoPickerDocsModule(context.installDir);
-    await ensureVideoPickerDocsAssets(context.installDir);
+    await ensureVideoPickerDocsAssets(context);
 
     const output = await context.runCraftScript(seedScript, { label: 'seed-video-picker-docs-field' });
     const fixture = JSON.parse(output.trim()) as VideoPickerDocsFixture;
@@ -76,17 +76,18 @@ return [
 }
 
 /** Copy bundled screenshot assets into the Craft web root (local thumbs for capture). */
-export async function ensureVideoPickerDocsAssets(installDir: string): Promise<void> {
+export async function ensureVideoPickerDocsAssets(context: ScreenshotSetupContext): Promise<void> {
     const { readdir } = await import('node:fs/promises');
 
-    const assetDir = join(installDir, 'web/video-picker-docs');
+    const assetSourceDir = join(context.captureRoot, 'assets');
+    const assetDir = join(context.installDir, 'web/video-picker-docs');
     await mkdir(assetDir, { recursive: true });
     await copyFile(
-        join(fixtureDir, 'assets/sea-turtle-thumb.jpg'),
+        join(assetSourceDir, 'sea-turtle-thumb.jpg'),
         join(assetDir, 'sea-turtle-thumb.jpg'),
     );
 
-    const explorerDir = join(fixtureDir, 'assets/explorer');
+    const explorerDir = join(assetSourceDir, 'explorer');
     const explorerAssetDir = join(assetDir, 'explorer');
     await mkdir(explorerAssetDir, { recursive: true });
 

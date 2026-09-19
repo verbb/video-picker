@@ -18,16 +18,19 @@ use craft\helpers\DateTimeHelper;
 use craft\helpers\Html;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
-use craft\helpers\Template;
 use craft\helpers\UrlHelper;
 
 use yii\caching\TagDependency;
 
 use DateInterval;
 use DateTime;
+use DOMDocument;
+use DOMElement;
 use Throwable;
 
 use Embed\Http\Crawler;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 
 class Videos extends Component
 {
@@ -37,6 +40,19 @@ class Videos extends Component
     public const CACHE_OK = 'ok';
     public const CACHE_STALE = 'stale';
     public const CACHE_UNAVAILABLE = 'unavailable';
+
+    private const EMBED_IFRAME_ATTRIBUTES = [
+        'allow',
+        'allowfullscreen',
+        'frameborder',
+        'height',
+        'loading',
+        'referrerpolicy',
+        'sandbox',
+        'scrolling',
+        'title',
+        'width',
+    ];
 
     /** Soft backoff after a failed revalidate so CP loads don’t hammer the API. */
     private const REVALIDATE_BACKOFF = 'PT15M';
@@ -277,7 +293,10 @@ class Videos extends Component
 
         $embedUrl = html_entity_decode($matches[2] ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-        if ($embedUrl) {
+        // A non-iframe provider widget is isolated in a sandboxed data document
+        // by getEmbedHtml(). Returning that URL alone would drop the sandbox and
+        // let callers accidentally execute the provider's markup.
+        if ($embedUrl && !str_starts_with(strtolower(trim($embedUrl)), 'data:')) {
             return UrlHelper::urlWithParams($embedUrl, $params);
         }
 
@@ -318,17 +337,10 @@ class Videos extends Component
     public function getEmbedHtml(string $url, array $params = []): string
     {
         $data = $this->getEmbedData($url);
-        $html = $data['code'] ?? '';
+        $baseUrl = (string)($data['url'] ?? $url);
 
-        // Check if this contains an iframe already, if not - create one
-        if (!str_contains($html, '<iframe')) {
-            $src = htmlspecialchars('data:text/html,' . rawurlencode($html));
-            $html = Html::tag('iframe', '', array_merge(['src' => $src, 'height' => 200], $params));
-        } else {
-            $html = Html::modifyTagAttributes($html, $params);
-        }
-
-        return $html;
+        // getEmbedData() has already reduced remote markup to one safe iframe.
+        return $this->_canonicalizeEmbedCode((string)($data['code'] ?? ''), $baseUrl, $params, true);
     }
 
     public function getEmbedData(string $url): array
@@ -341,6 +353,17 @@ class Videos extends Component
 
         // Success and short-lived error payloads share this key.
         if ($cached !== false && is_array($cached)) {
+            if (isset($cached['code'])) {
+                // Old cache entries may predate canonicalization. Sanitize every
+                // read so a stale payload cannot bypass the current boundary.
+                $cached['code'] = $this->_canonicalizeEmbedCode(
+                    (string)$cached['code'],
+                    (string)($cached['url'] ?? $url),
+                    [],
+                    true,
+                );
+            }
+
             return $cached;
         }
 
@@ -380,7 +403,7 @@ class Videos extends Component
                     'title' => $info->title,
                     'description' => $info->description,
                     'url' => $info->url,
-                    'code' => Template::raw($info->code ?: ''),
+                    'code' => (string)($info->code ?: ''),
                     'authorName' => $info->authorName,
                     'authorUrl' => $info->authorUrl,
                     'providerName' => $info->providerName,
@@ -399,6 +422,11 @@ class Videos extends Component
                 if (!trim($data['code'])) {
                     $data['code'] = '<iframe src="' . $info->url . '"></iframe>';
                 }
+
+                $data['code'] = $this->_canonicalizeEmbedCode(
+                    (string)$data['code'],
+                    (string)($data['url'] ?? $url),
+                );
 
                 $this->_storeEmbedCache($cacheKey, $data, max(60, (int)$settings->embedCacheDuration));
 
@@ -435,6 +463,131 @@ class Videos extends Component
 
     // Private Methods
     // =========================================================================
+
+    /** Reduce remote embed markup to one reconstructed iframe. */
+    private function _canonicalizeEmbedCode(
+        string $html,
+        string $baseUrl,
+        array $params = [],
+        bool $allowSanitizedDataUrl = false,
+    ): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        $document = new DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $document->loadHTML(
+                '<!doctype html><html><body>' . $html . '</body></html>',
+                LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING,
+            );
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        $iframe = $document->getElementsByTagName('iframe')->item(0);
+
+        if (!$iframe instanceof DOMElement) {
+            // Preserve non-iframe provider widgets in an opaque, script-disabled
+            // document rather than inserting their markup into the parent page.
+            return Html::tag('iframe', '', array_merge([
+                'src' => 'data:text/html;charset=utf-8,' . rawurlencode($html),
+                'height' => 200,
+                'sandbox' => '',
+            ], $this->_embedIframeAttributes($params)));
+        }
+
+        $src = html_entity_decode(trim($iframe->getAttribute('src')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        if (
+            $allowSanitizedDataUrl
+            && str_starts_with($src, 'data:text/html;charset=utf-8,')
+            && $iframe->hasAttribute('sandbox')
+        ) {
+            $attributes = ['src' => $src, 'sandbox' => ''];
+        } else {
+            $src = $this->_resolveEmbedIframeUrl($src, $baseUrl);
+
+            if ($src === null) {
+                return '';
+            }
+
+            $attributes = ['src' => $src];
+        }
+
+        foreach (self::EMBED_IFRAME_ATTRIBUTES as $attribute) {
+            if ($attribute === 'sandbox' && isset($attributes['sandbox'])) {
+                continue;
+            }
+
+            if (!$iframe->hasAttribute($attribute)) {
+                continue;
+            }
+
+            $attributes[$attribute] = $attribute === 'allowfullscreen'
+                ? true
+                : $iframe->getAttribute($attribute);
+        }
+
+        return Html::tag('iframe', '', array_merge(
+            $attributes,
+            $this->_embedIframeAttributes($params),
+        ));
+    }
+
+    /** Keep only iframe presentation attributes; src and executable attributes are never caller-overridable. */
+    private function _embedIframeAttributes(array $attributes): array
+    {
+        $safe = [];
+
+        foreach ($attributes as $name => $value) {
+            if (!is_string($name) || !is_scalar($value)) {
+                continue;
+            }
+
+            $name = strtolower($name);
+            $isPresentationAttribute = in_array($name, ['class', 'id', 'name', 'style'], true)
+                || str_starts_with($name, 'data-')
+                || str_starts_with($name, 'aria-');
+
+            if (
+                $name === 'sandbox'
+                || (!in_array($name, self::EMBED_IFRAME_ATTRIBUTES, true) && !$isPresentationAttribute)
+            ) {
+                continue;
+            }
+
+            $safe[$name] = $value;
+        }
+
+        return $safe;
+    }
+
+    private function _resolveEmbedIframeUrl(string $url, string $baseUrl): ?string
+    {
+        if ($url === '') {
+            return null;
+        }
+
+        try {
+            $uri = new Uri($url);
+
+            if ($uri->getScheme() === '') {
+                $uri = UriResolver::resolve(new Uri($baseUrl), $uri);
+            }
+
+            $resolved = (string)$uri;
+            EmbedUrl::assertAllowed($resolved);
+
+            return $resolved;
+        } catch (Throwable) {
+            return null;
+        }
+    }
 
     private function _embedCacheKey(string $url, Settings $settings): string
     {

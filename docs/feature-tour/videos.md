@@ -2,7 +2,7 @@
 
 Use a Video Picker field when editors need to select a video for an entry. They can browse a connected Source or paste a URL, then check the selection in a preview before saving.
 
-![Video Picker field with URL input and selected video preview](/_screenshots/feature-tour/videos.png)
+![Video Picker field with URL input and selected video preview](../../screenshots/output/docs/feature-tour/videos.png)
 
 ## Field Settings
 
@@ -22,7 +22,7 @@ Editors need the **Explore videos** permission under Video Picker in user group 
 
 Open an entry containing the field, open the explorer and choose a Source. Browse a folder or collection, or search for a known video. Select it and check the preview's title and thumbnail.
 
-![Video explorer browsing a connected Vimeo source](/_screenshots/feature-tour/explorer.png)
+![Video explorer browsing a connected Vimeo source](../../screenshots/output/docs/feature-tour/explorer.png)
 
 Save the entry and reopen it to confirm the selection is retained. [Rendering Videos](docs:template-guides/rendering-videos) shows how to display the selected video's details, and [Embedding Videos](docs:template-guides/embedding-videos) adds a player to your page.
 

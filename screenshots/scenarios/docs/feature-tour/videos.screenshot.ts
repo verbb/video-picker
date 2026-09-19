@@ -1,15 +1,15 @@
-import { defineScreenshotScenario } from '@verbb/docs-screenshots/api';
-import { seedVideoPickerDocsFixture } from '../.screenshots/video-picker/fixtures';
+import { defineScreenshotScenario } from '@verbb/craft-screenshots/api';
+import { seedVideoPickerDocsFixture } from '../../../support/docs/fixtures';
 import {
     createVideoPickerCleanupStep,
     createVideoPickerFieldPromoCropStep,
-} from '../.screenshots/video-picker/presets';
+} from '../../../support/docs/presets';
 
 let entryEditRoute = '/admin/entries';
 
 export default defineScreenshotScenario({
     id: 'feature-tour-videos',
-    output: '_screenshots/feature-tour/videos.png',
+    output: 'docs/feature-tour/videos.png',
     route: () => entryEditRoute,
     viewport: {
         width: 1100,

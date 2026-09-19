@@ -23,6 +23,12 @@ use GuzzleHttp\Exception\RequestException;
 
 class YouTube extends OAuthSource
 {
+    // Constants
+    // =========================================================================
+
+    private const BROAD_SCOPE = 'https://www.googleapis.com/auth/youtube';
+
+
     // Static Methods
     // =========================================================================
 
@@ -73,7 +79,6 @@ class YouTube extends OAuthSource
         return [
             'https://www.googleapis.com/auth/userinfo.profile',
             'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/youtube',
             'https://www.googleapis.com/auth/youtube.readonly',
         ];
     }
@@ -81,6 +86,12 @@ class YouTube extends OAuthSource
     public function getAuthorizationUrlOptions(): array
     {
         $options = parent::getAuthorizationUrlOptions();
+        // A scope persisted in project config must not be able to restore the
+        // former read/write grant after this source moved to read-only access.
+        $options['scope'] = array_values(array_filter(
+            $options['scope'] ?? [],
+            static fn(mixed $scope): bool => (string)$scope !== self::BROAD_SCOPE,
+        ));
         $options['access_type'] = 'offline';
         $options['prompt'] = 'consent';
         

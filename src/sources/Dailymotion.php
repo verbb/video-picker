@@ -286,6 +286,7 @@ class Dailymotion extends CredentialsSource
         try {
             $client = Craft::createGuzzleClient(['timeout' => 30]);
             $response = $client->post(self::OAUTH_TOKEN_URL, [
+                'allow_redirects' => false,
                 'form_params' => [
                     'grant_type' => 'client_credentials',
                     'client_id' => $clientId,

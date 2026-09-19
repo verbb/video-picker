@@ -27,6 +27,9 @@
 - Align documentation filenames with page titles and update internal links.
 
 ### Fixed
+- Fixed two moderate-severity cross-site scripting vulnerabilities.
+- Fixed a low-severity server-side request forgery vulnerability.
+- Fixed a low-severity excessive OAuth permissions vulnerability.
 - Fixed a moderate-severity denial-of-service vulnerability.
 - Fixed literal emoji shortcodes changing when video metadata is cached.
 - Fixed cached Bunny videos embedding under a different library.

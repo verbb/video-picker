@@ -1,16 +1,16 @@
-import { defineScreenshotScenario } from '@verbb/docs-screenshots/api';
-import { seedVideoPickerDocsFixture } from '../.screenshots/video-picker/fixtures';
+import { defineScreenshotScenario } from '@verbb/craft-screenshots/api';
+import { seedVideoPickerDocsFixture } from '../../../support/docs/fixtures';
 import {
     createSelectVimeoExplorerSourceStep,
     createVideoPickerCleanupStep,
     createVideoPickerExplorerPromoCropStep,
-} from '../.screenshots/video-picker/presets';
+} from '../../../support/docs/presets';
 
 let entryEditRoute = '/admin/entries';
 
 export default defineScreenshotScenario({
     id: 'feature-tour-explorer',
-    output: '_screenshots/feature-tour/explorer.png',
+    output: 'docs/feature-tour/explorer.png',
     route: () => entryEditRoute,
     viewport: {
         width: 1320,
@@ -36,6 +36,15 @@ export default defineScreenshotScenario({
                 type: 'selector',
                 selector: '.vp-explorer',
                 state: 'attached',
+                timeout: 60000,
+            },
+        },
+        {
+            type: 'wait',
+            waitFor: {
+                type: 'selector',
+                selector: '.vp-explorer pk-select',
+                state: 'visible',
                 timeout: 60000,
             },
         },

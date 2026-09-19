@@ -1,15 +1,15 @@
-import { defineScreenshotScenario } from '@verbb/docs-screenshots/api';
-import { seedVideoPickerDocsFixture } from '../.screenshots/video-picker/fixtures';
+import { defineScreenshotScenario } from '@verbb/craft-screenshots/api';
+import { seedVideoPickerDocsFixture } from '../../../support/docs/fixtures';
 import {
     createPrepareVideoPickerSourcesIndexStep,
     createVideoPickerCleanupStep,
-} from '../.screenshots/video-picker/presets';
+} from '../../../support/docs/presets';
 
 let sourcesRoute = '/admin/video-picker/sources';
 
 export default defineScreenshotScenario({
     id: 'feature-tour-sources',
-    output: '_screenshots/feature-tour/sources.png',
+    output: 'docs/feature-tour/sources.png',
     route: () => sourcesRoute,
     // ~200px narrower than the full table while keeping Provider visible.
     viewport: {

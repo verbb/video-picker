@@ -1,7 +1,7 @@
-import type { ScreenshotSetupContext } from '@verbb/docs-screenshots/types';
-import { registerPluginBootstrap } from '@verbb/docs-screenshots/api';
+import type { ScreenshotSetupContext } from '@verbb/craft-screenshots/types';
+import { registerPluginBootstrap } from '@verbb/craft-screenshots/api';
 
-import { ensureVideoPickerDocsModule } from './video-picker/fixtures';
+import { ensureVideoPickerDocsModule } from './docs/fixtures';
 
 export default registerPluginBootstrap({
     id: 'video-picker',

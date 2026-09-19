@@ -4,7 +4,7 @@
  * with Library/Folders sidebar and canned nature-style demo clips.
  *
  * Thumbnails are bundled JPGs in web/video-picker-docs/explorer/ (copied from
- * docs/.screenshots/video-picker/assets/explorer/). They are fixed per video id,
+ * screenshots/assets/explorer/). They are fixed per video id,
  * not fetched at capture time, so titles and imagery stay paired across runs.
  */
 

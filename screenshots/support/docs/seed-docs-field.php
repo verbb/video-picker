@@ -2,7 +2,7 @@
  * Seed Video Picker field, all supported provider sources (connected), and an entry with a resolved video.
  *
  * Echoes JSON: fieldId, fieldHandle, settingsRoute, entryEditRoute, sourcesRoute.
- * Note: no opening PHP tag — @verbb/docs-screenshots injects this into a bootstrap.
+ * Note: no opening PHP tag — @verbb/craft-screenshots injects this into a bootstrap.
  *
  * Requires modules/videopickerdocs (DocsVimeoSource) bootstrapped in the Craft install.
  */

@@ -91,6 +91,10 @@ abstract class CredentialsSource extends Source implements CredentialsProviderIn
      */
     public function request(string $method = 'GET', string $uri = '', array $options = []): mixed
     {
+        // Provider API origins are fixed. A redirect is a new trust decision, so
+        // never let callers or Guzzle follow one without per-hop validation.
+        $options['allow_redirects'] = false;
+
         try {
             /** @var ResponseInterface $response */
             $response = $this->credentialsHttpRequest($method, $uri, $options);
