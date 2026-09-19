@@ -9,6 +9,9 @@ Video Picker is a Craft CMS plugin that provides a rich experience when dealing 
 - Support for multiple providers, to handle multiple accounts.
 - Get video data in your templates — just provide the URL.
 - GraphQL support.
+- Layered caching for provider sources, video metadata and resolved records.
+- Use selected videos in supported Craft element cards.
+- Field settings to show or hide the video explorer and preview.
 - Events to write your own source types, or extend existing ones.
 
 ## Sources
