@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Tests\Support\CpRequestContext;
+use verbb\videopicker\VideoPicker;
+use verbb\videopicker\controllers\AuthController;
 use verbb\videopicker\fields\VideoPickerField;
 use verbb\videopicker\helpers\EmbedUrl;
 use verbb\videopicker\helpers\PinnedHttpClient;
@@ -11,6 +14,22 @@ use GuzzleHttp\TransferStats;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use yii\base\InvalidArgumentException;
+use yii\web\BadRequestHttpException;
+
+describe('OAuth callback transactions', function() {
+    it('rejects an unknown transaction before processing the provider callback', function() {
+        CpRequestContext::activate('actions/video-picker/auth/callback', 'GET', false);
+        Craft::$app->getRequest()->setQueryParams([
+            'state' => 'invalid-oauth-state-' . uniqid(),
+            'code' => 'unused-authorization-code',
+        ]);
+
+        $controller = new AuthController('auth', VideoPicker::$plugin);
+
+        expect(fn() => $controller->runAction('callback'))
+            ->toThrow(BadRequestHttpException::class, 'invalid or has expired');
+    });
+});
 
 describe('EmbedUrl host policy', function() {
     it('normalizes bracketed IPv6 hosts', function() {

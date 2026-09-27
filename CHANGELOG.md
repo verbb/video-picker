@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fixed OAuth callback transaction validation.
+
 ## 2.1.0 - 2026-09-
 
 ### Added
