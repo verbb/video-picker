@@ -129,7 +129,7 @@ class AuthController extends Controller
 
         Session::setNotice('video-picker', Craft::t('video-picker', '{provider} connected.', ['provider' => $source->providerName]), true);
 
-        return $this->redirect($this->getView()->renderObjectTemplate($redirect, $source));
+        return $this->redirect($redirect);
     }
 
     public function actionDisconnect(): ?Response
