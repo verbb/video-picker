@@ -44,17 +44,17 @@ class AuthController extends Controller
                 return $this->asFailure(Craft::t('video-picker', 'Unable to find source “{source}”.', ['source' => $sourceHandle]));
             }
 
-            // Handle redirection correctly for CP-based requests, as we need to session-store it.
+            $context = [
+                'sourceHandle' => $sourceHandle,
+            ];
+
             if ($this->request->getIsCpRequest()) {
                 if ($redirect = $this->request->getValidatedBodyParam('redirect')) {
-                    Session::set('redirect', $this->getView()->renderObjectTemplate($redirect, $source));
+                    $context['redirect'] = $this->getView()->renderObjectTemplate($redirect, $source);
                 }
             }
 
-            // Keep track of which source instance is for, so we can fetch it in the callback
-            Session::set('sourceHandle', $sourceHandle);
-
-            return Auth::getInstance()->getOAuth()->connect('video-picker', $source);
+            return Auth::getInstance()->getOAuth()->connect('video-picker', $source, $source->id, $context);
         } catch (Throwable $e) {
             VideoPicker::error('Unable to authorize connect “{source}”: “{message}” {file}:{line}', [
                 'source' => $sourceHandle,
@@ -69,8 +69,13 @@ class AuthController extends Controller
 
     public function actionCallback(): ?Response
     {
-        // Restore the session data that we saved before authorization redirection from the cache back to session
-        Session::restoreSession($this->request->getParam('state'));
+        $oauth = Auth::getInstance()->getOAuth();
+
+        if ($response = $oauth->prepareCallback('video-picker')) {
+            return $response;
+        }
+
+        $oauth->claimCallback('video-picker');
         
         // Get both the origin (failure) and redirect (success) URLs
         $origin = Session::get('origin');
@@ -91,7 +96,7 @@ class AuthController extends Controller
 
         try {
             // Fetch the access token from the source and create a Token for us to use
-            $token = Auth::getInstance()->getOAuth()->callback('video-picker', $source);
+            $token = $oauth->callback('video-picker', $source, $source->id);
 
             if (!$token) {
                 Session::setError('video-picker', Craft::t('video-picker', 'Unable to fetch token.'), true);
