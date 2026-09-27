@@ -4,6 +4,7 @@ namespace verbb\videopicker\controllers;
 use verbb\videopicker\VideoPicker;
 
 use Craft;
+use craft\elements\User;
 use craft\web\Controller;
 
 use yii\web\Response;
@@ -82,7 +83,7 @@ class AuthController extends Controller
             return $response;
         }
 
-        $oauth->claimCallback('video-picker');
+        $oauth->claimAuthorizedCallback('video-picker', fn(User $user): bool => $user->can('videoPicker-sources'));
         
         // Get both the origin (failure) and redirect (success) URLs
         $origin = Session::get('origin');

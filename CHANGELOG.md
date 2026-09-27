@@ -4,6 +4,7 @@
 
 ### Fixed
 - Fixed OAuth callback transaction validation.
+- Revalidate source-management permission when OAuth callbacks return.
 
 ## 2.1.0 - 2026-09-
 

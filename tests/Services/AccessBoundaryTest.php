@@ -33,6 +33,27 @@ describe('AuthController anonymous surface', function() {
 
         expect($prop->getValue($controller))->toBe(['callback']);
     });
+
+    it('requires POST for an authorized management request', function(string $action) {
+        AdminUser::login();
+        CpRequestContext::activate("actions/video-picker/auth/{$action}", 'GET', true);
+
+        $controller = new AuthController('auth', VideoPicker::$plugin);
+
+        expect(fn() => $controller->runAction($action))
+            ->toThrow(MethodNotAllowedHttpException::class);
+    })->with(['connect', 'disconnect']);
+
+    it('requires source-management permission', function(string $action) {
+        NonAdminUser::login();
+        CpRequestContext::activate("actions/video-picker/auth/{$action}", 'POST', true);
+
+        $controller = new AuthController('auth', VideoPicker::$plugin);
+        $controller->enableCsrfValidation = false;
+
+        expect(fn() => $controller->runAction($action))
+            ->toThrow(ForbiddenHttpException::class);
+    })->with(['connect', 'disconnect']);
 });
 
 describe('VideosController access boundary', function() {
