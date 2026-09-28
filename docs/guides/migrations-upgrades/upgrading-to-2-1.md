@@ -29,3 +29,5 @@ Embed 4 is now required. Review custom image detectors and embed client settings
 Source embed options now distinguish playback/query parameters from iframe attributes. Check templates that depended on query options also appearing as HTML attributes. Twig calls can override field embed defaults; GraphQL's `embedHtml` and `embedUrl` use the field defaults and accept no arguments.
 
 The GraphQL `plays` field now uses `Float` so videos with more than 2,147,483,647 plays return their count without a serialization error. Regenerate GraphQL client types if your project generates them from the schema. The response still contains a JSON number.
+
+The GraphQL `raw` field has been removed because provider responses can contain credentials and private asset URLs. Remove `raw` from queries and persisted operations, then regenerate GraphQL client types. Server-side Twig and PHP code can continue using `video.raw`.

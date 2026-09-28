@@ -89,8 +89,7 @@ Each Video Picker field exposes an object type named from its handle, such as `v
 | `private` | `Boolean` | Whether the provider marks the video as private. |
 | `width` | `Int` | Video width in pixels. |
 | `height` | `Int` | Video height in pixels. |
-| `raw` | `String` | Provider data encoded as a JSON string. |
 | `embedHtml` | `String` | Embed HTML using the field’s embed defaults. |
 | `embedUrl` | `String` | Embed URL using the field’s embed defaults. |
 
-`thumbnails` is a JSON scalar, so request it without a nested selection. `raw` is a JSON-encoded string and must be decoded separately. Neither `embedHtml` nor `embedUrl` accepts arguments; configure embed defaults on the Video Picker field.
+`thumbnails` is a JSON scalar, so request it without a nested selection. Neither `embedHtml` nor `embedUrl` accepts arguments; configure embed defaults on the Video Picker field.

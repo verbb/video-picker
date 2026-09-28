@@ -7,9 +7,13 @@
 
 ### Fixed
 - Fixed a high-severity information disclosure vulnerability.
+- Fixed a moderate-severity information disclosure vulnerability.
 - Fixed OAuth callback transaction validation.
 - Revalidate source-management permission when OAuth callbacks return.
 - Fixed OAuth callback redirects being evaluated as Twig templates.
+
+### Removed
+- Removed the `raw` field from GraphQL video types. Remove it from GraphQL queries and persisted operations before upgrading.
 
 ## 2.1.0 - 2026-09-
 

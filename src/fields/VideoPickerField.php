@@ -433,14 +433,6 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
                     'type' => Type::int(),
                     'description' => 'The height of the video.',
                 ],
-                'raw' => [
-                    'name' => 'raw',
-                    'type' => Type::string(),
-                    'description' => 'The raw data of the video as a JSON string.',
-                     'resolve' => function($model) {
-                        return Json::encode($model->raw);
-                    },
-                ],
                 'embedHtml' => [
                     'name' => 'embedHtml',
                     'type' => Type::string(),
