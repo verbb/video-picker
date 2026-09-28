@@ -39,6 +39,7 @@ class AuthController extends Controller
     public function actionConnect(): ?Response
     {
         $this->requirePermission('videoPicker-sources');
+        $this->requirePermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION);
         $this->requirePostRequest();
 
         $sourceHandle = $this->request->getRequiredParam('source');
@@ -83,7 +84,10 @@ class AuthController extends Controller
             return $response;
         }
 
-        $oauth->claimAuthorizedCallback('video-picker', fn(User $user): bool => $user->can('videoPicker-sources'));
+        $oauth->claimAuthorizedCallback(
+            'video-picker',
+            fn(User $user): bool => $user->can('videoPicker-sources') && $user->can(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION),
+        );
         
         // Get both the origin (failure) and redirect (success) URLs
         $origin = Session::get('origin');
@@ -142,6 +146,7 @@ class AuthController extends Controller
     public function actionDisconnect(): ?Response
     {
         $this->requirePermission('videoPicker-sources');
+        $this->requirePermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION);
         $this->requirePostRequest();
 
         $sourceHandle = $this->request->getRequiredParam('source');

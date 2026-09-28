@@ -12,6 +12,7 @@ use Tests\Support\CpRequestContext;
 use Tests\Support\NonAdminUser;
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\controllers\AuthController;
+use verbb\videopicker\controllers\SourcesController;
 use verbb\videopicker\controllers\VideosController;
 use verbb\videopicker\fields\VideoPickerField;
 use yii\web\BadRequestHttpException;
@@ -54,6 +55,39 @@ describe('AuthController anonymous surface', function() {
         expect(fn() => $controller->runAction($action))
             ->toThrow(ForbiddenHttpException::class);
     })->with(['connect', 'disconnect']);
+
+    it('requires the dedicated credential permission', function(string $action) {
+        NonAdminUser::loginWithPermissions(['videoPicker-sources']);
+        CpRequestContext::activate("actions/video-picker/auth/{$action}", 'POST', true);
+
+        $controller = new AuthController('auth', VideoPicker::$plugin);
+        $controller->enableCsrfValidation = false;
+
+        expect(fn() => $controller->runAction($action))
+            ->toThrow(ForbiddenHttpException::class);
+    })->with(['connect', 'disconnect']);
+
+    it('allows credential managers to reach request validation', function(string $action) {
+        NonAdminUser::loginWithPermissions(['videoPicker-sources', VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION]);
+        CpRequestContext::activate("actions/video-picker/auth/{$action}", 'POST', true);
+
+        $controller = new AuthController('auth', VideoPicker::$plugin);
+        $controller->enableCsrfValidation = false;
+
+        expect(fn() => $controller->runAction($action))
+            ->toThrow(BadRequestHttpException::class);
+    })->with(['connect', 'disconnect']);
+
+    it('requires the credential permission to check a saved connection', function() {
+        NonAdminUser::loginWithPermissions(['videoPicker-sources']);
+        CpRequestContext::activate('actions/video-picker/sources/check-connection', 'POST', true);
+
+        $controller = new SourcesController('sources', VideoPicker::$plugin);
+        $controller->enableCsrfValidation = false;
+
+        expect(fn() => $controller->runAction('check-connection'))
+            ->toThrow(ForbiddenHttpException::class);
+    });
 });
 
 describe('VideosController access boundary', function() {
@@ -185,14 +219,22 @@ describe('VideosController access boundary', function() {
     it('registers the Explore videos permission', function() {
         $permissions = Craft::$app->getUserPermissions()->getAllPermissions();
         $labels = [];
+        $collectLabels = function(array $permissions) use (&$collectLabels, &$labels): void {
+            foreach ($permissions as $handle => $info) {
+                $labels[$handle] = $info['label'] ?? $handle;
+
+                if (isset($info['nested'])) {
+                    $collectLabels($info['nested']);
+                }
+            }
+        };
 
         foreach ($permissions as $group) {
-            foreach (($group['permissions'] ?? []) as $handle => $info) {
-                $labels[$handle] = $info['label'] ?? $handle;
-            }
+            $collectLabels($group['permissions'] ?? []);
         }
 
         expect($labels)->toHaveKey('videoPicker-explore');
         expect($labels)->toHaveKey('videoPicker-sources');
+        expect($labels)->toHaveKey(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION);
     });
 });

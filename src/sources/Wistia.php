@@ -43,6 +43,11 @@ class Wistia extends CredentialsSource
         return $attributes;
     }
 
+    public function getCredentialAttributes(): array
+    {
+        return ['accessToken'];
+    }
+
     public function defineRules(): array
     {
         $rules = parent::defineRules();

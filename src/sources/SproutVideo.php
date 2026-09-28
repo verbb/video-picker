@@ -43,6 +43,11 @@ class SproutVideo extends CredentialsSource
         return $attributes;
     }
 
+    public function getCredentialAttributes(): array
+    {
+        return ['apiKey'];
+    }
+
     public function defineRules(): array
     {
         $rules = parent::defineRules();

@@ -9,6 +9,7 @@
 
 {% set fullPageForm = true %}
 {% set selectedSubnavItem = 'sources' %}
+{% set canManageSourceCredentials = currentUser.admin or currentUser.can('videoPicker-sources:credentials') %}
 
 {% set saveShortcutRedirect = 'video-picker/sources/{handle}' %}
 
@@ -155,7 +156,7 @@
         {% endif %}
     </div>
 
-    {% if source.id and source.supportsConnection() %}
+    {% if source.id and source.supportsConnection() and canManageSourceCredentials %}
         {% if source.supportsOAuthConnection() %}
             <div class="field lightswitch-field pk-connect-field">
                 <pk-connect-oauth

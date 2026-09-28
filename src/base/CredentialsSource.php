@@ -11,7 +11,7 @@ use verbb\auth\base\CredentialsProviderTrait;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
-abstract class CredentialsSource extends Source implements CredentialsProviderInterface
+abstract class CredentialsSource extends Source implements CredentialSourceInterface, CredentialsProviderInterface
 {
     // Traits
     // =========================================================================
@@ -32,6 +32,14 @@ abstract class CredentialsSource extends Source implements CredentialsProviderIn
     public static function supportsOAuthConnection(): bool
     {
         return false;
+    }
+
+    /**
+     * Fail closed for custom providers until they classify ordinary settings separately.
+     */
+    public function getCredentialAttributes(): array
+    {
+        return $this->settingsAttributes();
     }
 
 

@@ -46,6 +46,11 @@ class BunnyStream extends CredentialsSource
         return $attributes;
     }
 
+    public function getCredentialAttributes(): array
+    {
+        return ['libraryId', 'streamApiKey'];
+    }
+
     public function defineRules(): array
     {
         $rules = parent::defineRules();

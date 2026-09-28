@@ -2,7 +2,11 @@
 
 ## Unreleased
 
+### Added
+- Added a dedicated permission for managing Source credentials and connections. Existing non-admin Source managers must be granted this permission to continue managing credentials.
+
 ### Fixed
+- Fixed a high-severity information disclosure vulnerability.
 - Fixed OAuth callback transaction validation.
 - Revalidate source-management permission when OAuth callbacks return.
 - Fixed OAuth callback redirects being evaluated as Twig templates.

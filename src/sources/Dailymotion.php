@@ -64,6 +64,11 @@ class Dailymotion extends CredentialsSource
         return $attributes;
     }
 
+    public function getCredentialAttributes(): array
+    {
+        return ['apiKey', 'apiSecret'];
+    }
+
     public function defineRules(): array
     {
         $rules = parent::defineRules();

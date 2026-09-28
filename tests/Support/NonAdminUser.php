@@ -25,6 +25,25 @@ final class NonAdminUser
         return $user;
     }
 
+    public static function loginWithPermissions(array $permissions): User
+    {
+        $user = new class extends User {
+            public array $grantedPermissions = [];
+
+            public function can($permission): bool
+            {
+                return $permission === 'accessCp' || in_array($permission, $this->grantedPermissions, true);
+            }
+        };
+        $user->username = 'test-permitted-editor';
+        $user->email = 'test-permitted-editor@example.test';
+        $user->admin = false;
+        $user->grantedPermissions = $permissions;
+        Craft::$app->getUser()->setIdentity($user);
+
+        return $user;
+    }
+
     public static function identity(): User
     {
         if (self::$user) {

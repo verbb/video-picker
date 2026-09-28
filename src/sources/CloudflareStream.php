@@ -45,6 +45,11 @@ class CloudflareStream extends CredentialsSource
         return $attributes;
     }
 
+    public function getCredentialAttributes(): array
+    {
+        return ['accountId', 'apiToken'];
+    }
+
     public function defineRules(): array
     {
         $rules = parent::defineRules();

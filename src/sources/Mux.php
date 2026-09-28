@@ -45,6 +45,11 @@ class Mux extends CredentialsSource
         return $attributes;
     }
 
+    public function getCredentialAttributes(): array
+    {
+        return ['tokenId', 'tokenSecret'];
+    }
+
     public function defineRules(): array
     {
         $rules = parent::defineRules();

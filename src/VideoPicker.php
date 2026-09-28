@@ -23,6 +23,12 @@ use yii\base\Event;
 
 class VideoPicker extends Plugin
 {
+    // Constants
+    // =========================================================================
+
+    public const MANAGE_SOURCE_CREDENTIALS_PERMISSION = 'videoPicker-sources:credentials';
+
+
     // Traits
     // =========================================================================
 
@@ -155,7 +161,12 @@ class VideoPicker extends Plugin
                 'heading' => Craft::t('video-picker', 'Video Picker'),
                 'permissions' => [
                     'videoPicker-explore' => ['label' => Craft::t('video-picker', 'Explore videos')],
-                    'videoPicker-sources' => ['label' => Craft::t('video-picker', 'Sources')],
+                    'videoPicker-sources' => [
+                        'label' => Craft::t('video-picker', 'Sources'),
+                        'nested' => [
+                            self::MANAGE_SOURCE_CREDENTIALS_PERMISSION => ['label' => Craft::t('video-picker', 'Manage source credentials and connections')],
+                        ],
+                    ],
                 ],
             ];
         });

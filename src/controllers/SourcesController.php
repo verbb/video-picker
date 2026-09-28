@@ -3,6 +3,7 @@ namespace verbb\videopicker\controllers;
 
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\helpers\Plugin as PluginHelper;
+use verbb\videopicker\helpers\SourceSecurity;
 use verbb\videopicker\base\SourceInterface;
 use verbb\videopicker\fields\VideoPickerField;
 
@@ -107,11 +108,14 @@ class SourcesController extends Controller
         $sourcesService = VideoPicker::$plugin->getSources();
         $sourceId = $this->request->getParam('sourceId') ?: null;
         $type = $this->request->getParam('type');
+        $oldSource = null;
+        $storedSource = null;
 
         if ($sourceId) {
             $oldSource = $sourcesService->getSourceById($sourceId);
+            $storedSource = $sourcesService->getStoredSourceById($sourceId);
             
-            if (!$oldSource) {
+            if (!$oldSource || !$storedSource) {
                 throw new BadRequestHttpException("Invalid source ID: $sourceId");
             }
         }
@@ -133,7 +137,17 @@ class SourcesController extends Controller
             'settings' => $this->request->getParam("types.$type"),
         ]);
 
-        if (!$sourcesService->saveSource($source)) {
+        if (!$this->_validateDelegatedSourceChange($source, $oldSource)) {
+            return $this->asModelFailure($source, Craft::t('video-picker', 'Couldn’t save source.'), 'source');
+        }
+
+        $settingsForPersistence = null;
+
+        if ($storedSource && !Craft::$app->getUser()->checkPermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION)) {
+            $settingsForPersistence = SourceSecurity::settingsForPersistence($source, $storedSource);
+        }
+
+        if (!$sourcesService->saveSource($source, true, $settingsForPersistence)) {
             return $this->asModelFailure($source, Craft::t('video-picker', 'Couldn’t save source.'), 'source');
         }
 
@@ -143,6 +157,7 @@ class SourcesController extends Controller
     public function actionCheckConnection(): Response
     {
         $this->requirePostRequest();
+        $this->requirePermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION);
         $this->requireAcceptsJson();
 
         $sourceId = (int)$this->request->getParam('sourceId');
@@ -244,5 +259,14 @@ class SourcesController extends Controller
         ArrayHelper::multisort($options, 'label');
 
         return $options;
+    }
+
+    private function _validateDelegatedSourceChange(SourceInterface $source, ?SourceInterface $original): bool
+    {
+        if (Craft::$app->getUser()->checkPermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION)) {
+            return true;
+        }
+
+        return SourceSecurity::validateDelegatedChange($source, $original);
     }
 }
