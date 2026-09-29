@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 - 2026-09-29
 
 ### Added
 - Add **Bunny Stream**, **Cloudflare Stream**, **Dailymotion**, **Mux**, **Sprout Video** and **Wistia** sources.
