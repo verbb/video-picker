@@ -3,21 +3,6 @@
 ## Unreleased
 
 ### Added
-- Added a dedicated permission for managing Source credentials and connections. Existing non-admin Source managers must be granted this permission to continue managing credentials.
-
-### Fixed
-- Fixed a high-severity information disclosure vulnerability.
-- Fixed a moderate-severity information disclosure vulnerability.
-- Fixed OAuth callback transaction validation.
-- Revalidate source-management permission when OAuth callbacks return.
-- Fixed OAuth callback redirects being evaluated as Twig templates.
-
-### Removed
-- Removed the `raw` field from GraphQL video types. Remove it from GraphQL queries and persisted operations before upgrading.
-
-## 2.1.0 - 2026-09-
-
-### Added
 - Add **Bunny Stream**, **Cloudflare Stream**, **Dailymotion**, **Mux**, **Sprout Video** and **Wistia** sources.
 - Add field settings for available sources, URL input, search, public-only videos, videos per page, minimum and maximum duration, video sort order and placeholder text.
 - Add source setting **Available Fields** to control what fields can browse the source.
@@ -26,6 +11,7 @@
 - Add YouTube **Privacy Enhanced Mode** for `youtube-nocookie.com` embeds.
 - Add an optional provider icon, private-video indicator and provider link to selected-video previews.
 - Add **Explore videos** (`videoPicker-explore`) permission for field explorer and URL lookup requests, separate from **Sources**.
+- Add **Manage source credentials and connections** permission. Existing non-admin Source managers must be granted this permission to continue managing credentials and OAuth connections.
 
 ### Changed
 - Rebuild the field input and explorer with [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) web components, including responsive layouts and improved keyboard and screen-reader support.
@@ -35,7 +21,7 @@
 - Split credential and OAuth source authentication into `CredentialsSource` and `OAuthSource`; `SourceInterface` no longer requires `getOAuthProviderClass()`.
 - Separate provider embed options from iframe attributes.
 - Change GraphQL `plays` to `Float` to support play counts above the 32-bit integer limit.
-- Require Embed 4 and update Plugin Kit and lodash to patched releases.
+- Require Embed 4 and update Auth, Plugin Kit and lodash to patched releases.
 - Expand the field, provider, embed, Source API, GraphQL and migration documentation.
 
 ### Fixed
@@ -43,11 +29,12 @@
 - Fixed a high-severity server-side request forgery vulnerability.
 - Fixed two moderate-severity cross-site scripting vulnerabilities.
 - Fixed a moderate-severity denial-of-service vulnerability.
-- Fixed a moderate-severity information disclosure vulnerability.
+- Fixed two moderate-severity information disclosure vulnerabilities.
 - Fixed a moderate-severity credential disclosure vulnerability.
 - Fixed a low-severity server-side request forgery vulnerability.
 - Fixed a low-severity broken access control vulnerability.
 - Fixed a low-severity excessive OAuth permissions vulnerability.
+- Fixed OAuth callback validation and redirect handling.
 - Fixed YouTube explorer searches reusing incompatible playlist pagination parameters. ([#6](https://github.com/verbb/video-picker/issues/6))
 - Fixed literal emoji shortcodes changing when video metadata is cached.
 - Fixed Refresh reusing stale video metadata for alias URLs or stopping before a later account that can access the video.
@@ -61,6 +48,9 @@
 - Fixed invalid video URLs silently clearing the selected video when saving content.
 - Fixed GraphQL `ArrayType` values not returning their serialized arrays.
 - Fixed element thumbnail `srcset` output containing an empty 2× candidate.
+
+### Removed
+- Removed the `raw` field from GraphQL video types. Remove it from GraphQL queries and persisted operations before upgrading.
 
 ## 2.0.11 - 2026-09-13
 
