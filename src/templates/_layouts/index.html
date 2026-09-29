@@ -1,6 +1,7 @@
 {% extends parentLayout ?? '_layouts/cp' %}
 
-{% do view.registerAssetBundle('verbb\\videopicker\\assetbundles\\VideoPickerAsset') %}
+{% do view.registerAssetBundle('verbb\\videopicker\\web\\assets\\cp\\CpAsset') %}
+{% do craft.videoPicker.registerCpStyles() %}
 
 {% if title is not defined %}
     {% set title = 'Video Picker' | t('video-picker') %}

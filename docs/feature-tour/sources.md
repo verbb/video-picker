@@ -1,37 +1,17 @@
 # Sources
-A Source allows you to connect to a video provider to fetch Videos from various platforms. Once a Source is set up, you can retrieve video data, including titles, descriptions, thumbnails, and playback details.
+
+A Source connects Video Picker to a video provider. Once set up, you can browse videos in the field explorer or resolve them by URL.
+
+<img src="../../screenshots/output/docs/feature-tour/sources.png" width="727" alt="Video Picker Sources index with connected providers." />
 
 ## Provider Settings
-Each provider will be different, but almost all require OAuth authentication. Create a Source and follow the documentation for the provider to get your Client ID/Secret credentials. Once configured, connect to the provider, going through the OAuth handshake to retrieve a token.
 
-## Fetching Videos
-To fetch a video from a source, you'll need to provide a URL for the video, and use `source.getVideoByUrl(url)`.
+OAuth Sources need a client ID, client secret and connection handshake. Credential Sources use API tokens entered in the Source settings. Create a Source, follow its provider page, save it and complete **Connect** when shown. Confirm the Source is connected before assigning it to a field.
 
-```twig
-{# Get the source by its handle #}
-{% set source = craft.videoPicker.getSourceByHandle('mySourceHandle') %}
+## Available Fields
 
-{% for video in source.getVideos() %}
-    ID: {{ video.id }}<br>
-    Title: {{ video.title }}<br>
-    Description: {{ video.description }}<br>
-    Thumbnail: <img src="{{ video.getThumbnail() }}" alt="{{ video.title }}">
-{% endfor %}
-```
+On each Source you can limit which Video Picker fields are allowed to browse it (**Available Fields**). Select **All** to allow every field, choose individual fields to limit access, or clear every checkbox to allow none. The field must still use a Source that is enabled and connected.
 
-You can also use the more convenient `craft.videoPicker.getVideoByUrl(url)` which does the same thing, but automatically determins which source the video is for. This can be more helpful when you don't know which source a video belongs to in advance.
+Editors need **Explore videos** to browse an allowed Source or resolve a pasted URL through the field. Give **Sources** permission only to users who manage provider credentials and connections.
 
-```twig
-{% set video = craft.videoPicker.getVideoByUrl('http://provider.com/video/4b6b2kk32b5h') %}
-
-{% if video %}
-    ID: {{ video.id }}<br>
-    Title: {{ video.title }}<br>
-    Description: {{ video.description }}<br>
-    Thumbnail: <img src="{{ video.getThumbnail() }}" alt="{{ video.title }}">
-{% endif %}
-```
-
-:::tip
-Check out our guide on [Rendering Videos](docs:template-guides/rendering-videos) for more.
-:::
+Once an editor has made a selection, follow [Rendering Videos](docs:template-guides/rendering-videos). Custom integrations can [select Sources in Twig](docs:template-guides/selecting-video-sources).

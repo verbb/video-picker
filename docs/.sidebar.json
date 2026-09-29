@@ -4,6 +4,7 @@
         "collapsable": false,
         "children": [
             "get-started/installation-setup",
+            "get-started/selecting-your-first-video",
             "get-started/requirements",
             "get-started/configuration"
         ]
@@ -21,7 +22,13 @@
         "title": "Providers",
         "collapsable": false,
         "children": [
+            "providers/bunny-stream",
+            "providers/cloudflare-stream",
+            "providers/dailymotion",
+            "providers/mux",
+            "providers/sprout-video",
             "providers/vimeo",
+            "providers/wistia",
             "providers/youtube"
         ]
     },
@@ -29,7 +36,8 @@
         "title": "Template Guides",
         "collapsable": false,
         "children": [
-            "template-guides/available-variables",
+            "template-guides/selecting-video-sources",
+            "template-guides/rendering-videos-from-urls",
             "template-guides/rendering-videos",
             "template-guides/embedding-videos"
         ]
@@ -46,7 +54,14 @@
         ]
     },
     {
-        "title": "Guides",
+        "title": "Troubleshooting",
+        "collapsable": false,
+        "children": [
+            "get-started/troubleshooting"
+        ]
+    },
+    {
+        "title": "User Guides",
         "collapsable": false,
         "children": [
             "guides/migrations-upgrades/index"

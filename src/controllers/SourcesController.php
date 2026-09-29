@@ -2,7 +2,10 @@
 namespace verbb\videopicker\controllers;
 
 use verbb\videopicker\VideoPicker;
+use verbb\videopicker\helpers\Plugin as PluginHelper;
+use verbb\videopicker\helpers\SourceSecurity;
 use verbb\videopicker\base\SourceInterface;
+use verbb\videopicker\fields\VideoPickerField;
 
 use Craft;
 use craft\helpers\ArrayHelper;
@@ -13,10 +16,23 @@ use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
+use Throwable;
+
 class SourcesController extends Controller
 {
     // Public Methods
     // =========================================================================
+
+    public function beforeAction($action): bool
+    {
+        if (!parent::beforeAction($action)) {
+            return false;
+        }
+
+        $this->requirePermission('videoPicker-sources');
+
+        return true;
+    }
 
     public function actionIndex(): Response
     {
@@ -71,12 +87,17 @@ class SourcesController extends Controller
             $title = Craft::t('video-picker', 'Create a new source');
         }
 
+        if ($source->id && $source->supportsConnection()) {
+            PluginHelper::registerSourceConnectAssets();
+        }
+
         return $this->renderTemplate('video-picker/sources/_edit', [
             'title' => $title,
             'source' => $source,
             'sourceOptions' => $sourceOptions,
             'sourceInstances' => $sourceInstances,
             'sourceTypes' => $allSourceTypes,
+            'fieldOptions' => $this->_videoPickerFieldOptions(),
         ]);
     }
 
@@ -87,13 +108,23 @@ class SourcesController extends Controller
         $sourcesService = VideoPicker::$plugin->getSources();
         $sourceId = $this->request->getParam('sourceId') ?: null;
         $type = $this->request->getParam('type');
+        $oldSource = null;
+        $storedSource = null;
 
         if ($sourceId) {
             $oldSource = $sourcesService->getSourceById($sourceId);
+            $storedSource = $sourcesService->getStoredSourceById($sourceId);
             
-            if (!$oldSource) {
+            if (!$oldSource || !$storedSource) {
                 throw new BadRequestHttpException("Invalid source ID: $sourceId");
             }
+        }
+
+        // Available Fields lives on the source (not the field) so prod can grant fields without PC.
+        $fields = $this->request->getBodyParam('fields', $oldSource->fields ?? '*');
+        if ($fields === '') {
+            // Craft posts an empty string when every checkbox, including All, is unchecked.
+            $fields = [];
         }
 
         $source = $sourcesService->createSource([
@@ -102,14 +133,84 @@ class SourcesController extends Controller
             'name' => $this->request->getParam('name'),
             'handle' => $this->request->getParam('handle'),
             'enabled' => (bool)$this->request->getParam('enabled'),
+            'fields' => $fields,
             'settings' => $this->request->getParam("types.$type"),
         ]);
 
-        if (!$sourcesService->saveSource($source)) {
+        if (!$this->_validateDelegatedSourceChange($source, $oldSource)) {
+            return $this->asModelFailure($source, Craft::t('video-picker', 'Couldn’t save source.'), 'source');
+        }
+
+        $settingsForPersistence = null;
+
+        if ($storedSource && !Craft::$app->getUser()->checkPermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION)) {
+            $settingsForPersistence = SourceSecurity::settingsForPersistence($source, $storedSource);
+        }
+
+        if (!$sourcesService->saveSource($source, true, $settingsForPersistence)) {
             return $this->asModelFailure($source, Craft::t('video-picker', 'Couldn’t save source.'), 'source');
         }
 
         return $this->asModelSuccess($source, Craft::t('video-picker', 'Source saved.'), 'source');
+    }
+
+    public function actionCheckConnection(): Response
+    {
+        $this->requirePostRequest();
+        $this->requirePermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION);
+        $this->requireAcceptsJson();
+
+        $sourceId = (int)$this->request->getParam('sourceId');
+        $type = (string)$this->request->getParam('type');
+
+        if (!$sourceId) {
+            return $this->asFailure(Craft::t('video-picker', 'No source exists with the ID “{id}”.', ['id' => $sourceId]));
+        }
+
+        $source = VideoPicker::$plugin->getSources()->getSourceById($sourceId);
+
+        if (!$source) {
+            return $this->asFailure(Craft::t('video-picker', 'No source exists with the ID “{id}”.', ['id' => $sourceId]));
+        }
+
+        // Merge posted provider settings so Refresh reflects unsaved form values (Formie pattern).
+        $settings = $this->request->getParam("types.$type", []);
+
+        if ($type && is_array($settings)) {
+            $source = VideoPicker::$plugin->getSources()->createSource([
+                'id' => $source->id,
+                'name' => $this->request->getParam('name', $source->name),
+                'handle' => $this->request->getParam('handle', $source->handle),
+                'enabled' => (bool)$this->request->getParam('enabled', $source->enabled),
+                'fields' => $source->fields,
+                'type' => $type,
+                'settings' => array_merge($source->getSettings(), $settings),
+                'cache' => $source->cache,
+                'uid' => $source->uid,
+            ]);
+        }
+
+        if (!$source::supportsConnection() || $source::supportsOAuthConnection()) {
+            return $this->asFailure(Craft::t('video-picker', 'This source does not support credential refresh.'));
+        }
+
+        if (!$source->isConfigured()) {
+            return $this->asFailure(Craft::t('video-picker', 'Provider credentials are not configured.'));
+        }
+
+        try {
+            $success = $source->checkConnection(false);
+
+            if (!$success) {
+                return $this->asFailure(Craft::t('video-picker', 'Unable to connect to the provider.'));
+            }
+
+            return $this->asJson([
+                'success' => true,
+            ]);
+        } catch (Throwable $e) {
+            throw $e;
+        }
     }
 
     public function actionReorder(): Response
@@ -126,12 +227,46 @@ class SourcesController extends Controller
     public function actionDelete(): Response
     {
         $this->requirePostRequest();
-        $this->requireAcceptsJson();
 
-        $sourceId = $this->request->getRequiredBodyParam('id');
+        $sourceId = $this->request->getBodyParam('id') ?? $this->request->getRequiredBodyParam('sourceId');
 
         VideoPicker::$plugin->getSources()->deleteSourceById($sourceId);
 
         return $this->asSuccess();
+    }
+
+    // Private Methods
+    // =========================================================================
+
+    /**
+     * @return array{label: string, value: string}[]
+     */
+    private function _videoPickerFieldOptions(): array
+    {
+        $options = [];
+
+        foreach (Craft::$app->getFields()->getAllFields() as $field) {
+            if (!$field instanceof VideoPickerField || !$field->uid) {
+                continue;
+            }
+
+            $options[] = [
+                'label' => $field->name . ' (' . $field->handle . ')',
+                'value' => $field->uid,
+            ];
+        }
+
+        ArrayHelper::multisort($options, 'label');
+
+        return $options;
+    }
+
+    private function _validateDelegatedSourceChange(SourceInterface $source, ?SourceInterface $original): bool
+    {
+        if (Craft::$app->getUser()->checkPermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION)) {
+            return true;
+        }
+
+        return SourceSecurity::validateDelegatedChange($source, $original);
     }
 }

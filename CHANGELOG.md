@@ -1,9 +1,57 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 - 2026-09-29
+
+### Added
+- Add **Bunny Stream**, **Cloudflare Stream**, **Dailymotion**, **Mux**, **Sprout Video** and **Wistia** sources.
+- Add field settings for available sources, URL input, search, public-only videos, videos per page, minimum and maximum duration, video sort order and placeholder text.
+- Add source setting **Available Fields** to control what fields can browse the source.
+- Add field-level playback defaults for autoplay, mute, looping and controls, with per-video Twig options taking precedence.
+- Add configurable provider, search, embed-error and selected-video cache durations, embed allowed domains and high-resolution embed images.
+- Add YouTube **Privacy Enhanced Mode** for `youtube-nocookie.com` embeds.
+- Add an optional provider icon, private-video indicator and provider link to selected-video previews.
+- Add **Explore videos** (`videoPicker-explore`) permission for field explorer and URL lookup requests, separate from **Sources**.
+- Add **Manage source credentials and connections** permission. Existing non-admin Source managers must be granted this permission to continue managing credentials and OAuth connections.
 
 ### Changed
 - Route plugin settings through the plugin’s authorized settings controller.
+- Rebuild the field input and explorer with [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) web components, including responsive layouts and improved keyboard and screen-reader support.
+- Revalidate expired selected-video metadata on read while retaining the last successful data when refreshes fail.
+- Improve explorer performance and resilience with cached provider searches, complete collection pagination and isolated provider failures.
+- Share cached videos by URL across compatible same-provider sources and rebind them to an allowed source when used by a field.
+- Split credential and OAuth source authentication into `CredentialsSource` and `OAuthSource`; `SourceInterface` no longer requires `getOAuthProviderClass()`.
+- Separate provider embed options from iframe attributes.
+- Change GraphQL `plays` to `Float` to support play counts above the 32-bit integer limit.
+- Require Embed 4 and update Auth, Plugin Kit and lodash to patched releases.
+- Expand the field, provider, embed, Source API, GraphQL and migration documentation.
+
+### Fixed
+- Fixed a high-severity cross-site scripting vulnerability.
+- Fixed a high-severity server-side request forgery vulnerability.
+- Fixed two moderate-severity cross-site scripting vulnerabilities.
+- Fixed a moderate-severity denial-of-service vulnerability.
+- Fixed two moderate-severity information disclosure vulnerabilities.
+- Fixed a moderate-severity credential disclosure vulnerability.
+- Fixed a low-severity server-side request forgery vulnerability.
+- Fixed a low-severity broken access control vulnerability.
+- Fixed a low-severity excessive OAuth permissions vulnerability.
+- Fixed OAuth callback validation and redirect handling.
+- Fixed YouTube explorer searches reusing incompatible playlist pagination parameters. ([#6](https://github.com/verbb/video-picker/issues/6))
+- Fixed literal emoji shortcodes changing when video metadata is cached.
+- Fixed Refresh reusing stale video metadata for alias URLs or stopping before a later account that can access the video.
+- Fixed cached video embeds becoming unavailable after changing a source handle.
+- Fixed unlisted Vimeo embeds omitting their privacy hash.
+- Fixed generic embeds dropping URL query parameters or named image properties, or rejecting valid public URLs when peer-IP statistics are unavailable.
+- Fixed empty YouTube searches and playlists causing an API error.
+- Fixed source credential changes reusing stale provider data.
+- Fixed duplicate source names and handles not showing validation errors.
+- Fixed deleting a source from its edit page not completing successfully.
+- Fixed invalid video URLs silently clearing the selected video when saving content.
+- Fixed GraphQL `ArrayType` values not returning their serialized arrays.
+- Fixed element thumbnail `srcset` output containing an empty 2× candidate.
+
+### Removed
+- Removed the `raw` field from GraphQL video types. Remove it from GraphQL queries and persisted operations before upgrading.
 
 ### Fixed
 - Fixed OAuth callback transaction validation.

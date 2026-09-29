@@ -4,7 +4,7 @@
 
 <h3>{{ 'Video Cache' | t('video-picker') }}</h3>
 
-{{ 'Video Picker will cache the data for a video‘s URL indefinitely for performance. Use this utility to clear a video‘s data.' | t('video-picker') | md | raw }}
+{{ 'Video Picker caches video metadata for the configured Video Cache Duration. Use this utility to clear a video’s cached data immediately.' | t('video-picker') | md | raw }}
 
 <form class="utility" method="post" accept-charset="UTF-8">
     {{ actionInput('video-picker/plugin/clear-video-cache') }}

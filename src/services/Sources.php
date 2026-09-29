@@ -1,12 +1,16 @@
 <?php
 namespace verbb\videopicker\services;
 
+use verbb\videopicker\VideoPicker;
 use verbb\videopicker\sources as sourceTypes;
 use verbb\videopicker\base\SourceInterface;
 use verbb\videopicker\events\SourceEvent;
 use verbb\videopicker\records\Source as SourceRecord;
 
+use verbb\videopicker\fields\VideoPickerField;
+
 use Craft;
+use craft\base\Field;
 use craft\base\MemoizableArray;
 use craft\db\Query;
 use craft\errors\MissingComponentException;
@@ -17,6 +21,8 @@ use craft\helpers\Json;
 
 use yii\base\Component;
 use yii\base\InvalidConfigException;
+
+use verbb\auth\Auth;
 
 use Exception;
 use Throwable;
@@ -48,6 +54,12 @@ class Sources extends Component
         $sourceTypes = [
             sourceTypes\YouTube::class,
             sourceTypes\Vimeo::class,
+            sourceTypes\BunnyStream::class,
+            sourceTypes\CloudflareStream::class,
+            sourceTypes\Dailymotion::class,
+            sourceTypes\Mux::class,
+            sourceTypes\SproutVideo::class,
+            sourceTypes\Wistia::class,
         ];
 
         $event = new RegisterComponentTypesEvent([
@@ -59,13 +71,13 @@ class Sources extends Component
         return $event->types;
     }
 
-    public function createSource(mixed $config): SourceInterface
+    public function createSource(mixed $config, bool $applyOverrides = true): SourceInterface
     {
         $handle = $config['handle'] ?? null;
         $settings = $config['settings'] ?? [];
 
         // Allow config settings to override source settings
-        if ($handle && $settings) {
+        if ($applyOverrides && $handle && $settings) {
             $configOverrides = $this->getSourceOverrides($handle);
 
             if ($configOverrides) {
@@ -110,6 +122,60 @@ class Sources extends Component
         return $sources;
     }
 
+    /**
+     * Enabled sources available for a Video Picker field.
+     *
+     * Each source’s `fields` setting: `*` / null → all fields; `[]` → none;
+     * otherwise a list of field UIDs.
+     *
+     * @param bool $usableOnly When true (default), only sources that are configured and
+     *                         ready to use (OAuth connected, or credentials saved).
+     * @return SourceInterface[]
+     */
+    public function getSourcesForField(?Field $field, bool $usableOnly = true): array
+    {
+        $allSources = $this->getAllEnabledSources();
+
+        if (!$field instanceof VideoPickerField) {
+            $sources = $allSources;
+        } else {
+            $sources = [];
+
+            foreach ($allSources as $source) {
+                if ($source->isAvailableForField($field)) {
+                    $sources[] = $source;
+                }
+            }
+        }
+
+        if (!$usableOnly) {
+            return $sources;
+        }
+
+        // Explorer + URL resolve need a live provider session — not merely enabled.
+        return array_values(array_filter(
+            $sources,
+            static fn(SourceInterface $source) => $source->isUsable(),
+        ));
+    }
+
+    public function getSourceByHandleForField(string $handle, ?Field $field): ?SourceInterface
+    {
+        $source = $this->getSourceByHandle($handle);
+
+        if (!$source) {
+            return null;
+        }
+
+        foreach ($this->getSourcesForField($field) as $allowed) {
+            if ($allowed->handle === $source->handle) {
+                return $source;
+            }
+        }
+
+        return null;
+    }
+
     public function getAllSourcesByParams(array $params): array
     {
         $limit = ArrayHelper::remove($params, 'limit');
@@ -132,6 +198,18 @@ class Sources extends Component
         return $source;
     }
 
+    /**
+     * Returns the database representation without config/video-picker.php overrides.
+     */
+    public function getStoredSourceById(int $id): ?SourceInterface
+    {
+        $result = $this->_createSourceQuery()
+            ->where(['id' => $id])
+            ->one();
+
+        return $result ? $this->createSource($result, false) : null;
+    }
+
     public function getSourceByHandle(string $handle, bool $enabledOnly = false, bool $connectedOnly = false): ?SourceInterface
     {
         $source = $this->_sources()->firstWhere('handle', $handle, true);
@@ -150,7 +228,7 @@ class Sources extends Component
         return $this->getAllSourcesByParams($params)[0] ?? null;
     }
 
-    public function saveSource(SourceInterface $source, bool $runValidation = true): bool
+    public function saveSource(SourceInterface $source, bool $runValidation = true, ?array $settingsForPersistence = null): bool
     {
         $isNewSource = !$source->id;
 
@@ -168,9 +246,19 @@ class Sources extends Component
         }
 
         // Ensure we support Emoji's properly
-        $settings = $source->settings;
+        $settings = $settingsForPersistence ?? $source->settings;
 
         $sourceRecord = $this->_getSourceRecordById($source->id);
+        $previousHandle = $sourceRecord->handle;
+        $previousType = $sourceRecord->type;
+        $previousSettings = $sourceRecord->settings;
+        if (is_string($previousSettings)) {
+            $previousSettings = Json::decode($previousSettings) ?: [];
+        }
+        if (!is_array($previousSettings)) {
+            $previousSettings = [];
+        }
+
         $sourceRecord->name = $source->name;
         $sourceRecord->handle = $source->handle;
         $sourceRecord->enabled = $source->enabled;
@@ -185,10 +273,48 @@ class Sources extends Component
             $sourceRecord->sortOrder = $maxSortOrder ? $maxSortOrder + 1 : 1;
         }
 
-        $sourceRecord->save(false);
+        // Persist a rename together with its cached video references, so template
+        // output cannot be left pointing at a source handle that no longer exists.
+        $transaction = Craft::$app->getDb()->beginTransaction();
+
+        try {
+            $sourceRecord->save(false);
+
+            if (!$isNewSource && $previousType !== get_class($source)) {
+                // A new provider must establish its own connection, even when the
+                // source keeps the same identity and field assignments.
+                Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
+            }
+
+            if (!$isNewSource && $previousHandle !== $source->handle) {
+                VideoPicker::$plugin->getVideos()->renameSourceHandle($previousHandle, $source->handle);
+            }
+
+            $transaction->commit();
+        } catch (Throwable $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
 
         if (!$source->id) {
             $source->id = $sourceRecord->id;
+        }
+
+        // Clear request memo so Available Fields changes apply immediately.
+        $this->_sources = null;
+
+        // Credentials / provider settings change: drop explorer section blob + API cache (D04).
+        // Available Fields alone does not affect collections — ignore `fields` for this check.
+        if (!$isNewSource) {
+            $newSettings = is_array($settings) ? $settings : [];
+            $prevComparable = $previousSettings;
+            $newComparable = $newSettings;
+            unset($prevComparable['fields'], $newComparable['fields']);
+
+            if ($previousType !== get_class($source) || $prevComparable != $newComparable) {
+                $source->clearExplorerCache();
+                $source->clearConnectionCache();
+            }
         }
 
         // Fire an 'afterSaveSource' event
@@ -252,9 +378,24 @@ class Sources extends Component
             ]));
         }
 
-        Craft::$app->getDb()->createCommand()
-            ->delete('{{%video_picker_sources}}', ['id' => $source->id])
-            ->execute();
+        $transaction = Craft::$app->getDb()->beginTransaction();
+
+        try {
+            // Drop OAuth tokens + tagged provider cache before the row goes away.
+            if ($source::supportsConnection()) {
+                Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
+            }
+            $source->clearLocalCache();
+
+            Craft::$app->getDb()->createCommand()
+                ->delete('{{%video_picker_sources}}', ['id' => $source->id])
+                ->execute();
+
+            $transaction->commit();
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
 
         // Fire an 'afterDeleteSource' event
         if ($this->hasEventHandlers(self::EVENT_AFTER_DELETE_SOURCE)) {

@@ -5,21 +5,21 @@ use verbb\videopicker\VideoPicker;
 
 use Craft;
 use craft\elements\User;
-use craft\helpers\Db;
 use craft\web\Controller;
 
 use yii\web\Response;
 
+use Throwable;
+
 use verbb\auth\Auth;
 use verbb\auth\helpers\Session;
-
-use Throwable;
 
 class AuthController extends Controller
 {
     // Properties
     // =========================================================================
 
+    // Only the OAuth provider callback is anonymous — connect/disconnect require CP auth.
     protected array|int|bool $allowAnonymous = ['callback'];
 
 
@@ -39,6 +39,7 @@ class AuthController extends Controller
     public function actionConnect(): ?Response
     {
         $this->requirePermission('videoPicker-sources');
+        $this->requirePermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION);
         $this->requirePostRequest();
 
         $sourceHandle = $this->request->getRequiredParam('source');
@@ -46,6 +47,10 @@ class AuthController extends Controller
         try {
             if (!($source = VideoPicker::$plugin->getSources()->getSourceByHandle($sourceHandle))) {
                 return $this->asFailure(Craft::t('video-picker', 'Unable to find source “{source}”.', ['source' => $sourceHandle]));
+            }
+
+            if (!$source::supportsOAuthConnection()) {
+                return $this->asFailure(Craft::t('video-picker', 'This source does not use OAuth connect.'));
             }
 
             $context = [
@@ -79,7 +84,10 @@ class AuthController extends Controller
             return $response;
         }
 
-        $oauth->claimAuthorizedCallback('video-picker', fn(User $user): bool => $user->can('videoPicker-sources'));
+        $oauth->claimAuthorizedCallback(
+            'video-picker',
+            fn(User $user): bool => $user->can('videoPicker-sources') && $user->can(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION),
+        );
         
         // Get both the origin (failure) and redirect (success) URLs
         $origin = Session::get('origin');
@@ -111,6 +119,9 @@ class AuthController extends Controller
             // Save the token to the Auth plugin, with a reference to this source
             $token->reference = $source->id;
             Auth::getInstance()->getTokens()->upsertToken($token);
+
+            // Drop explorer sections + provider responses cached under a previous account/config.
+            $source->clearExplorerCache();
         } catch (Throwable $e) {
             $error = Craft::t('video-picker', 'Unable to process callback for “{source}”: “{message}” {file}:{line}', [
                 'source' => $sourceHandle,
@@ -135,6 +146,7 @@ class AuthController extends Controller
     public function actionDisconnect(): ?Response
     {
         $this->requirePermission('videoPicker-sources');
+        $this->requirePermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION);
         $this->requirePostRequest();
 
         $sourceHandle = $this->request->getRequiredParam('source');
@@ -143,11 +155,14 @@ class AuthController extends Controller
             return $this->asFailure(Craft::t('video-picker', 'Unable to find source “{source}”.', ['source' => $sourceHandle]));
         }
 
+        if (!$source::supportsOAuthConnection()) {
+            return $this->asFailure(Craft::t('video-picker', 'This source does not use OAuth connect.'));
+        }
+
         // Delete all tokens for this source
         Auth::getInstance()->getTokens()->deleteTokenByOwnerReference('video-picker', $source->id);
 
-        // Clear any caches for the source
-        Db::update('{{%video_picker_sources}}', ['cache' => null], ['id' => $source->id]);
+        $source->clearExplorerCache();
 
         return $this->asModelSuccess($source, Craft::t('video-picker', '{provider} disconnected.', ['provider' => $source->providerName]), 'source');
     }

@@ -15,3 +15,5 @@ Follow these steps to configure Vimeo for Video Picker.
 1. Click the **Add URL** button under **Your callback URLs** section.
 1. Enter the value from the **Redirect URI** field in Video Picker.
 1. Copy the **Client ID** and **Client Secret** values and paste into the fields in Video Picker.
+1. Save the source, then click **Connect** and authorise access to the Vimeo account.
+1. Return to the source and confirm it reports a connected account before opening a Video Picker field.

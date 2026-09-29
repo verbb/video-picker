@@ -6,13 +6,17 @@ use verbb\videopicker\models\Settings;
 
 use Embed\Detectors\Detector;
 use Embed\Detectors\Image;
-
-use GuzzleHttp\Client;
-
-use Psr\Http\Message\UriInterface;
+use GuzzleHttp\Psr7\Request;
 
 class EmbedImagesExtractor extends Detector
 {
+    // Constants
+    // =========================================================================
+
+    private const MAX_CANDIDATES = 5;
+    private const MAX_BYTES = 2_000_000;
+
+
     // Public Methods
     // =========================================================================
 
@@ -35,40 +39,70 @@ class EmbedImagesExtractor extends Detector
         $ld = $this->extractor->getLinkedData();
 
         // Find all available images
-        $imageUrls = array_filter([
+        $imageUrls = array_values(array_unique(array_filter([
             $oembed->url('image'),
             $oembed->url('thumbnail'),
             $oembed->url('thumbnail_url'),
             $metas->url('og:image', 'og:image:url', 'og:image:secure_url', 'twitter:image', 'twitter:image:src', 'lp:image'),
             $document->link('image_src'),
             $ld->url('image.url'),
-            $this->detectFromContentType(),
+            $this->_detectFromContentType(),
+        ])));
+
+        // Cap candidates — unbounded sequential fetches were a memory/latency footgun.
+        $imageUrls = array_slice($imageUrls, 0, self::MAX_CANDIDATES);
+
+        $client = new PinnedHttpClient($settings->embedAllowedDomains, [
+            'timeout' => 5,
+            'connect_timeout' => 3,
+            'max_redirs' => 3,
+            'max_bytes' => self::MAX_BYTES,
         ]);
 
-        $client = new Client();
         $largestImage = null;
         $largestSize = 0;
 
-        // Fetch them, returning just the largest
-        foreach (array_unique($imageUrls) as $imageUrl) {
-            // Fetch the image content
-            $response = $client->get($imageUrl);
-            $imageContent = $response->getBody()->getContents();
+        foreach ($imageUrls as $imageUrl) {
+            try {
+                EmbedUrl::assertAllowed((string)$imageUrl, $settings->embedAllowedDomains);
 
-            // Get image dimensions
-            [$width, $height] = getimagesizefromstring($imageContent);
+                $response = $client->sendRequest(new Request('GET', (string)$imageUrl));
 
-            $size = $width * $height;
+                if ($response->getStatusCode() >= 400) {
+                    continue;
+                }
 
-            // Compare with the current largest image
-            if ($size > $largestSize) {
-                $largestSize = $size;
+                $body = $response->getBody();
+                $imageContent = '';
 
-                $largestImage = [
-                    'image' => $imageUrl,
-                    'imageWidth' => $width,
-                    'imageHeight' => $height,
-                ];
+                while (!$body->eof() && strlen($imageContent) < self::MAX_BYTES) {
+                    $imageContent .= $body->read(65536);
+                }
+
+                if ($imageContent === '' || strlen($imageContent) >= self::MAX_BYTES) {
+                    continue;
+                }
+
+                $sizeInfo = @getimagesizefromstring($imageContent);
+
+                if (!$sizeInfo) {
+                    continue;
+                }
+
+                [$width, $height] = $sizeInfo;
+                $size = $width * $height;
+
+                if ($size > $largestSize) {
+                    $largestSize = $size;
+
+                    $largestImage = [
+                        'image' => $imageUrl,
+                        'imageWidth' => $width,
+                        'imageHeight' => $height,
+                    ];
+                }
+            } catch (\Throwable) {
+                continue;
             }
         }
 
@@ -79,7 +113,7 @@ class EmbedImagesExtractor extends Detector
     // Private Methods
     // =========================================================================
 
-    private function detectFromContentType()
+    private function _detectFromContentType()
     {
         if (!$this->extractor->getResponse()->hasHeader('content-type')) {
             return null;

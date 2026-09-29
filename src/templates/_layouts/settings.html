@@ -5,6 +5,8 @@
 
 {% requireAdmin %}
 
+{% do view.registerAssetBundle('verbb\\videopicker\\web\\assets\\cp\\CpAsset') -%}
+
 {% set crumbs = [
     { label: 'Settings' | t('app'), url: url('settings') },
     { label: 'Plugins' | t('app'), url: url('settings/plugins') },
@@ -13,12 +15,11 @@
 
 {% set pageTabs = {
     general: { title: 'General Settings' | t('video-picker'), url: url('video-picker/settings') },
+    cache: { title: 'Cache Settings' | t('video-picker'), url: url('video-picker/settings/cache') },
+    embed: { title: 'Embed Settings' | t('video-picker'), url: url('video-picker/settings/embed') },
 } %}
 
 {% set pageTitle = pageTitle ?? false %}
 {% if title is not defined and pageTitle %}
     {% set title = pageTitle %}
 {% endif %}
-
-{% block settingsMeta %}
-{% endblock %}

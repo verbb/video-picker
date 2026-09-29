@@ -8,7 +8,6 @@ use verbb\videopicker\helpers\Videos;
 use craft\base\Model;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Json;
-use craft\helpers\StringHelper;
 use craft\helpers\Template;
 
 use DateTime;
@@ -37,11 +36,35 @@ class Video extends Model
     public ?int $height = null;
     public array $raw = [];
 
+    /**
+     * Field-level embed intent defaults (autoplay/muted/loop/controls).
+     * Merged under call-site options; not part of persisted video cache identity.
+     */
+    public array $embedDefaults = [];
+
+    /**
+     * Managed DB cache status for this snapshot (ok / stale / unavailable).
+     * Runtime-only — not serialized into video_picker_videos.data.
+     */
+    public string $cacheStatus = 'ok';
+
+    /** Last revalidation error when status is stale/unavailable (runtime-only). */
+    public ?string $cacheError = null;
+
     private ?SourceInterface $_source = null;
 
 
     // Public Methods
     // =========================================================================
+
+    public function fields(): array
+    {
+        $fields = parent::fields();
+        // Keep field defaults / cache chrome off serialized video cache / GraphQL bag.
+        unset($fields['embedDefaults'], $fields['cacheStatus'], $fields['cacheError']);
+
+        return $fields;
+    }
 
     public function getVideoData(): array
     {
@@ -59,15 +82,31 @@ class Video extends Model
         ]);
 
         $video['thumbnail'] = $this->getThumbnail();
-        $video['embedHtml'] = $this->getEmbedHtml(['autoplay' => true]);
+        // CP preview: always autoplay+muted so the dialog feels live without sound blast.
+        $video['embedHtml'] = $this->getEmbedHtml(['autoplay' => true, 'muted' => true]);
         $video['duration'] = $this->getFormattedDuration();
         $video['duration8601'] = $this->getDuration8601();
+        $video['cacheStatus'] = $this->cacheStatus;
+        $video['cacheError'] = $this->cacheError;
+
+        // Selected-card chrome (P02) — provider identity when the source still exists.
+        if ($source = $this->getSource()) {
+            $video['providerName'] = $source->getProviderName();
+            $video['providerHandle'] = $source->getProviderHandle();
+            $video['providerColor'] = $source->getPrimaryColor();
+            // Brand SVG for the compact title-row icon (CP field preview).
+            $video['providerIcon'] = $source->getIcon();
+        }
 
         return $video;
     }
 
     public function getFormattedDuration(): string
     {
+        if ($this->duration === null) {
+            return '';
+        }
+
         $hours = intdiv($this->duration, 3600);
         $minutes = intdiv($this->duration % 3600, 60);
         $seconds = $this->duration % 60;
@@ -86,6 +125,10 @@ class Video extends Model
 
     public function getDuration8601(): string
     {
+        if ($this->duration === null) {
+            return '';
+        }
+
         $hours = intdiv($this->duration, 3600);
         $minutes = intdiv($this->duration % 3600, 60);
         $seconds = $this->duration % 60;
@@ -105,20 +148,37 @@ class Video extends Model
 
     public function getThumbnail(int $width = 600): ?string
     {
+        if (!$this->thumbnails) {
+            return null;
+        }
+
         $closestThumbnail = null;
         $smallestDifference = PHP_INT_MAX;
+        $firstUrl = null;
 
-        // Find the thumbnail that most closely matches the width
+        // Find the thumbnail that most closely matches the width when dimensions exist.
         foreach ($this->thumbnails as $thumbnail) {
-            $difference = abs($thumbnail['width'] - $width);
+            $url = $thumbnail['url'] ?? null;
+
+            if (!$url) {
+                continue;
+            }
+
+            $firstUrl ??= $url;
+
+            if (!isset($thumbnail['width'])) {
+                continue;
+            }
+
+            $difference = abs((int)$thumbnail['width'] - $width);
 
             if ($difference < $smallestDifference) {
                 $smallestDifference = $difference;
-                $closestThumbnail = $thumbnail['url'];
+                $closestThumbnail = $url;
             }
         }
 
-        return $closestThumbnail;
+        return $closestThumbnail ?? $firstUrl;
     }
 
     public function getEmbedHtml(array $options = []): ?string
@@ -129,7 +189,7 @@ class Video extends Model
             return null;
         }
 
-        return $source->getEmbedHtml($this->id, $options);
+        return $source->getEmbedHtml($this->id, $this->_getEmbedOptions($source, $options));
     }
 
     public function getEmbedUrl(array $options = []): ?string
@@ -140,7 +200,7 @@ class Video extends Model
             return null;
         }
 
-        return $source->getEmbedUrl($this->id, $options);
+        return $source->getEmbedUrl($this->id, $this->_getEmbedOptions($source, $options));
     }
 
     public function getSource(): ?SourceInterface
@@ -154,8 +214,27 @@ class Video extends Model
 
     public function serializeData(): string
     {
-        // Handle emoji's in some values
-        return StringHelper::emojiToShortcodes(Json::encode($this));
+        // JSON Unicode escapes preserve emoji without rewriting literal shortcode text.
+        return Json::encode($this, 0);
     }
-    
+
+
+    // Private Methods
+    // =========================================================================
+
+    private function _getEmbedOptions(SourceInterface $source, array $options): array
+    {
+        // Normalize call-site aliases before merging so a field's canonical default
+        // cannot override an explicitly requested mute value.
+        if (array_key_exists('mute', $options) && !array_key_exists('muted', $options)) {
+            $options['muted'] = $options['mute'];
+        }
+
+        // Derive required provider metadata even for snapshots saved before the
+        // option existed. Keep custom interface implementations without this hook usable.
+        $providerOptions = method_exists($source, 'getVideoEmbedOptions') ? $source->getVideoEmbedOptions($this) : [];
+
+        return array_merge($providerOptions, $this->embedDefaults, $options);
+    }
+
 }

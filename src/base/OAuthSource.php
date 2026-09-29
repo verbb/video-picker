@@ -9,13 +9,40 @@ use verbb\auth\base\OAuthProviderInterface;
 use verbb\auth\base\OAuthProviderTrait;
 use verbb\auth\models\Token;
 
-abstract class OAuthSource extends Source implements OAuthProviderInterface
+abstract class OAuthSource extends Source implements CredentialSourceInterface, OAuthProviderInterface
 {
     // Traits
     // =========================================================================
 
     use OAuthProviderTrait;
-    
+
+
+    // Static Methods
+    // =========================================================================
+
+    public static function supportsConnection(): bool
+    {
+        return true;
+    }
+
+    public static function supportsOAuthConnection(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Required by Auth {@see OAuthProviderTrait} — not part of the base Source contract.
+     */
+    abstract public static function getOAuthProviderClass(): string;
+
+
+    // Properties
+    // =========================================================================
+
+    // Set via config files
+    public array $authorizationOptions = [];
+    public array $scopes = [];
+
 
     // Public Methods
     // =========================================================================
@@ -26,8 +53,14 @@ abstract class OAuthSource extends Source implements OAuthProviderInterface
         $attributes = parent::settingsAttributes();
         $attributes[] = 'clientId';
         $attributes[] = 'clientSecret';
+        $attributes[] = 'scopes';
 
         return $attributes;
+    }
+
+    public function getCredentialAttributes(): array
+    {
+        return ['clientId', 'clientSecret'];
     }
 
     public function defineRules(): array
@@ -51,6 +84,16 @@ abstract class OAuthSource extends Source implements OAuthProviderInterface
     public function isConnected(): bool
     {
         return (bool)$this->getToken();
+    }
+
+    public function supportsBrowse(): bool
+    {
+        return true;
+    }
+
+    public function supportsSearch(): bool
+    {
+        return true;
     }
 
     public function getRedirectUri(): ?string
@@ -85,9 +128,17 @@ abstract class OAuthSource extends Source implements OAuthProviderInterface
     public function getToken(): ?Token
     {
         if ($this->id) {
-            return Auth::getInstance()->getTokens()->getTokenByOwnerReference('video-picker', $this->id);
+            $token = Auth::getInstance()->getTokens()->getTokenByOwnerReference('video-picker', $this->id);
+
+            // Also reject stale associations saved before provider changes cleared tokens.
+            return $token && $token->providerType === static::class ? $token : null;
         }
 
         return null;
+    }
+
+    public function checkConnection(bool $useCache = true): bool
+    {
+        return $this->isConnected();
     }
 }

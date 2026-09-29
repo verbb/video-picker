@@ -1,21 +1,23 @@
 # Cache
-Video Picker has two levels of caching to prevent API limits from being hit, and good performance, generally.
 
-## Source Caching
-The Video Picker field allows you to browser folders and favourites for each source. As such, we query the respective APIs for this data, which is then cached indefinitely. Any changes to your folders such as renaming them, or adding them won't appear as "live".
+Video Picker keeps copies of provider data so editors can browse quickly without requesting the same information repeatedly. Refresh the relevant cache when a video, folder or playlist has changed at the provider.
 
-There are two ways to address this - firstly, when the explorer is open, you'll find a **Refresh** button, that will ensure your sources are refreshed from the API. You can also use our **Cache Utility** found in Utilities → Video Picker for on-demand cache-clearing.
+## Explorer Sections
 
-The videos for each source are **not** cached, as these are paginated, and cannot reliably be cached.
+Folder and playlist lists stay cached until refreshed. If you rename a folder or create a playlist, use **Refresh** in the explorer or clear the cache from **Utilities → Video Picker**, then reopen the collection to check it appears.
 
-## Video Caching
-Whenever you pick a video, we store a copy of it's data to the database, keyed by its URL. This is cached indefinitely. So, if you change anything about a video, like its title or description, you'll need to refresh it on Video Picker's end.
+Video lists and search results expire automatically. Adjust their durations under **Settings → Video Picker → Cache Settings** when editors need provider changes to appear sooner. Shorter durations make more provider requests; [Configuration](docs:get-started/configuration) gives the defaults.
 
-There are two ways to address this - firstly, when viewing a Video Picker field with a video value, you'll find a **Refresh** button, that will ensure the video is refreshed from the API. You can also use our **Cache Utility** found in Utilities → Video Picker for on-demand cache-clearing of specific URLs.
+## Selected Videos
 
-The benefit of this is that if you use a particular video multiple times in your content, you'll be loading it from the cache. Likewise, even when the cache is cleared, you'll only be making a single API call to fetch that video
+Selected videos retain a copy of their metadata for **Video Cache Duration**, which defaults to seven days and has a minimum of one hour. When that period expires, the next read attempts a refresh. If the provider request fails, Video Picker keeps the last successful copy. Private selections in field inputs still require verified provider access and may report that the video is unavailable.
 
-## Database Caching
-We utilize database-level caching instead of file-level caching, to ensure that Video Picker caches aren't cleared unnecessarily. It's common (and encouraged) to clear file-level caching when deploying to a server, which can lead to a lot of API calls for videos after a deployment - particularly if you have a large site with lots of videos.
+Use **Refresh** on the field after changing a selected video's title or thumbnail, or clear its URL from **Utilities → Video Picker**. The same URL shares cached metadata across fields, so refreshing it can update other entries that use that video.
 
-So while our caching is aggressive, we feel that as video content often does not change, it's to their benefit.
+## Embed Helpers
+
+Generic URL embeds have a separate cache. After changing the remote page or fixing a rejected URL, allow its cached result to expire or clear Craft's application cache before checking again. Failed discovery is cached briefly to avoid repeated requests for the same unavailable URL.
+
+## Database vs File Cache
+
+Clearing Craft's application cache removes cached provider pages, search results and generic embed discovery. It does not remove selected-video metadata or folder and playlist lists, which are stored in the database. Use the Video Picker utility when those need refreshing.

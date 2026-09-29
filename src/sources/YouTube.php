@@ -23,6 +23,12 @@ use GuzzleHttp\Exception\RequestException;
 
 class YouTube extends OAuthSource
 {
+    // Constants
+    // =========================================================================
+
+    private const BROAD_SCOPE = 'https://www.googleapis.com/auth/youtube';
+
+
     // Static Methods
     // =========================================================================
 
@@ -39,6 +45,9 @@ class YouTube extends OAuthSource
 
     public ?string $proxyRedirect = null;
 
+    /** Use youtube-nocookie.com embeds (Privacy Enhanced Mode). */
+    public bool $privacyEnhanced = false;
+
 
     // Public Methods
     // =========================================================================
@@ -46,6 +55,11 @@ class YouTube extends OAuthSource
     public function getProxyRedirect(): ?bool
     {
         return App::parseBooleanEnv($this->proxyRedirect);
+    }
+
+    public function getProviderDocsHandle(): string
+    {
+        return 'youtube';
     }
 
     public function getRedirectUri(): ?string
@@ -65,7 +79,6 @@ class YouTube extends OAuthSource
         return [
             'https://www.googleapis.com/auth/userinfo.profile',
             'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/youtube',
             'https://www.googleapis.com/auth/youtube.readonly',
         ];
     }
@@ -73,6 +86,12 @@ class YouTube extends OAuthSource
     public function getAuthorizationUrlOptions(): array
     {
         $options = parent::getAuthorizationUrlOptions();
+        // A scope persisted in project config must not be able to restore the
+        // former read/write grant after this source moved to read-only access.
+        $options['scope'] = array_values(array_filter(
+            $options['scope'] ?? [],
+            static fn(mixed $scope): bool => (string)$scope !== self::BROAD_SCOPE,
+        ));
         $options['access_type'] = 'offline';
         $options['prompt'] = 'consent';
         
@@ -81,7 +100,40 @@ class YouTube extends OAuthSource
 
     public function getEmbedUrlFormat(): string
     {
-        return 'https://www.youtube.com/embed/{id}?wmode=transparent';
+        // Host is a source setting — field embeds stay provider-agnostic.
+        $host = $this->privacyEnhanced ? 'www.youtube-nocookie.com' : 'www.youtube.com';
+
+        return "https://{$host}/embed/{id}";
+    }
+
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        $params = ['wmode' => 'transparent'];
+
+        if ($this->isEmbedTruthy($intent['autoplay'] ?? null)) {
+            $params['autoplay'] = 1;
+        }
+
+        // YouTube uses `mute`, not `muted`.
+        if ($this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null)) {
+            $params['mute'] = 1;
+        }
+
+        if ($this->isEmbedTruthy($intent['loop'] ?? null)) {
+            $params['loop'] = 1;
+            // Single-video loop requires playlist = that video id.
+            $params['playlist'] = $videoId;
+        }
+
+        if (array_key_exists('controls', $intent) && !$this->isEmbedTruthy($intent['controls'])) {
+            $params['controls'] = 0;
+        }
+
+        if (isset($intent['start']) && $intent['start'] !== '' && $intent['start'] !== null) {
+            $params['start'] = (int)$intent['start'];
+        }
+
+        return $params;
     }
 
     public function getVideoIdFromUrl(string $url): ?string
@@ -204,8 +256,8 @@ class YouTube extends OAuthSource
         $params['part'] = 'id';
         $params['type'] = 'video';
 
-        $response = $this->request('GET', 'youtube/v3/search', [
-            'query' => $this->_queryFromParams($params),
+        $response = $this->cachedRequest('GET', 'youtube/v3/search', [
+            'query' => $this->_queryFromParams($params, true),
         ]);
 
         $videoIds = [];
@@ -247,6 +299,10 @@ class YouTube extends OAuthSource
 
     private function _getVideosResponse(array $response, array $videoIds): array
     {
+        if (!$videoIds) {
+            return ['videos' => [], 'nextPage' => $response['nextPageToken'] ?? null];
+        }
+
         $videos = [];
 
         $videosResponse = $this->cachedRequest('GET', 'youtube/v3/videos', [
@@ -308,43 +364,60 @@ class YouTube extends OAuthSource
         $collections = [];
 
         try {
-            $data = $this->cachedRequest('GET', 'youtube/v3/playlists', [
-                'query' => [
-                    'part' => 'snippet',
-                    'mine' => 'true',
-                    'maxResults' => 50,
-                ],
-            ]);
+            $pageToken = null;
 
-            foreach (($data['items'] ?? []) as $item) {
-                $collection = [];
-                $collection['id'] = $item['id'] ?? '';
-                $collection['title'] = $item['snippet']['title'] ?? '';
-                $collection['totalVideos'] = 0;
-                $collection['url'] = 'title';
+            do {
+                $data = $this->cachedRequest('GET', 'youtube/v3/playlists', [
+                    'query' => [
+                        'part' => 'snippet',
+                        'mine' => 'true',
+                        'maxResults' => 50,
+                        'pageToken' => $pageToken,
+                    ],
+                ]);
 
-                $collections[] = $collection;
-            }
+                foreach (($data['items'] ?? []) as $item) {
+                    $collection = [];
+                    $collection['id'] = $item['id'] ?? '';
+                    $collection['title'] = $item['snippet']['title'] ?? '';
+                    $collection['totalVideos'] = 0;
+                    $collection['url'] = 'title';
+
+                    $collections[] = $collection;
+                }
+
+                $pageToken = $data['nextPageToken'] ?? null;
+            } while ($pageToken);
         } catch (Throwable $e) {
             // A fatal error will be thrown for an account with no playlists yet...
-            if ($e instanceof RequestException && $e->getResponse()) {
-                if ($e->getResponse()->getStatusCode() !== 404) {
-                    throw $e;
-                }
+            if (!$e instanceof RequestException || !$e->getResponse() || $e->getResponse()->getStatusCode() !== 404) {
+                throw $e;
             }
         }
 
         return $collections;
     }
 
-    private function _queryFromParams(array $params = []): array
+    private function _queryFromParams(array $params = [], bool $allowSearchQuery = false): array
     {
         $page = ArrayHelper::remove($params, 'nextPage') ?? null;
 
-        return array_merge([
+        // Search `q` must never reach playlistItems / videos.list — Google rejects
+        // pageToken when q is present (GH-6). Only search.list accepts q.
+        if (!$allowSearchQuery) {
+            ArrayHelper::remove($params, 'q');
+        }
+
+        // Drop pagination / page-size keys so callers cannot override the clamp (D02).
+        ArrayHelper::remove($params, 'maxResults');
+        ArrayHelper::remove($params, 'pageToken');
+        ArrayHelper::remove($params, 'per_page');
+        ArrayHelper::remove($params, 'page');
+
+        return array_merge($params, [
             'maxResults' => $this->getVideosPerPage(),
             'pageToken' => $page,
-        ], $params);
+        ]);
     }
 
     private function _getSpecialPlaylistId(string $type)

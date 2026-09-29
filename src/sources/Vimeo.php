@@ -56,10 +56,23 @@ class Vimeo extends OAuthSource
         return 'https://player.vimeo.com/video/{id}';
     }
 
+    public function getVideoEmbedOptions(Video $video): array
+    {
+        $url = $video->url ?? '';
+        parse_str(parse_url($url, PHP_URL_QUERY) ?: '', $query);
+        $hash = $query['h'] ?? null;
+
+        if (!$hash && preg_match('~^/' . preg_quote($video->id ?? '', '~') . '/([a-zA-Z0-9]+)(?:/|$)~', parse_url($url, PHP_URL_PATH) ?: '', $matches)) {
+            $hash = $matches[1];
+        }
+
+        return is_string($hash) && preg_match('/^[a-zA-Z0-9]+$/', $hash) ? ['h' => $hash] : [];
+    }
+
     public function getVideoIdFromUrl(string $url): ?string
     {
         $pattern = '/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/[\w]+\/|groups\/[\w]+\/videos\/|album\/\d+\/video\/|video\/|)(\d+)/';
-        
+
         if (preg_match($pattern, $url, $matches)) {
             return $matches[1];
         }
@@ -71,7 +84,8 @@ class Vimeo extends OAuthSource
     {
         $data = $this->cachedRequest('GET', 'videos/' . $id, [
             'query' => [
-                'fields' => 'created_time,description,duration,height,link,name,pictures,pictures,privacy,stats,uri,user,width,download,review_link,files'
+                // Omit download/review_link/files — unused and sensitive when stored in Video::$raw.
+                'fields' => 'created_time,description,duration,height,link,name,pictures,privacy,stats,uri,user,width',
             ],
         ]);
 
@@ -85,6 +99,43 @@ class Vimeo extends OAuthSource
 
     // Protected Methods
     // =========================================================================
+
+    protected function mapEmbedQueryParams(string $videoId, array $intent): array
+    {
+        $params = [];
+
+        if (array_key_exists('autoplay', $intent)) {
+            $params['autoplay'] = (int)$this->isEmbedTruthy($intent['autoplay']);
+        }
+
+        if (array_key_exists('muted', $intent) || array_key_exists('mute', $intent)) {
+            $params['muted'] = (int)$this->isEmbedTruthy($intent['muted'] ?? $intent['mute'] ?? null);
+        }
+
+        if (array_key_exists('loop', $intent)) {
+            $params['loop'] = (int)$this->isEmbedTruthy($intent['loop']);
+        }
+
+        if (array_key_exists('controls', $intent)) {
+            $params['controls'] = (int)$this->isEmbedTruthy($intent['controls']);
+        }
+
+        if (isset($intent['start']) && $intent['start'] !== '') {
+            $params['start'] = (int)$intent['start'];
+        }
+
+        return $params;
+    }
+
+    protected function buildEmbedUrl(string $videoId, array $queryParams): string
+    {
+        // Vimeo's timecode belongs in the fragment, after any privacy/query options.
+        $start = $queryParams['start'] ?? null;
+        unset($queryParams['start']);
+        $url = parent::buildEmbedUrl($videoId, $queryParams);
+
+        return $start !== null ? $url . '#t=' . (int)$start . 's' : $url;
+    }
 
     protected function fetchExplorerSections(): array
     {
@@ -214,7 +265,7 @@ class Vimeo extends OAuthSource
     private function _performVideosRequest(string $uri, array $params = []): array
     {
         $query = $this->_queryFromParams($params);
-        $query['fields'] = 'created_time,description,duration,height,link,name,pictures,pictures,privacy,stats,uri,user,width,download,review_link,files';
+        $query['fields'] = 'created_time,description,duration,height,link,name,pictures,privacy,stats,uri,user,width';
 
         $data = $this->cachedRequest('GET', $uri, [
             'query' => $query,
@@ -240,6 +291,9 @@ class Vimeo extends OAuthSource
 
     private function _parseVideo(array $data): Video
     {
+        // Never persist download/review/file URLs even if an older API response included them.
+        unset($data['download'], $data['review_link'], $data['files']);
+
         $video = new Video();
         $video->raw = $data;
         $video->authorName = $data['user']['name'] ?? null;;
@@ -275,13 +329,10 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'name,uri';
 
-        $data = $this->cachedRequest('GET', 'me/folders', [
-            'query' => $query,
-        ]);
-
+        $items = $this->_getCollectionItems('me/folders', $query);
         $collections = [];
 
-        foreach (($data['data'] ?? []) as $data) {
+        foreach ($items as $data) {
             $collections[] = [
                 'id' => substr($data['uri'], strpos($data['uri'], '/projects/') + \strlen('/projects/')),
                 'url' => $data['uri'],
@@ -298,13 +349,10 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'name,uri,stats';
 
-        $data = $this->cachedRequest('GET', 'me/albums', [
-            'query' => $query,
-        ]);
-
+        $items = $this->_getCollectionItems('me/albums', $query);
         $collections = [];
 
-        foreach (($data['data'] ?? []) as $data) {
+        foreach ($items as $data) {
             $collections[] = [
                 'id' => substr($data['uri'], strpos($data['uri'], '/albums/') + \strlen('/albums/')),
                 'url' => $data['uri'],
@@ -321,13 +369,10 @@ class Vimeo extends OAuthSource
         $query = $this->_queryFromParams($params);
         $query['fields'] = 'name,uri';
 
-        $data = $this->cachedRequest('GET', 'me/channels', [
-            'query' => $query,
-        ]);
-
+        $items = $this->_getCollectionItems('me/channels', $query);
         $collections = [];
 
-        foreach (($data['data'] ?? []) as $data) {
+        foreach ($items as $data) {
             $collections[] = [
                 'id' => substr($data['uri'], strpos($data['uri'], '/channels/') + \strlen('/channels/')),
                 'url' => $data['uri'],
@@ -339,14 +384,34 @@ class Vimeo extends OAuthSource
         return $collections;
     }
 
+    private function _getCollectionItems(string $uri, array $query): array
+    {
+        $items = [];
+        $query['per_page'] = 100;
+
+        do {
+            $response = $this->cachedRequest('GET', $uri, ['query' => $query]);
+            array_push($items, ...($response['data'] ?? []));
+            $query['page']++;
+        } while (!empty($response['paging']['next']));
+
+        return $items;
+    }
+
     private function _queryFromParams(array $params = []): array
     {
         $page = ArrayHelper::remove($params, 'nextPage') ?? 1;
 
-        return array_merge([
+        // Drop pagination / page-size keys so callers cannot override the clamp (D02).
+        ArrayHelper::remove($params, 'per_page');
+        ArrayHelper::remove($params, 'page');
+        ArrayHelper::remove($params, 'maxResults');
+        ArrayHelper::remove($params, 'pageToken');
+
+        return array_merge($params, [
             'full_response' => 1,
             'page' => $page,
             'per_page' => $this->getVideosPerPage(),
-        ], $params);
+        ]);
     }
 }

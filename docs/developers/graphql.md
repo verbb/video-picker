@@ -1,7 +1,7 @@
 # GraphQL
-You can fetch field content via GraphQL for Video Picker fields. The resulting values will be identical to a [Video](docs:developers/video) object.
+You can fetch Video Picker field content through Craft's GraphQL API. Add the entry section and Video Picker field to the schema used by your access token. Replace `blog_blog_Entry` and `videoPickerField` below with the generated entry type and field handle from your project.
 
-```json
+```graphql
 {
     entries(id: 1234) {
         ... on blog_blog_Entry {
@@ -17,7 +17,11 @@ You can fetch field content via GraphQL for Video Picker fields. The resulting v
         }
     }
 }
+```
 
+A populated field returns data in this shape:
+
+```json
 {
     "data": {
         "entries": [
@@ -62,3 +66,30 @@ You can fetch field content via GraphQL for Video Picker fields. The resulting v
     }
 }
 ```
+
+## The `{fieldHandle}_Video` Type
+
+Each Video Picker field exposes an object type named from its handle, such as `videoPickerField_Video`. Select the following fields directly within that field’s selection. All fields are nullable; available metadata depends on the provider and stored video.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `String` | The video identifier supplied by its provider. |
+| `url` | `String` | The video’s source URL. |
+| `sourceHandle` | `String` | The configured Video Picker source handle. |
+| `date` | `DateTime` | The video’s publication date. |
+| `duration` | `Int` | Duration in seconds. |
+| `formattedDuration` | `String` | Duration formatted for display. |
+| `plays` | `Float` | The provider’s play count, when available, including counts above the 32-bit integer limit. |
+| `authorName` | `String` | The author’s display name. |
+| `authorUrl` | `String` | The author’s URL. |
+| `authorUsername` | `String` | The author’s username. |
+| `thumbnails` | `ArrayType` | Thumbnail metadata as structured JSON, including URLs and dimensions. |
+| `title` | `String` | The video title. |
+| `description` | `String` | The video description. |
+| `private` | `Boolean` | Whether the provider marks the video as private. |
+| `width` | `Int` | Video width in pixels. |
+| `height` | `Int` | Video height in pixels. |
+| `embedHtml` | `String` | Embed HTML using the field’s embed defaults. |
+| `embedUrl` | `String` | Embed URL using the field’s embed defaults. |
+
+`thumbnails` is a JSON scalar, so request it without a nested selection. Neither `embedHtml` nor `embedUrl` accepts arguments; configure embed defaults on the Video Picker field.

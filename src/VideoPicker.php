@@ -23,17 +23,23 @@ use yii\base\Event;
 
 class VideoPicker extends Plugin
 {
-    // Properties
+    // Constants
     // =========================================================================
 
-    public bool $hasCpSettings = true;
-    public string $schemaVersion = '1.0.0';
+    public const MANAGE_SOURCE_CREDENTIALS_PERMISSION = 'videoPicker-sources:credentials';
 
 
     // Traits
     // =========================================================================
 
     use PluginTrait;
+
+
+    // Properties
+    // =========================================================================
+
+    public bool $hasCpSettings = true;
+    public string $schemaVersion = '1.1.3';
 
 
     // Public Methods
@@ -56,10 +62,10 @@ class VideoPicker extends Plugin
         if (Craft::$app->getRequest()->getIsSiteRequest()) {
             $this->_registerSiteRoutes();
         }
-        
-        if (Craft::$app->getEdition() === Craft::Pro) {
-            $this->_registerPermissions();
-        }
+
+        // User-group permissions (Explore videos / Sources) — register on all editions so
+        // upgrades and Craft-boot tests see the same handles; Solo sites typically use admin.
+        $this->_registerPermissions();
 
         $this->hasCpSection = $this->getSettings()->hasCpSection;
     }
@@ -118,6 +124,8 @@ class VideoPicker extends Plugin
             $event->rules['video-picker/sources/new'] = 'video-picker/sources/edit';
             $event->rules['video-picker/sources/<handle:{handle}>'] = 'video-picker/sources/edit';
             $event->rules['video-picker/settings'] = 'video-picker/plugin/settings';
+            $event->rules['video-picker/settings/cache'] = 'video-picker/plugin/settings-cache';
+            $event->rules['video-picker/settings/embed'] = 'video-picker/plugin/settings-embed';
 
             if (Craft::$app->getConfig()->getGeneral()->headlessMode || !Craft::$app->getConfig()->getGeneral()->cpTrigger) {
                 $event->rules['video-picker/auth/callback'] = 'video-picker/auth/callback';
@@ -152,7 +160,13 @@ class VideoPicker extends Plugin
             $event->permissions[] = [
                 'heading' => Craft::t('video-picker', 'Video Picker'),
                 'permissions' => [
-                    'videoPicker-sources' => ['label' => Craft::t('video-picker', 'Sources')],
+                    'videoPicker-explore' => ['label' => Craft::t('video-picker', 'Explore videos')],
+                    'videoPicker-sources' => [
+                        'label' => Craft::t('video-picker', 'Sources'),
+                        'nested' => [
+                            self::MANAGE_SOURCE_CREDENTIALS_PERMISSION => ['label' => Craft::t('video-picker', 'Manage source credentials and connections')],
+                        ],
+                    ],
                 ],
             ];
         });
