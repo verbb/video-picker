@@ -6,12 +6,8 @@
 {% set fullPageForm = true %}
 {% set selectedTab = 'embed' %}
 {% set pageTitle = 'Embed Settings' | t('video-picker') %}
-{% set pageAction = 'video-picker/plugin/save-settings' %}
+{% set pageAction = 'video-picker/settings/save-settings' %}
 {% set pageUrl = 'video-picker/settings/embed' %}
-
-{% block settingsMeta %}
-    {{ hiddenInput('settingsScreen', 'embed') }}
-{% endblock %}
 
 {% block settingsContent %}
     {{ forms.lightswitchField({

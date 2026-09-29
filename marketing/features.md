@@ -1,5 +1,5 @@
 <!-- feature-intro -->
-A visual field for finding and selecting hosted video. Connect YouTube or Vimeo sources, browse account collections or paste a URL, then hand templates useful video data instead of an opaque string.
+A visual field for finding and selecting hosted video. Connect supported provider sources, browse account collections or paste a URL, then hand templates useful video data instead of an opaque string.
 <!-- feature-intro-end -->
 
 <!-- feature-section media-size="large" -->
@@ -28,7 +28,7 @@ Once a video is selected, its thumbnail and metadata remain visible in the field
 <!-- feature-section media-size="large" -->
 ## Multiple video sources
 
-Configure multiple YouTube and Vimeo sources for different channels or clients, then decide which sources are available to each field. Developers can register another source type or extend existing behaviour through events.
+Configure multiple provider sources for different channels or clients, then decide which sources are available to each field. Developers can register another source type or extend existing behaviour through events.
 
 ![Connected Vimeo and YouTube sources in Video Picker.](../screenshots/output/feature-tour/video-picker-sources.png)
 

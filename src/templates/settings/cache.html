@@ -6,12 +6,8 @@
 {% set fullPageForm = true %}
 {% set selectedTab = 'cache' %}
 {% set pageTitle = 'Cache Settings' | t('video-picker') %}
-{% set pageAction = 'video-picker/plugin/save-settings' %}
+{% set pageAction = 'video-picker/settings/save-settings' %}
 {% set pageUrl = 'video-picker/settings/cache' %}
-
-{% block settingsMeta %}
-    {{ hiddenInput('settingsScreen', 'cache') }}
-{% endblock %}
 
 {% block settingsContent %}
     {{ forms.textField({

@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.0 - 2026-09-
+## Unreleased
 
 ### Added
 - Add **Bunny Stream**, **Cloudflare Stream**, **Dailymotion**, **Mux**, **Sprout Video** and **Wistia** sources.
@@ -14,6 +14,7 @@
 - Add **Manage source credentials and connections** permission. Existing non-admin Source managers must be granted this permission to continue managing credentials and OAuth connections.
 
 ### Changed
+- Route plugin settings through the plugin’s authorized settings controller.
 - Rebuild the field input and explorer with [Plugin Kit](https://docs.verbb.io/plugin-kit/web/) web components, including responsive layouts and improved keyboard and screen-reader support.
 - Revalidate expired selected-video metadata on read while retaining the last successful data when refreshes fail.
 - Improve explorer performance and resilience with cached provider searches, complete collection pagination and isolated provider failures.

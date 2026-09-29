@@ -6,12 +6,8 @@
 {% set fullPageForm = true %}
 {% set selectedTab = 'general' %}
 {% set pageTitle = 'General Settings' | t('video-picker') %}
-{% set pageAction = 'video-picker/plugin/save-settings' %}
+{% set pageAction = 'video-picker/settings/save-settings' %}
 {% set pageUrl = 'video-picker/settings' %}
-
-{% block settingsMeta %}
-    {{ hiddenInput('settingsScreen', 'general') }}
-{% endblock %}
 
 {% block settingsContent %}
     {{ forms.textField({

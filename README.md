@@ -12,6 +12,9 @@ Video Picker is a Craft CMS field for selecting videos by URL or from a connecte
 - Set default embed options per field (autoplay, muted, loop, controls).
 - Resolve video data from field selections or supported URLs in templates.
 - GraphQL support.
+- Layered caching for provider sources, video metadata and resolved records.
+- Use selected videos in supported Craft element cards.
+- Field settings to show or hide the video explorer and preview.
 - Events for adding or extending source types.
 
 ## Sources
