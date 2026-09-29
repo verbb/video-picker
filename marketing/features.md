@@ -7,13 +7,13 @@ A visual field for finding and selecting hosted video. Connect supported provide
 
 Connect a source and explore liked videos, uploads and collections. Search more widely where the provider allows it or paste a known URL, with thumbnails and metadata to confirm the right video before saving.
 
-![Video Picker’s video explorer showing videos from a connected Vimeo library.](../screenshots/output/feature-tour/video-picker-explorer.png)
+![Video Picker’s video explorer showing videos from a connected Vimeo library.](../screenshots/output/docs/feature-tour/explorer.png)
 
 <!-- feature-section-end -->
 
 <!-- feature-grid -->
-- :icon[database] **Layered caching** Cache source listings, video metadata and resolved records to reduce provider requests.
-- :icon[layout-cards] **Element cards** Show selected videos with useful thumbnails and links in supported Craft element cards.
+- :icon[adjustments] **Field-level choices** Decide which sources authors can use, whether they can paste URLs or search public videos, and which duration or sorting limits apply.
+- :icon[database] **Resilient provider data** Cache source listings, video metadata and resolved records, retaining the last successful details through temporary provider failures.
 - :icon[code] **Template-ready data** Use video metadata, embed URLs and responsive embed HTML in Twig or GraphQL.
 <!-- feature-grid-end -->
 
@@ -22,14 +22,14 @@ Connect a source and explore liked videos, uploads and collections. Search more 
 
 Once a video is selected, its thumbnail and metadata remain visible in the field. Editors can confirm the saved choice without reopening the explorer when they return to the entry later.
 
-![A Video Picker field with a selected Vimeo video.](../screenshots/output/feature-tour/video-picker-field.png)
+![A Video Picker field with a selected Vimeo video.](../screenshots/output/docs/feature-tour/videos.png)
 <!-- feature-section-end -->
 
 <!-- feature-section media-size="large" -->
-## Multiple video sources
+## Your video platform, connected
 
-Configure multiple provider sources for different channels or clients, then decide which sources are available to each field. Developers can register another source type or extend existing behaviour through events.
+Bring Bunny Stream, Cloudflare Stream, Dailymotion, Mux, Sprout Video, Vimeo, Wistia or YouTube into the same editorial workflow. Configure multiple accounts for different channels or clients without changing how authors find and select a video.
 
-![Connected Vimeo and YouTube sources in Video Picker.](../screenshots/output/feature-tour/video-picker-sources.png)
+![Connected video sources from eight supported providers in Video Picker.](../screenshots/output/docs/feature-tour/sources.png)
 
 <!-- feature-section-end -->
