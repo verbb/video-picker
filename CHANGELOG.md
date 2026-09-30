@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.1 - 2026-09-30
+
+### Changed
+- Keep OAuth callback redirects literal.
+- Authorize OAuth connection management.
+- Validate OAuth callback transactions.
+
 ## 2.1.0 - 2026-09-29
 
 ### Added
