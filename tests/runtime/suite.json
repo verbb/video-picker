@@ -1,5 +1,5 @@
 {
-    "project": "video-picker-react-tests",
+    "project": "video-picker-craft5-tests",
     "suites": {
         "default": [
             "--exclude-group=slow",

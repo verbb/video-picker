@@ -1,4 +1,4 @@
-name: video-picker-react-tests
+name: video-picker-craft5-tests
 type: php
 docroot: tests/runtime/web
 php_version: "8.3"

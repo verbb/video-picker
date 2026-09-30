@@ -7,7 +7,7 @@ A visual field for finding and selecting hosted video. Connect supported provide
 
 Connect a source and explore liked videos, uploads and collections. Search more widely where the provider allows it or paste a known URL, with thumbnails and metadata to confirm the right video before saving.
 
-![Video Picker’s video explorer showing videos from a connected Vimeo library.](../screenshots/output/docs/feature-tour/explorer.png)
+![Video Picker’s video explorer showing videos from a connected Vimeo library.](../screenshots/video-picker-library.png)
 
 <!-- feature-section-end -->
 
@@ -22,7 +22,7 @@ Connect a source and explore liked videos, uploads and collections. Search more 
 
 Once a video is selected, its thumbnail and metadata remain visible in the field. Editors can confirm the saved choice without reopening the explorer when they return to the entry later.
 
-![A Video Picker field with a selected Vimeo video.](../screenshots/output/docs/feature-tour/videos.png)
+![A Video Picker field with a selected Vimeo video.](../screenshots/video-picker-video.png)
 <!-- feature-section-end -->
 
 <!-- feature-section media-size="large" -->
@@ -30,6 +30,6 @@ Once a video is selected, its thumbnail and metadata remain visible in the field
 
 Bring Bunny Stream, Cloudflare Stream, Dailymotion, Mux, Sprout Video, Vimeo, Wistia or YouTube into the same editorial workflow. Configure multiple accounts for different channels or clients without changing how authors find and select a video.
 
-![Connected video sources from eight supported providers in Video Picker.](../screenshots/output/docs/feature-tour/sources.png)
+![Connected video sources from eight supported providers in Video Picker.](../screenshots/video-picker-providers.png)
 
 <!-- feature-section-end -->

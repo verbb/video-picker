@@ -2,7 +2,7 @@
 
 A Source connects Video Picker to a video provider. Once set up, you can browse videos in the field explorer or resolve them by URL.
 
-<img src="../../screenshots/output/docs/feature-tour/sources.png" width="727" alt="Video Picker Sources index with connected providers." />
+<img src="../../screenshots/video-picker-providers.png" width="727" alt="Video Picker Sources index with connected providers." />
 
 ## Provider Settings
 
