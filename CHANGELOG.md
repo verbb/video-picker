@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fixed an error when upgrading sites with existing selected-video cache rows.
+
 ## 2.1.1 - 2026-09-30
 
 ### Changed

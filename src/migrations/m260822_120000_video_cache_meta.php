@@ -4,6 +4,7 @@ namespace verbb\videopicker\migrations;
 use craft\db\Migration;
 use craft\db\Query;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\Db;
 
 use DateInterval;
 use DateTime;
@@ -13,6 +14,9 @@ use DateTime;
  */
 class m260822_120000_video_cache_meta extends Migration
 {
+    // Public Methods
+    // =========================================================================
+
     public function safeUp(): bool
     {
         $table = '{{%video_picker_videos}}';
@@ -37,8 +41,10 @@ class m260822_120000_video_cache_meta extends Migration
             $this->addColumn($table, 'lastError', $this->text()->null()->after('status'));
         }
 
-        $this->createIndex(null, $table, ['expiresAt'], false);
-        $this->createIndex(null, $table, ['status'], false);
+        // MySQL keeps schema changes when a later migration statement fails, so retries
+        // must accept indexes created by the first attempt.
+        $this->createIndexIfMissing($table, ['expiresAt']);
+        $this->createIndexIfMissing($table, ['status']);
 
         // Treat existing rows as freshly fetched for one default TTL window (7 days).
         $ttl = new DateInterval('P7D');
@@ -53,8 +59,8 @@ class m260822_120000_video_cache_meta extends Migration
             $expires = (clone $fetched)->add($ttl);
 
             $this->update($table, [
-                'fetchedAt' => DateTimeHelper::toIso8601($fetched),
-                'expiresAt' => DateTimeHelper::toIso8601($expires),
+                'fetchedAt' => Db::prepareDateForDb($fetched),
+                'expiresAt' => Db::prepareDateForDb($expires),
                 'status' => 'ok',
                 'lastError' => null,
             ], ['id' => $row['id']], [], false);
