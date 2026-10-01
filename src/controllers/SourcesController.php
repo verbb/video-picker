@@ -114,7 +114,7 @@ class SourcesController extends Controller
         if ($sourceId) {
             $oldSource = $sourcesService->getSourceById($sourceId);
             $storedSource = $sourcesService->getStoredSourceById($sourceId);
-            
+
             if (!$oldSource || !$storedSource) {
                 throw new BadRequestHttpException("Invalid source ID: $sourceId");
             }
@@ -122,6 +122,7 @@ class SourcesController extends Controller
 
         // Available Fields lives on the source (not the field) so prod can grant fields without PC.
         $fields = $this->request->getBodyParam('fields', $oldSource->fields ?? '*');
+
         if ($fields === '') {
             // Craft posts an empty string when every checkbox, including All, is unchecked.
             $fields = [];

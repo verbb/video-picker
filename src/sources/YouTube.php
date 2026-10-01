@@ -94,7 +94,7 @@ class YouTube extends OAuthSource
         ));
         $options['access_type'] = 'offline';
         $options['prompt'] = 'consent';
-        
+
         return $options;
     }
 
@@ -139,7 +139,7 @@ class YouTube extends OAuthSource
     public function getVideoIdFromUrl(string $url): ?string
     {
         $pattern = '/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|.+\?v=)|youtu\.be\/)([\w\-]{11})/';
-        
+
         if (preg_match($pattern, $url, $matches)) {
             return $matches[1];
         }

@@ -176,6 +176,7 @@ class Videos extends Component
 
                 // Expired (or private field-scoped) — sync revalidate.
                 $revalidateSources = $compatible ?: $allowedSources;
+
                 foreach ($revalidateSources as $source) {
                     if ($source->getVideoIdFromUrl($videoUrl)) {
                         // Bust provider app cache so revalidate isn’t served from TTL API cache.
@@ -470,8 +471,7 @@ class Videos extends Component
         string $baseUrl,
         array $params = [],
         bool $allowSanitizedDataUrl = false,
-    ): string
-    {
+    ): string {
         if (trim($html) === '') {
             return '';
         }

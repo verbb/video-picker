@@ -213,7 +213,7 @@ class Sources extends Component
     public function getSourceByHandle(string $handle, bool $enabledOnly = false, bool $connectedOnly = false): ?SourceInterface
     {
         $source = $this->_sources()->firstWhere('handle', $handle, true);
-    
+
         if ($source && (($enabledOnly && !$source->enabled) || ($connectedOnly && !$source->isConnected()))) {
             return null;
         }
@@ -252,9 +252,11 @@ class Sources extends Component
         $previousHandle = $sourceRecord->handle;
         $previousType = $sourceRecord->type;
         $previousSettings = $sourceRecord->settings;
+
         if (is_string($previousSettings)) {
             $previousSettings = Json::decode($previousSettings) ?: [];
         }
+
         if (!is_array($previousSettings)) {
             $previousSettings = [];
         }

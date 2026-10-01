@@ -12,5 +12,5 @@ class Collection extends Model
     public ?string $method = null;
     public array $options = [];
     public ?string $icon = null;
-    
+
 }

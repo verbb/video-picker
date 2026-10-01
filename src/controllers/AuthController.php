@@ -88,7 +88,7 @@ class AuthController extends Controller
             'video-picker',
             fn(User $user): bool => $user->can('videoPicker-sources') && $user->can(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION),
         );
-        
+
         // Get both the origin (failure) and redirect (success) URLs
         $origin = Session::get('origin');
         $redirect = Session::get('redirect');

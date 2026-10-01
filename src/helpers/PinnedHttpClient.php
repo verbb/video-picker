@@ -36,8 +36,7 @@ class PinnedHttpClient implements ClientInterface
         array $settings = [],
         ?Closure $resolver = null,
         ?Closure $transport = null,
-    )
-    {
+    ) {
         $this->_allowedDomains = $allowedDomains;
         $this->_settings = $settings;
         $this->_resolver = $resolver;

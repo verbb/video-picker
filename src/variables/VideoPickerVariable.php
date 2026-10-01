@@ -78,5 +78,5 @@ class VideoPickerVariable
     {
         PluginHelper::registerCpStyles();
     }
-    
+
 }

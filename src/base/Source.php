@@ -358,7 +358,7 @@ abstract class Source extends SavableComponent implements SourceInterface
             $video->url = $url;
             $video->addError('url', $e->getMessage());
 
-            return $video; 
+            return $video;
         }
 
         return null;

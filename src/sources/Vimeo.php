@@ -26,7 +26,7 @@ class Vimeo extends OAuthSource
         return VimeoProvider::class;
     }
 
-    
+
     // Properties
     // =========================================================================
 
@@ -296,18 +296,18 @@ class Vimeo extends OAuthSource
 
         $video = new Video();
         $video->raw = $data;
-        $video->authorName = $data['user']['name'] ?? null;;
-        $video->authorUrl = $data['user']['link'] ?? null;;
+        $video->authorName = $data['user']['name'] ?? null;
+        $video->authorUrl = $data['user']['link'] ?? null;
         $video->date = new DateTime($data['created_time'] ?? '');
-        $video->description = $data['description'] ?? null;;
+        $video->description = $data['description'] ?? null;
         $video->sourceHandle = $this->handle;
         $video->id = (int)substr($data['uri'], strlen('/videos/'));
         $video->plays = $data['stats']['plays'] ?? 0;
-        $video->title = $data['name'] ?? null;;
-        $video->url = $data['link'] ?? null;;
-        $video->width = $data['width'] ?? null;;
-        $video->height = $data['height'] ?? null;;
-        $video->duration = $data['duration'] ?? null;;
+        $video->title = $data['name'] ?? null;
+        $video->url = $data['link'] ?? null;
+        $video->width = $data['width'] ?? null;
+        $video->height = $data['height'] ?? null;
+        $video->duration = $data['duration'] ?? null;
 
         if (in_array(($data['privacy']['view'] ?? ''), ['nobody', 'contacts', 'password', 'users', 'disable'])) {
             $video->private = true;

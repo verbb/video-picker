@@ -10,5 +10,5 @@ class Section extends Model
 
     public ?string $name = null;
     public array $collections = [];
-    
+
 }
