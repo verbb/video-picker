@@ -2,8 +2,14 @@
 
 ## Unreleased
 
+### Changed
+- Updated the required version of `verbb/base` to 3.0.19.
+
 ### Fixed
 - Fixed an error when upgrading sites with existing selected-video cache rows.
+
+### Removed
+- Removed the unused legacy `verbb\videopicker\assetbundles\VideoPickerAsset` compatibility wrapper.
 
 ## 2.1.1 - 2026-09-30
 

@@ -30,7 +30,7 @@
         "embed/embed": "^4.0.0",
         "nystudio107/craft-plugin-vite": "^5.0.0",
         "verbb/auth": "^2.0.48",
-        "verbb/base": "^3.0.18"
+        "verbb/base": "^3.0.19"
     },
     "autoload": {
         "psr-4": {

@@ -4,7 +4,7 @@ namespace verbb\videopicker\web\assets\sourceconnect;
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset as CraftCpAsset;
 
-use verbb\base\assetbundles\CpAsset as VerbbCpAsset;
+use verbb\base\web\assets\cp\CpAsset as VerbbCpAsset;
 
 class SourceConnectAsset extends AssetBundle
 {
