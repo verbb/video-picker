@@ -15,6 +15,7 @@ use verbb\videopicker\controllers\AuthController;
 use verbb\videopicker\controllers\SourcesController;
 use verbb\videopicker\controllers\VideosController;
 use verbb\videopicker\fields\VideoPickerField;
+use verbb\videopicker\sources\Wistia;
 use yii\web\BadRequestHttpException;
 use yii\web\ForbiddenHttpException;
 use yii\web\MethodNotAllowedHttpException;
@@ -87,6 +88,27 @@ describe('AuthController anonymous surface', function() {
 
         expect(fn() => $controller->runAction('check-connection'))
             ->toThrow(ForbiddenHttpException::class);
+    });
+
+    it('does not expose stored source credentials to delegated source managers', function() {
+        $sources = VideoPicker::$plugin->getSources();
+        $source = new Wistia([
+            'name' => 'Restricted credential fixture',
+            'handle' => 'restrictedCredentialFixture',
+            'enabled' => false,
+            'accessToken' => 'credential-read-regression-marker',
+        ]);
+
+        expect($sources->saveSource($source))->toBeTrue();
+
+        try {
+            NonAdminUser::loginWithPermissions(['videoPicker-sources']);
+            $settingsHtml = $sources->getSourceById($source->id)->getSettingsHtml();
+
+            expect($settingsHtml)->not->toContain('credential-read-regression-marker');
+        } finally {
+            $sources->deleteSource($source);
+        }
     });
 });
 

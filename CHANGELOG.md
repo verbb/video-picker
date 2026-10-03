@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fixed source credential values being visible to users without credential-management permission.
+
 ## 2.1.2 - 2026-10-02
 
 ### Changed

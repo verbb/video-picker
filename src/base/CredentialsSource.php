@@ -7,6 +7,7 @@ use craft\helpers\StringHelper;
 
 use verbb\auth\base\CredentialsProviderInterface;
 use verbb\auth\base\CredentialsProviderTrait;
+use verbb\videopicker\helpers\SourceSecurity;
 
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
@@ -60,9 +61,10 @@ abstract class CredentialsSource extends Source implements CredentialSourceInter
     {
         $handle = StringHelper::toKebabCase(static::$providerHandle);
 
-        return Craft::$app->getView()->renderTemplate('video-picker/sources/credentials/_types/' . $handle, [
-            'source' => $this,
-        ]);
+        return Craft::$app->getView()->renderTemplate(
+            'video-picker/sources/credentials/_types/' . $handle,
+            SourceSecurity::settingsTemplateVariables($this),
+        );
     }
 
     public function checkConnection(bool $useCache = true): bool

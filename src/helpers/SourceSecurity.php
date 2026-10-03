@@ -3,6 +3,7 @@ namespace verbb\videopicker\helpers;
 
 use verbb\videopicker\base\CredentialSourceInterface;
 use verbb\videopicker\base\SourceInterface;
+use verbb\videopicker\VideoPicker;
 
 use Craft;
 
@@ -10,6 +11,63 @@ class SourceSecurity
 {
     // Static Methods
     // =========================================================================
+
+    /**
+     * Build provider-template variables without exposing protected settings to
+     * users who can edit a source but cannot manage its credentials.
+     */
+    public static function settingsTemplateVariables(SourceInterface $source): array
+    {
+        $canManageSourceCredentials = Craft::$app->getUser()->checkPermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION);
+
+        return [
+            'source' => $canManageSourceCredentials ? $source : self::redactedSource($source),
+            'canManageSourceCredentials' => $canManageSourceCredentials,
+        ];
+    }
+
+    /**
+     * Return a detached source model with credentials and indirect configuration
+     * references replaced by neutral values.
+     */
+    public static function redactedSource(SourceInterface $source): SourceInterface
+    {
+        $redacted = clone $source;
+        $settings = $source->getSettings();
+
+        foreach (self::_protectedAttributes($source) as $attribute) {
+            if (array_key_exists($attribute, $settings)) {
+                $redacted->{$attribute} = self::_redactedValue($settings[$attribute]);
+            }
+        }
+
+        return $redacted;
+    }
+
+    /**
+     * Restore protected values omitted by the redacted delegated-manager form.
+     * Explicit non-empty changes remain in place so validation still rejects them.
+     */
+    public static function prepareDelegatedSource(SourceInterface $source, SourceInterface $original): SourceInterface
+    {
+        $prepared = clone $source;
+        $settings = $source->getSettings();
+        $originalSettings = $original->getSettings();
+
+        foreach (self::_protectedAttributes($original) as $attribute) {
+            $value = $settings[$attribute] ?? null;
+
+            if (array_key_exists($attribute, $settings) && !self::_isEmptySubmission($value)) {
+                continue;
+            }
+
+            if (array_key_exists($attribute, $originalSettings)) {
+                $prepared->{$attribute} = $originalSettings[$attribute];
+            }
+        }
+
+        return $prepared;
+    }
 
     /**
      * Keep credentials and indirect configuration references behind the dedicated
@@ -71,6 +129,23 @@ class SourceSecurity
 
     // Private Methods
     // =========================================================================
+
+    private static function _redactedValue(mixed $value): mixed
+    {
+        return match (true) {
+            is_string($value) => '',
+            is_array($value) => [],
+            is_bool($value) => false,
+            is_int($value) => 0,
+            is_float($value) => 0.0,
+            default => null,
+        };
+    }
+
+    private static function _isEmptySubmission(mixed $value): bool
+    {
+        return $value === null || $value === '' || $value === [];
+    }
 
     private static function _protectedAttributes(SourceInterface $source): array
     {

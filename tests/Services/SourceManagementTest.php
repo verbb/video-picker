@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Tests\Support\AdminUser;
 use Tests\Support\CpRequestContext;
+use Tests\Support\NonAdminUser;
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\controllers\SourcesController;
+use verbb\videopicker\sources\Dailymotion;
 use verbb\videopicker\sources\YouTube;
 
 it('preserves no available fields when every checkbox is cleared', function() {
@@ -51,6 +53,69 @@ it('deletes a source submitted by the edit form', function() {
         expect(VideoPicker::$plugin->getSources()->getSourceById($source->id))->toBeNull();
     } finally {
         VideoPicker::$plugin->getSources()->deleteSourceById($source->id);
+    }
+});
+
+it('preserves hidden credentials when a delegated manager saves an ordinary setting', function() {
+    $sources = VideoPicker::$plugin->getSources();
+    $source = new Dailymotion([
+        'name' => 'Delegated save fixture',
+        'handle' => 'delegatedSaveFixture',
+        'enabled' => false,
+        'apiKey' => 'preserved-key-marker',
+        'apiSecret' => 'preserved-secret-marker',
+        'channelUser' => 'original-channel',
+    ]);
+    expect($sources->saveSource($source))->toBeTrue();
+
+    $overridesProperty = new ReflectionProperty($sources, '_overrides');
+    $sourcesProperty = new ReflectionProperty($sources, '_sources');
+    $originalOverrides = $overridesProperty->getValue($sources);
+    $overridesProperty->setValue($sources, [
+        'sources' => [
+            $source->handle => [
+                'apiKey' => 'configured-key-marker',
+                'apiSecret' => 'configured-secret-marker',
+            ],
+        ],
+    ]);
+    $sourcesProperty->setValue($sources, null);
+
+    NonAdminUser::loginWithPermissions(['videoPicker-sources']);
+    CpRequestContext::activate('actions/video-picker/sources/save');
+    $request = Craft::$app->getRequest();
+    $request->getHeaders()->set('Accept', 'application/json');
+    $request->setBodyParams([
+        'sourceId' => $source->id,
+        'type' => Dailymotion::class,
+        'name' => $source->name,
+        'handle' => $source->handle,
+        'enabled' => false,
+        'fields' => '*',
+        'types' => [
+            Dailymotion::class => [
+                'channelUser' => 'updated-channel',
+            ],
+        ],
+    ]);
+    $controller = new SourcesController('sources', VideoPicker::$plugin);
+
+    try {
+        $response = $controller->actionSave();
+        $saved = $sources->getStoredSourceById($source->id);
+        $responseBody = json_encode($response->data, JSON_THROW_ON_ERROR);
+
+        expect($saved->apiKey)->toBe('preserved-key-marker')
+            ->and($saved->apiSecret)->toBe('preserved-secret-marker')
+            ->and($saved->channelUser)->toBe('updated-channel')
+            ->and($responseBody)->not->toContain('preserved-key-marker')
+            ->and($responseBody)->not->toContain('preserved-secret-marker')
+            ->and($responseBody)->not->toContain('configured-key-marker')
+            ->and($responseBody)->not->toContain('configured-secret-marker');
+    } finally {
+        $overridesProperty->setValue($sources, $originalOverrides);
+        $sourcesProperty->setValue($sources, null);
+        $sources->deleteSourceById($source->id);
     }
 });
 

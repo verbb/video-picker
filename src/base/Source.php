@@ -18,6 +18,7 @@ use craft\validators\HandleValidator;
 
 use verbb\auth\helpers\Provider as ProviderHelper;
 use verbb\videopicker\fields\VideoPickerField;
+use verbb\videopicker\helpers\SourceSecurity;
 
 use DateTime;
 use Exception;
@@ -256,9 +257,10 @@ abstract class Source extends SavableComponent implements SourceInterface
     {
         $handle = StringHelper::toKebabCase(static::$providerHandle);
 
-        return Craft::$app->getView()->renderTemplate('video-picker/sources/_types/' . $handle . '/settings', [
-            'source' => $this,
-        ]);
+        return Craft::$app->getView()->renderTemplate(
+            'video-picker/sources/_types/' . $handle . '/settings',
+            SourceSecurity::settingsTemplateVariables($this),
+        );
     }
 
     /**

@@ -19,24 +19,30 @@ To connect to {name}, follow our <a href="https://verbb.io/craft-plugins/video-p
     value: source.getRedirectUri(),
 }) }}
 
-{{ forms.autosuggestField({
-    label: 'Client ID' | t('video-picker'),
-    instructions: 'Enter your {name} Client ID key here.' | t('video-picker', { name: name }),
-    name: 'clientId',
-    required: true,
-    suggestEnvVars: true,
-    value: source.clientId ?? '',
-    warning: macros.configWarning("sources.#{source.handle}.clientId", 'video-picker'),
-    errors: source.getErrors('clientId'),
-}) }}
+{% if canManageSourceCredentials %}
+    {{ forms.autosuggestField({
+        label: 'Client ID' | t('video-picker'),
+        instructions: 'Enter your {name} Client ID key here.' | t('video-picker', { name: name }),
+        name: 'clientId',
+        required: true,
+        suggestEnvVars: true,
+        value: source.clientId ?? '',
+        warning: macros.configWarning("sources.#{source.handle}.clientId", 'video-picker'),
+        errors: source.getErrors('clientId'),
+    }) }}
 
-{{ forms.autosuggestField({
-    label: 'Client Secret' | t('video-picker'),
-    instructions: 'Enter your {name} Client Secret here.' | t('video-picker', { name: name }),
-    name: 'clientSecret',
-    required: true,
-    suggestEnvVars: true,
-    value: source.clientSecret ?? '',
-    warning: macros.configWarning("sources.#{source.handle}.clientSecret", 'video-picker'),
-    errors: source.getErrors('clientSecret'),
-}) }}
+    {{ forms.autosuggestField({
+        label: 'Client Secret' | t('video-picker'),
+        instructions: 'Enter your {name} Client Secret here.' | t('video-picker', { name: name }),
+        name: 'clientSecret',
+        required: true,
+        suggestEnvVars: true,
+        value: source.clientSecret ?? '',
+        warning: macros.configWarning("sources.#{source.handle}.clientSecret", 'video-picker'),
+        errors: source.getErrors('clientSecret'),
+    }) }}
+{% else %}
+    <div class="vp-settings-block">
+        {{ 'Credential values are configured and hidden. A credential manager can update them.' | t('video-picker') }}
+    </div>
+{% endif %}

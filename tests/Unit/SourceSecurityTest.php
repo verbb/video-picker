@@ -16,6 +16,76 @@ use verbb\videopicker\sources\Wistia;
 use verbb\videopicker\sources\YouTube;
 
 describe('Delegated source settings', function() {
+    it('redacts credentials from every built-in provider settings form', function(string $sourceClass, array $credentials) {
+        NonAdminUser::loginWithPermissions(['videoPicker-sources']);
+        $settings = [
+            'name' => 'Restricted credential fixture',
+            'handle' => 'restrictedCredentialFixture',
+            'enabled' => false,
+        ];
+
+        foreach ($credentials as $attribute) {
+            $settings[$attribute] = "credential-marker-$attribute";
+        }
+
+        $source = new $sourceClass($settings);
+        $settingsHtml = $source->getSettingsHtml();
+
+        foreach ($credentials as $attribute) {
+            expect($settingsHtml)->not->toContain("credential-marker-$attribute");
+        }
+    })->with([
+        YouTube::class => [YouTube::class, ['clientId', 'clientSecret']],
+        Vimeo::class => [Vimeo::class, ['clientId', 'clientSecret']],
+        BunnyStream::class => [BunnyStream::class, ['libraryId', 'streamApiKey']],
+        CloudflareStream::class => [CloudflareStream::class, ['accountId', 'apiToken']],
+        Dailymotion::class => [Dailymotion::class, ['apiKey', 'apiSecret']],
+        Mux::class => [Mux::class, ['tokenId', 'tokenSecret']],
+        SproutVideo::class => [SproutVideo::class, ['apiKey']],
+        Wistia::class => [Wistia::class, ['accessToken']],
+    ]);
+
+    it('still renders credential values for credential managers', function() {
+        NonAdminUser::loginWithPermissions(['videoPicker-sources', VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION]);
+        $source = new Wistia([
+            'name' => 'Credential manager fixture',
+            'handle' => 'credentialManagerFixture',
+            'accessToken' => 'credential-manager-marker',
+        ]);
+
+        expect($source->getSettingsHtml())->toContain('credential-manager-marker');
+    });
+
+    it('keeps literal ordinary settings editable for delegated source managers', function() {
+        NonAdminUser::loginWithPermissions(['videoPicker-sources']);
+        $source = new Dailymotion([
+            'name' => 'Ordinary setting fixture',
+            'handle' => 'ordinarySettingFixture',
+            'apiKey' => 'hidden-key-marker',
+            'apiSecret' => 'hidden-secret-marker',
+            'channelUser' => 'editable-channel-marker',
+        ]);
+        $settingsHtml = $source->getSettingsHtml();
+
+        expect($settingsHtml)->toContain('Channel Username')
+            ->and($settingsHtml)->toContain('editable-channel-marker')
+            ->and($settingsHtml)->not->toContain('hidden-key-marker')
+            ->and($settingsHtml)->not->toContain('hidden-secret-marker');
+    });
+
+    it('redacts reference-backed ordinary settings from delegated source managers', function() {
+        NonAdminUser::loginWithPermissions(['videoPicker-sources']);
+        $source = new Dailymotion([
+            'name' => 'Protected reference fixture',
+            'handle' => 'protectedReferenceFixture',
+            'channelUser' => '$VIDEO_CHANNEL',
+        ]);
+        $settingsHtml = $source->getSettingsHtml();
+
+        expect($settingsHtml)->toContain('Channel Username')
+            ->and($settingsHtml)->not->toContain('$VIDEO_CHANNEL');
+    });
+
     it('classifies credential fields for every built-in provider', function(string $sourceClass, array $expected) {
         $source = (new ReflectionClass($sourceClass))->newInstanceWithoutConstructor();
 
