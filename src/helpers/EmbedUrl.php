@@ -81,7 +81,7 @@ class EmbedUrl
                 continue;
             }
 
-            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            if (!self::isPublicIp($ip)) {
                 throw new InvalidArgumentException(Craft::t('video-picker', 'Embed URL host is not allowed.'));
             }
 
@@ -119,11 +119,7 @@ class EmbedUrl
 
         // Literal IPs (IPv6 brackets already stripped).
         if (filter_var($host, FILTER_VALIDATE_IP)) {
-            return !filter_var(
-                $host,
-                FILTER_VALIDATE_IP,
-                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
-            );
+            return !self::isPublicIp($host);
         }
 
         // Resolve DNS — block if any A/AAAA is private / reserved.
@@ -136,11 +132,43 @@ class EmbedUrl
                 continue;
             }
 
-            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            if (!self::isPublicIp($ip)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    public static function isPublicIp(string $ip): bool
+    {
+        $packed = @inet_pton(trim($ip, '[]'));
+
+        if ($packed === false) {
+            return false;
+        }
+
+        $blocked = strlen($packed) === 4
+            ? ['0.0.0.0/8', '10.0.0.0/8', '100.64.0.0/10', '127.0.0.0/8', '169.254.0.0/16', '172.16.0.0/12', '192.0.0.0/24', '192.0.2.0/24', '192.88.99.0/24', '192.168.0.0/16', '198.18.0.0/15', '198.51.100.0/24', '203.0.113.0/24', '224.0.0.0/4', '240.0.0.0/4']
+            : ['2001::/23', '2001:db8::/32', '2002::/16', '3fff::/20'];
+
+        // Only global unicast IPv6; exclude mapped, translation, and tunnel address families.
+        if (strlen($packed) === 16 && (ord($packed[0]) & 0xe0) !== 0x20) {
+            return false;
+        }
+
+        foreach ($blocked as $cidr) {
+            [$network, $bits] = explode('/', $cidr);
+            $network = inet_pton($network);
+            $bytes = intdiv((int)$bits, 8);
+            $remaining = (int)$bits % 8;
+
+            if (substr($packed, 0, $bytes) === substr($network, 0, $bytes)
+                && (!$remaining || (ord($packed[$bytes]) & (0xff << (8 - $remaining))) === (ord($network[$bytes]) & (0xff << (8 - $remaining))))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

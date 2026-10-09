@@ -10,6 +10,7 @@ use verbb\videopicker\helpers\EmbedUrl;
 use verbb\videopicker\helpers\PinnedHttpClient;
 use verbb\videopicker\models\Video;
 use verbb\videopicker\services\Videos;
+use verbb\videopicker\sources\Vimeo;
 use GuzzleHttp\TransferStats;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
@@ -47,6 +48,28 @@ describe('EmbedUrl host policy', function() {
         expect(EmbedUrl::isBlockedHost('example.com'))->toBeFalse();
     });
 
+    it('blocks non-public and translated IP address ranges', function(string $ip) {
+        expect(EmbedUrl::isPublicIp($ip))->toBeFalse()
+            ->and(EmbedUrl::isBlockedHost($ip))->toBeTrue();
+    })->with([
+        'carrier-grade NAT start' => '100.64.0.0',
+        'carrier-grade NAT end' => '100.127.255.255',
+        'IPv4-mapped loopback' => '::ffff:127.0.0.1',
+        'IPv4-mapped carrier-grade NAT' => '::ffff:100.64.0.1',
+        'IPv6 translation prefix' => '64:ff9b::7f00:1',
+        'IPv6 documentation range' => '2001:db8::1',
+    ]);
+
+    it('keeps public IPv4 and IPv6 addresses available', function(string $ip) {
+        expect(EmbedUrl::isPublicIp($ip))->toBeTrue()
+            ->and(EmbedUrl::isBlockedHost($ip))->toBeFalse();
+    })->with([
+        'public IPv4' => '93.184.216.34',
+        'before carrier-grade NAT' => '100.63.255.255',
+        'after carrier-grade NAT' => '100.128.0.0',
+        'public IPv6' => '2606:2800:220:1:248:1893:25c8:1946',
+    ]);
+
     it('enforces optional domain allowlists', function() {
         EmbedUrl::assertAllowed('https://cdn.example.com/v', ['example.com']);
 
@@ -58,6 +81,40 @@ describe('EmbedUrl host policy', function() {
         expect(fn() => EmbedUrl::assertAllowed('file:///etc/passwd'))
             ->toThrow(InvalidArgumentException::class);
     });
+});
+
+describe('Vimeo collection request paths', function() {
+    it('preserves valid provider collection identifiers as one path segment', function(string $method, string $id, string $expectedPath) {
+        $source = new class(['handle' => 'vimeo-security']) extends Vimeo {
+            public array $requestedUris = [];
+
+            public function cachedRequest(string $method = 'GET', string $uri = '', array $options = [])
+            {
+                $this->requestedUris[] = $uri;
+
+                return ['data' => [], 'paging' => []];
+            }
+        };
+
+        $source->getVideos($method, ['id' => $id]);
+
+        expect($source->requestedUris)->toBe([$expectedPath]);
+    })->with([
+        'album' => ['album', '12345', 'me/albums/12345/videos'],
+        'folder' => ['folder', 'project-123', 'me/folders/project-123/videos'],
+        'channel' => ['channel', 'staff+picks', 'channels/staff%2Bpicks/videos'],
+    ]);
+
+    it('rejects collection identifiers that can change the provider request path', function(string $method, string $id) {
+        $source = new Vimeo(['handle' => 'vimeo-security']);
+
+        expect(fn() => $source->getVideos($method, ['id' => $id]))
+            ->toThrow(InvalidArgumentException::class, 'Invalid Vimeo collection identifier.');
+    })->with([
+        'album traversal' => ['album', '../users/me'],
+        'folder encoded traversal' => ['folder', '%2e%2e%2fusers'],
+        'channel query injection' => ['channel', 'staff?fields=token'],
+    ]);
 });
 
 describe('Pinned embed HTTP client', function() {

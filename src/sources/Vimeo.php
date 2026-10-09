@@ -16,6 +16,8 @@ use Throwable;
 use verbb\auth\Auth;
 use verbb\auth\providers\Vimeo as VimeoProvider;
 
+use yii\base\InvalidArgumentException;
+
 class Vimeo extends OAuthSource
 {
     // Static Methods
@@ -222,21 +224,21 @@ class Vimeo extends OAuthSource
 
     protected function fetchVideosAlbum(array $params = []): array
     {
-        $albumId = ArrayHelper::remove($params, 'id');
+        $albumId = $this->_collectionPathSegment(ArrayHelper::remove($params, 'id'));
 
         return $this->_performVideosRequest('me/albums/' . $albumId . '/videos', $params);
     }
 
     protected function fetchVideosFolder(array $params = []): array
     {
-        $folderId = ArrayHelper::remove($params, 'id');
+        $folderId = $this->_collectionPathSegment(ArrayHelper::remove($params, 'id'));
 
         return $this->_performVideosRequest('me/folders/' . $folderId . '/videos', $params);
     }
 
     protected function fetchVideosChannel(array $params = []): array
     {
-        $channelId = ArrayHelper::remove($params, 'id');
+        $channelId = $this->_collectionPathSegment(ArrayHelper::remove($params, 'id'));
 
         return $this->_performVideosRequest('channels/' . $channelId . '/videos', $params);
     }
@@ -287,6 +289,17 @@ class Vimeo extends OAuthSource
             'videos' => $videos,
             'nextPage' => $nextPage,
         ];
+    }
+
+    private function _collectionPathSegment(mixed $id): string
+    {
+        $id = (string)$id;
+
+        if ($id === '' || in_array($id, ['.', '..'], true) || strpbrk($id, "/\\?#%") !== false || preg_match('/[\x00-\x1f\x7f]/', $id)) {
+            throw new InvalidArgumentException('Invalid Vimeo collection identifier.');
+        }
+
+        return rawurlencode($id);
     }
 
     private function _parseVideo(array $data): Video

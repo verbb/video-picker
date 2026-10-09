@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fixed a moderate-severity server-side request forgery vulnerability.
+- Fixed a low-severity improper input validation vulnerability.
+
 ## 2.1.4 - 2026-10-07
 
 ### Changed
