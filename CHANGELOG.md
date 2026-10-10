@@ -4,6 +4,7 @@
 
 ### Fixed
 - Fixed configuration-owned source settings being persisted to the database.
+- Fixed environment references not being consistently protected across supported Craft versions.
 - Fixed a moderate-severity server-side request forgery vulnerability.
 - Fixed a low-severity improper input validation vulnerability.
 

@@ -6,6 +6,7 @@ use verbb\videopicker\base\SourceInterface;
 use verbb\videopicker\VideoPicker;
 
 use Craft;
+use craft\helpers\App;
 
 class SourceSecurity
 {
@@ -215,6 +216,8 @@ class SourceSecurity
         return str_starts_with($value, '@')
             || preg_match('/^\$\w+$/', $value) === 1
             || preg_match('/\$\{\w+}/', $value) === 1
-            || preg_match('/(?<=^|\/)\$\w+(?=$|\/)/', $value) === 1;
+            || preg_match('/(?<=^|\/)\$\w+(?=$|\/)/', $value) === 1
+            || (version_compare(Craft::$app->getVersion(), '5.11.0', '<') && preg_match('/(?<=^|\/)\$\w+(?=$|\/)?/', $value) === 1)
+            || (preg_match('/\$(?:\{\w+}|\w+)/', $value) === 1 && App::parseEnv($value) !== $value);
     }
 }

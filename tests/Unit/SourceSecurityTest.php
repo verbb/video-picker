@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Tests\Support\NonAdminUser;
+use craft\helpers\App;
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\controllers\SourcesController;
 use verbb\videopicker\helpers\SourceSecurity;
@@ -113,6 +114,54 @@ describe('Delegated source settings', function() {
         expect(SourceSecurity::validateDelegatedChange($source, $original))->toBeFalse()
             ->and($source->getErrors('channelUser'))->not->toBeEmpty();
     })->with(['$VIDEO_CHANNEL', '${VIDEO_CHANNEL}', 'prefix/${VIDEO_CHANNEL}', '@videoChannel']);
+
+    it('matches the installed Craft environment parser for ordinary settings', function(string $value) {
+        putenv('VIDEO_PICKER_REFERENCE_TEST=resolved');
+
+        try {
+            $source = new Dailymotion([
+                'apiKey' => 'unchanged-key',
+                'apiSecret' => 'unchanged-secret',
+                'channelUser' => $value,
+            ]);
+            $original = clone $source;
+            $original->channelUser = 'channel-name';
+            $parsedAsReference = App::parseEnv($value) !== $value;
+
+            expect(SourceSecurity::validateDelegatedChange($source, $original))->toBe(!$parsedAsReference)
+                ->and(SourceSecurity::redactedSource($source)->channelUser)->toBe($parsedAsReference ? '' : $value);
+        } finally {
+            putenv('VIDEO_PICKER_REFERENCE_TEST');
+        }
+    })->with([
+        '$VIDEO_PICKER_REFERENCE_TEST.suffix',
+        'https://$VIDEO_PICKER_REFERENCE_TEST.suffix',
+        'channel-$VIDEO_PICKER_REFERENCE_TEST.suffix',
+        'literal-channel-name',
+    ]);
+
+    it('protects legacy Craft reference forms independently of their current resolved value', function() {
+        $craftVersion = Craft::$app->getVersion();
+        putenv('VIDEO_PICKER_REFERENCE_TEST=$VIDEO_PICKER_REFERENCE_TEST');
+
+        try {
+            Craft::$app->setVersion('5.10.14');
+            $source = new Dailymotion([
+                'apiKey' => 'unchanged-key',
+                'apiSecret' => 'unchanged-secret',
+                'channelUser' => '$VIDEO_PICKER_REFERENCE_TEST.suffix',
+            ]);
+            $original = clone $source;
+            $original->channelUser = 'channel-name';
+
+            expect(SourceSecurity::validateDelegatedChange($source, $original))->toBeFalse()
+                ->and($source->getErrors('channelUser'))->not->toBeEmpty()
+                ->and(SourceSecurity::redactedSource($source)->channelUser)->toBe('');
+        } finally {
+            Craft::$app->setVersion($craftVersion);
+            putenv('VIDEO_PICKER_REFERENCE_TEST');
+        }
+    });
 
     it('rejects OAuth credential changes for ordinary source managers', function(string $value) {
         $source = new YouTube([
