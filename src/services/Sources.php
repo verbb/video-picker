@@ -245,10 +245,15 @@ class Sources extends Component
             return false;
         }
 
-        // Ensure we support Emoji's properly
-        $settings = $settingsForPersistence ?? $source->settings;
-
         $sourceRecord = $this->_getSourceRecordById($source->id);
+
+        // Config owns its overridden keys. Keep their underlying database values
+        // (or no value for new sources) instead of serialising the effective model.
+        $settings = $this->_settingsForPersistence(
+            $source,
+            $sourceRecord,
+            $settingsForPersistence ?? $source->settings,
+        );
         $previousHandle = $sourceRecord->handle;
         $previousType = $sourceRecord->type;
         $previousSettings = $sourceRecord->settings;
@@ -415,6 +420,41 @@ class Sources extends Component
 
     // Private Methods
     // =========================================================================
+
+    private function _settingsForPersistence(SourceInterface $source, SourceRecord $sourceRecord, array $settings): array
+    {
+        $handles = array_values(array_unique(array_filter(
+            [$sourceRecord->handle, $source->handle],
+            static fn($handle): bool => is_string($handle) && $handle !== '',
+        )));
+        $overrideKeys = [];
+
+        foreach ($handles as $handle) {
+            $overrideKeys = array_merge($overrideKeys, array_keys($this->getSourceOverrides($handle)));
+        }
+
+        if ($overrideKeys === []) {
+            return $settings;
+        }
+
+        $storedSettings = Json::decodeIfJson($sourceRecord->settings);
+
+        if (!is_array($storedSettings)) {
+            $storedSettings = [];
+        }
+
+        $sameProvider = !$sourceRecord->type || $sourceRecord->type === get_class($source);
+
+        foreach (array_unique($overrideKeys) as $attribute) {
+            if ($sameProvider && array_key_exists($attribute, $storedSettings)) {
+                $settings[$attribute] = $storedSettings[$attribute];
+            } else {
+                unset($settings[$attribute]);
+            }
+        }
+
+        return $settings;
+    }
 
     private function _sources(): MemoizableArray
     {

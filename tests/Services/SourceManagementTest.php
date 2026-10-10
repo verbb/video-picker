@@ -7,8 +7,12 @@ use Tests\Support\CpRequestContext;
 use Tests\Support\NonAdminUser;
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\controllers\SourcesController;
+use verbb\videopicker\records\Source as SourceRecord;
+use verbb\videopicker\services\Sources;
 use verbb\videopicker\sources\Dailymotion;
 use verbb\videopicker\sources\YouTube;
+
+use craft\helpers\Json;
 
 it('preserves no available fields when every checkbox is cleared', function() {
     AdminUser::login();
@@ -135,3 +139,69 @@ it('validates duplicate source names and handles without a database error', func
         $sources->deleteSource($source);
     }
 })->with(['name', 'handle']);
+
+it('keeps configuration-owned settings out of database saves', function() {
+    $transaction = Craft::$app->getDb()->beginTransaction();
+    $originalSources = VideoPicker::$plugin->getSources();
+    VideoPicker::$plugin->set('sources', $sources = new Sources());
+
+    try {
+        $source = new Dailymotion([
+            'name' => 'Configured persistence fixture',
+            'handle' => 'configuredPersistenceFixture',
+            'enabled' => false,
+            'apiKey' => 'stored-key-marker',
+            'apiSecret' => 'stored-secret-marker',
+            'channelUser' => 'stored-channel-marker',
+        ]);
+        expect($sources->saveSource($source))->toBeTrue();
+
+        $overridesProperty = new ReflectionProperty($sources, '_overrides');
+        $overridesProperty->setValue($sources, [
+            'sources' => [
+                'configuredPersistenceFixture' => [
+                    'apiKey' => 'configured-key-marker',
+                    'channelUser' => 'configured-channel-marker',
+                ],
+                'configuredNewFixture' => [
+                    'apiKey' => '$VIDEO_PICKER_CONFIG_KEY',
+                    'channelUser' => '$VIDEO_PICKER_CONFIG_CHANNEL',
+                ],
+            ],
+        ]);
+
+        $effective = $sources->getSourceById($source->id);
+        expect($effective->apiKey)->toBe('configured-key-marker')
+            ->and($effective->channelUser)->toBe('configured-channel-marker');
+
+        AdminUser::login();
+        expect($effective->getSettingsHtml())->not->toContain('configured-key-marker');
+
+        $effective->handle = 'renamedPersistenceFixture';
+        expect($sources->saveSource($effective))->toBeTrue();
+
+        $stored = $sources->getStoredSourceById($source->id);
+        expect($stored->apiKey)->toBe('stored-key-marker')
+            ->and($stored->apiSecret)->toBe('stored-secret-marker')
+            ->and($stored->channelUser)->toBe('stored-channel-marker');
+
+        $newSource = $sources->createSource([
+            'type' => Dailymotion::class,
+            'name' => 'Configured new fixture',
+            'handle' => 'configuredNewFixture',
+            'enabled' => false,
+        ]);
+        $newSource->apiKey = '$VIDEO_PICKER_CONFIG_KEY';
+        $newSource->channelUser = '$VIDEO_PICKER_CONFIG_CHANNEL';
+        expect($newSource->getSettingsHtml())->toContain('$VIDEO_PICKER_CONFIG_KEY');
+        expect($sources->saveSource($newSource))->toBeTrue();
+
+        $newRecord = SourceRecord::findOne(['id' => $newSource->id]);
+        $newSettings = Json::decodeIfJson($newRecord->settings);
+
+        expect($newSettings)->not->toHaveKeys(['apiKey', 'channelUser']);
+    } finally {
+        $transaction->rollBack();
+        VideoPicker::$plugin->set('sources', $originalSources);
+    }
+});

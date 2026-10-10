@@ -21,7 +21,9 @@ class SourceSecurity
         $canManageSourceCredentials = Craft::$app->getUser()->checkPermission(VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION);
 
         return [
-            'source' => $canManageSourceCredentials ? $source : self::redactedSource($source),
+            'source' => $canManageSourceCredentials
+                ? self::_sourceWithoutResolvedConfigurationCredentials($source)
+                : self::redactedSource($source),
             'canManageSourceCredentials' => $canManageSourceCredentials,
         ];
     }
@@ -129,6 +131,30 @@ class SourceSecurity
 
     // Private Methods
     // =========================================================================
+
+    private static function _sourceWithoutResolvedConfigurationCredentials(SourceInterface $source): SourceInterface
+    {
+        if (!$source instanceof CredentialSourceInterface || !$source->handle) {
+            return $source;
+        }
+
+        $overrides = VideoPicker::$plugin->getSources()->getSourceOverrides($source->handle);
+        $displaySource = $source;
+
+        foreach ($source->getCredentialAttributes() as $attribute) {
+            if (!array_key_exists($attribute, $overrides) || self::_containsReference($overrides[$attribute])) {
+                continue;
+            }
+
+            if ($displaySource === $source) {
+                $displaySource = clone $source;
+            }
+
+            $displaySource->{$attribute} = self::_redactedValue($overrides[$attribute]);
+        }
+
+        return $displaySource;
+    }
 
     private static function _redactedValue(mixed $value): mixed
     {

@@ -186,15 +186,13 @@ Supply OAuth client credentials in `config/video-picker.php` when you want to pr
 ```php
 <?php
 
-use craft\helpers\App;
-
 return [
     '*' => [
         'sources' => [
             'vimeo' => [
                 'enabled' => true,
-                'clientId' => App::env('VIMEO_CLIENT_ID'),
-                'clientSecret' => App::env('VIMEO_CLIENT_SECRET'),
+                'clientId' => '$VIMEO_CLIENT_ID',
+                'clientSecret' => '$VIMEO_CLIENT_SECRET',
 
                 // Add in any additional OAuth scopes
                 'scopes' => [
@@ -208,13 +206,15 @@ return [
                 ],
             ],
             'youTube' => [
-                'clientId' => App::env('YOUTUBE_CLIENT_ID'),
-                'clientSecret' => App::env('YOUTUBE_CLIENT_SECRET'),
+                'clientId' => '$YOUTUBE_CLIENT_ID',
+                'clientSecret' => '$YOUTUBE_CLIENT_SECRET',
             ],
         ],
     ],
 ];
 ```
+
+Pass environment-variable references as literal strings. Video Picker resolves them when the provider uses the credentials, while preserving the references as configuration rather than replacing them with their secret values when the configuration file loads.
 
 ## Control Panel
 Visit **Settings → Video Picker** to manage **General Settings**, cache durations under **Cache Settings**, and image quality and allowed domains under **Embed Settings**. The advanced client, header and detector arrays can only be set in the configuration file.

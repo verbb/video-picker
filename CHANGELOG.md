@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Fixed
+- Fixed configuration-owned source settings being persisted to the database.
 - Fixed a moderate-severity server-side request forgery vulnerability.
 - Fixed a low-severity improper input validation vulnerability.
 
