@@ -2,7 +2,6 @@
 namespace verbb\videopicker\migrations;
 
 use craft\db\Migration;
-use craft\helpers\MigrationHelper;
 
 use verbb\auth\Auth;
 
@@ -24,7 +23,6 @@ class Install extends Migration
 
     public function safeDown(): bool
     {
-        $this->dropForeignKeys();
         $this->dropTables();
 
         // Delete all tokens for this plugin
@@ -84,14 +82,4 @@ class Install extends Migration
         $this->dropTableIfExists('{{%video_picker_videos}}');
     }
 
-    public function dropForeignKeys(): void
-    {
-        if ($this->db->tableExists('{{%video_picker_sources}}')) {
-            MigrationHelper::dropAllForeignKeysOnTable('{{%video_picker_sources}}', $this);
-        }
-
-        if ($this->db->tableExists('{{%video_picker_videos}}')) {
-            MigrationHelper::dropAllForeignKeysOnTable('{{%video_picker_videos}}', $this);
-        }
-    }
 }

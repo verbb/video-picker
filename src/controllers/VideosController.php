@@ -99,7 +99,7 @@ class VideosController extends Controller
         $video = VideoPicker::getInstance()->getVideos()->getVideoByUrl($url, $refresh, $field);
 
         if (!$video) {
-            return $this->asErrorJson(Craft::t('video-picker', 'Unable to find the video.'));
+            return $this->asJson(['error' => Craft::t('video-picker', 'Unable to find the video.')]);
         }
 
         // Provider failures used to return a Video with model errors as HTTP 200.
@@ -107,11 +107,11 @@ class VideosController extends Controller
             $message = $video->getFirstError('url')
                 ?: Craft::t('video-picker', 'Unable to find the video.');
 
-            return $this->asErrorJson($message);
+            return $this->asJson(['error' => $message]);
         }
 
         if ($reason = $field->selectionPolicyError($video)) {
-            return $this->asErrorJson($reason);
+            return $this->asJson(['error' => $reason]);
         }
 
         return $this->asJson($video->getVideoData());
