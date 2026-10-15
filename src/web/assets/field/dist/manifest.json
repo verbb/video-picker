@@ -4,7 +4,7 @@
     "name": "videoPickerPkComponents"
   },
   "field/src/js/plugin-kit-register.ts": {
-    "file": "assets/pluginKit-Ck_M_BDb.js",
+    "file": "assets/pluginKit-CaXswDtq.js",
     "name": "pluginKit",
     "src": "field/src/js/plugin-kit-register.ts",
     "isEntry": true,
@@ -16,7 +16,7 @@
     ]
   },
   "field/src/js/video-picker.ts": {
-    "file": "assets/video-picker-DZYQOi5E.js",
+    "file": "assets/video-picker-uLzArCoI.js",
     "name": "video-picker",
     "src": "field/src/js/video-picker.ts",
     "isEntry": true,
