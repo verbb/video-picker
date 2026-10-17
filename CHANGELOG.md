@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fixed error handling when fetching video metadata.
+
 ## 1.0.7 - 2026-07-15
 
 ### Added

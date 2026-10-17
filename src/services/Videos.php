@@ -26,6 +26,8 @@ use DateTimeZone;
 use Embed\Http\Crawler;
 use Embed\Http\CurlClient;
 
+use Throwable;
+
 class Videos extends Component
 {
     // Public Methods
@@ -92,7 +94,7 @@ class Videos extends Component
         if ($url) {
             return UrlHelper::urlWithParams($url, $params);
         }
-        
+
         return null;
     }
 
