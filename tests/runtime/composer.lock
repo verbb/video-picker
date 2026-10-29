@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6190bc63b2f83d5b25292f4de0a85576",
+    "content-hash": "7aab80a8a8c12f348303ce78f5e463f4",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -11113,11 +11113,11 @@
         },
         {
             "name": "verbb/video-picker",
-            "version": "2.1.5",
+            "version": "2.1.6",
             "dist": {
                 "type": "path",
                 "url": "../../..",
-                "reference": "80cbfcb38b9cd93ff930aac86879a371a208441b"
+                "reference": "987f2a758e9f775e1b987555b2f9e20ba8447777"
             },
             "require": {
                 "craftcms/cms": "^5.0.0",
@@ -12127,7 +12127,8 @@
     "platform": {},
     "platform-dev": {},
     "platform-overrides": {
-        "php": "8.2.0"
+        "php": "8.2.0",
+        "php-64bit": "8.2.0"
     },
     "plugin-api-version": "2.6.0"
 }
