@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.7 - 2026-11-01
+
+### Changed
+- Standardise PHP test runtimes and CI checks.
+
 ## 2.1.6 - 2026-10-22
 
 ### Changed
