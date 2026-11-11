@@ -80,6 +80,12 @@ class Videos extends Component
         $allowedSources = VideoPicker::$plugin->getSources()->getSourcesForField($field);
 
         if ($field instanceof VideoPickerField && !$this->_compatibleSourcesForUrl($allowedSources, $videoUrl)) {
+            // A provider with an enabled source stays restricted to that source. Only URLs
+            // that no source handles at all fall back to a public generic embed.
+            if ($this->_isUnhandledUrl($videoUrl)) {
+                return $this->_videosByUrl[$memoKey] = $this->_getGenericVideoByUrl($videoUrl, $clearCache);
+            }
+
             return $this->_videosByUrl[$memoKey] = null;
         }
 
@@ -96,6 +102,12 @@ class Videos extends Component
         $record = VideoRecord::findOne([
             'videoUrl' => $videoUrl,
         ]);
+
+        // Generic snapshots only serve the field fallback above. Template lookups, and
+        // URLs a source has since been added for, resolve through configured sources.
+        if ($record && $this->_videoFromRecord($record)->generic) {
+            $record = null;
+        }
 
         if ($record) {
             if ($clearCache) {
@@ -238,7 +250,8 @@ class Videos extends Component
 
     public function saveVideo(Video $video, bool $replaceExisting = true): void
     {
-        if (!$video->id || !$video->url || $video->hasErrors()) {
+        // Generic embeds have no provider id, so their URL identifies the snapshot.
+        if ((!$video->id && !$video->generic) || !$video->url || $video->hasErrors()) {
             return;
         }
 
@@ -257,7 +270,7 @@ class Videos extends Component
             $expires = (clone $now)->add(new DateInterval('PT' . $ttl . 'S'));
 
             $record->setAttributes([
-                'videoId' => $video->id,
+                'videoId' => $video->id ?? $video->url,
                 'videoUrl' => $video->url,
                 'data' => $video->serializeData(),
                 'dataVersion' => 1,
@@ -271,6 +284,7 @@ class Videos extends Component
                 $record->save();
                 // Other URL aliases and field contexts may have memoized this snapshot.
                 $this->_videosByUrl = [];
+
                 return;
             } catch (Throwable $e) {
                 // Concurrent insert against the unique index — reload and overwrite.
@@ -419,6 +433,9 @@ class Videos extends Component
                     ...$image,
                 ]));
 
+                // Field fallbacks only accept player markup the provider supplied.
+                $data['hasProviderCode'] = trim($data['code']) !== '';
+
                 // If no embed code, create it
                 if (!trim($data['code'])) {
                     $data['code'] = '<iframe src="' . $info->url . '"></iframe>';
@@ -459,6 +476,29 @@ class Videos extends Component
 
             return $payload;
         }
+    }
+
+    /**
+     * Player markup for a field video resolved through the generic embed path. `$params`
+     * accepts iframe attributes only, since provider playback options have no mapping.
+     */
+    public function getGenericVideoEmbedHtml(Video $video, array $params = []): ?string
+    {
+        $attributes = $this->_genericVideoEmbedAttributes($video);
+
+        if (!$attributes) {
+            return null;
+        }
+
+        return Html::tag('iframe', '', array_merge($attributes, $this->_embedIframeAttributes($params)));
+    }
+
+    /** Player URL for a generic field video, with `$params` appended as query parameters. */
+    public function getGenericVideoEmbedUrl(Video $video, array $params = []): ?string
+    {
+        $src = $this->_genericVideoEmbedAttributes($video)['src'] ?? null;
+
+        return $src ? UrlHelper::urlWithParams($src, $params) : null;
     }
 
 
@@ -620,6 +660,7 @@ class Videos extends Component
                 // first error for recovery only if none of those accounts can resolve it.
                 if ($video->hasErrors()) {
                     $firstError ??= $video;
+
                     continue;
                 }
 
@@ -680,6 +721,227 @@ class Videos extends Component
         // Short backoff — stay expired relative to full TTL, but avoid per-request refetch.
         $record->expiresAt = (new DateTime())->add(new DateInterval(self::REVALIDATE_BACKOFF));
         $record->save(false);
+    }
+
+    /** True when no enabled source, connected or not, recognises the URL's provider. */
+    private function _isUnhandledUrl(string $videoUrl): bool
+    {
+        return !$this->_compatibleSourcesForUrl(
+            VideoPicker::$plugin->getSources()->getAllEnabledSources(),
+            $videoUrl,
+        );
+    }
+
+    /**
+     * Resolve a URL no source handles through the generic embed path, keeping the
+     * snapshot in the shared video cache with the same expiry as provider videos.
+     */
+    private function _getGenericVideoByUrl(string $videoUrl, bool $clearCache): Video
+    {
+        // The video cache keys rows by URL in a 255-character column.
+        if (mb_strlen($videoUrl) > 255) {
+            $video = new Video(['url' => $videoUrl]);
+            $video->addError('url', Craft::t('video-picker', 'Unable to find the video.'));
+
+            return $video;
+        }
+
+        $record = VideoRecord::findOne([
+            'videoUrl' => $videoUrl,
+        ]);
+
+        $previous = $record ? $this->_videoFromRecord($record) : null;
+
+        // A row from a removed or disabled source may hold another account's private
+        // metadata. Only generic rows are safe to serve without that source.
+        if ($previous && !$previous->generic) {
+            $previous = null;
+        }
+
+        if ($previous && !$clearCache && !$this->_recordIsExpired($record)) {
+            return $previous;
+        }
+
+        $fresh = $this->_fetchGenericVideo($videoUrl, $clearCache || $previous !== null);
+
+        if (!$fresh->hasErrors()) {
+            $this->saveVideo($fresh);
+            $fresh->cacheStatus = self::CACHE_OK;
+
+            return $fresh;
+        }
+
+        if (!$previous) {
+            return $fresh;
+        }
+
+        // Keep the last good snapshot so a provider outage doesn't block saving content.
+        $error = (string)$fresh->getFirstError('url');
+        $this->_markRevalidateFailure($record, self::CACHE_UNAVAILABLE, $error);
+        $previous->cacheStatus = self::CACHE_UNAVAILABLE;
+        $previous->cacheError = $error;
+
+        return $previous;
+    }
+
+    private function _fetchGenericVideo(string $videoUrl, bool $bypassCache): Video
+    {
+        /* @var Settings $settings */
+        $settings = VideoPicker::$plugin->getSettings();
+        $cacheKey = $this->_embedCacheKey($videoUrl, $settings);
+
+        if ($bypassCache) {
+            Craft::$app->getCache()->delete($cacheKey);
+        }
+
+        // getEmbedData() applies the host policy, pinned client and iframe canonicalization.
+        $data = $this->getEmbedData($videoUrl);
+
+        // Payloads cached before the provider-markup flag existed can't be judged. Fetch once.
+        if (!isset($data['error']) && !array_key_exists('hasProviderCode', $data)) {
+            Craft::$app->getCache()->delete($cacheKey);
+            $data = $this->getEmbedData($videoUrl);
+        }
+
+        $embedAttributes = isset($data['error']) ? null : $this->_playableEmbedAttributes($data);
+
+        // Short links, aliases and redirects that land on a provider with an enabled
+        // source must go through that source and its field restrictions instead.
+        $resolvesToSource = $embedAttributes && (
+            !$this->_isUnhandledUrl($embedAttributes['src'])
+            || (is_string($data['url'] ?? null) && !$this->_isUnhandledUrl($data['url']))
+        );
+
+        if (!$embedAttributes || $resolvesToSource) {
+            $video = new Video(['url' => $videoUrl]);
+            $video->addError('url', Craft::t('video-picker', 'Unable to find the video.'));
+
+            return $video;
+        }
+
+        $image = $this->_httpUrl($data['image'] ?? null);
+        $thumbnail = array_filter([
+            'url' => $image,
+            'width' => is_numeric($data['imageWidth'] ?? null) ? (int)$data['imageWidth'] : null,
+            'height' => is_numeric($data['imageHeight'] ?? null) ? (int)$data['imageHeight'] : null,
+        ], static fn($value) => $value !== null);
+
+        $publishedTime = $this->_stringOrNull($data['publishedTime'] ?? null);
+
+        return new Video([
+            'url' => $videoUrl,
+            'generic' => true,
+            'title' => $this->_stringOrNull($data['title'] ?? null),
+            'description' => $this->_stringOrNull($data['description'] ?? null),
+            'authorName' => $this->_stringOrNull($data['authorName'] ?? null),
+            // Remote page metadata becomes CP link targets, so only http(s) URLs are kept.
+            'authorUrl' => $this->_httpUrl($data['authorUrl'] ?? null),
+            'date' => $publishedTime ? (DateTimeHelper::toDateTime($publishedTime) ?: null) : null,
+            'thumbnails' => $image ? [$thumbnail] : [],
+            'raw' => array_filter([
+                'providerName' => $this->_stringOrNull($data['providerName'] ?? null),
+                'providerUrl' => $this->_httpUrl($data['providerUrl'] ?? null),
+                // Rendering uses this snapshot, so the player survives provider outages
+                // and pages don't refetch the remote page.
+                'embedAttributes' => $embedAttributes,
+            ]),
+        ]);
+    }
+
+    /** Stored iframe attributes, re-checked so an edited snapshot can't inject markup. */
+    private function _genericVideoEmbedAttributes(Video $video): ?array
+    {
+        $stored = $video->generic ? ($video->raw['embedAttributes'] ?? null) : null;
+
+        if (!is_array($stored) || !($src = $this->_httpUrl($stored['src'] ?? null))) {
+            return null;
+        }
+
+        $attributes = ['src' => $src];
+
+        foreach (self::EMBED_IFRAME_ATTRIBUTES as $attribute) {
+            $value = $stored[$attribute] ?? null;
+
+            if ($attribute === 'sandbox' || !is_scalar($value)) {
+                continue;
+            }
+
+            $attributes[$attribute] = $attribute === 'allowfullscreen' ? true : (string)$value;
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Attributes of the provider-supplied iframe after canonicalization, or null for
+     * synthesized page frames and sandboxed widgets.
+     */
+    private function _playableEmbedAttributes(array $data): ?array
+    {
+        $code = trim((string)($data['code'] ?? ''));
+
+        if (empty($data['hasProviderCode']) || !str_starts_with($code, '<iframe')) {
+            return null;
+        }
+
+        $document = new DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $document->loadHTML(
+                '<!doctype html><html><body>' . $code . '</body></html>',
+                LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING,
+            );
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        $iframe = $document->getElementsByTagName('iframe')->item(0);
+
+        if (!$iframe instanceof DOMElement || $iframe->hasAttribute('sandbox')) {
+            return null;
+        }
+
+        $src = $this->_httpUrl($iframe->getAttribute('src'));
+
+        if (!$src) {
+            return null;
+        }
+
+        $attributes = ['src' => $src];
+
+        foreach (self::EMBED_IFRAME_ATTRIBUTES as $attribute) {
+            if ($attribute === 'sandbox' || !$iframe->hasAttribute($attribute)) {
+                continue;
+            }
+
+            $attributes[$attribute] = $attribute === 'allowfullscreen' ? true : $iframe->getAttribute($attribute);
+        }
+
+        return $attributes;
+    }
+
+    private function _httpUrl(mixed $value): ?string
+    {
+        $value = $this->_stringOrNull($value);
+
+        if ($value === null || !filter_var($value, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        return in_array(strtolower((string)parse_url($value, PHP_URL_SCHEME)), ['http', 'https'], true) ? $value : null;
+    }
+
+    private function _stringOrNull(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value !== '' ? $value : null;
     }
 
     /**

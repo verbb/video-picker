@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fixed Video Picker fields rejecting public video URLs from providers without a Source, which were accepted before 2.1.0. These URLs now resolve through the generic embed lookup.
+
 ## 2.1.8 - 2026-11-05
 
 ### Removed

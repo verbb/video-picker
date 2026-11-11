@@ -28,6 +28,8 @@ Save the entry and reopen it to confirm the selection is retained. [Rendering Vi
 
 ## Direct URL
 
-Paste a URL into the field to find a known video without browsing. The URL must match an enabled, connected Source that is available to the field. Check the preview before saving; a URL from an unavailable Source cannot be selected.
+Paste a URL into the field to find a known video without browsing. A URL from a provider with an enabled Source must match a connected Source that is available to the field. Check the preview before saving; a URL from an unavailable Source cannot be selected.
+
+A public URL from a provider without any enabled Source, such as a YouTube link on a site that only connects Vimeo, is resolved through the [generic embed](docs:template-guides/rendering-videos-from-urls#resolve-generic-embed-data) lookup instead. The field accepts it when the provider supplies a player, and keeps the title, author and thumbnail the provider shares. A short link or redirect that leads to a provider with an enabled Source is treated as that provider's URL, so it must match a connected Source. Duration, play counts and private status aren't available for these videos, so the field's duration limits don't apply to them. `getEmbedHtml()` accepts iframe attributes such as `width` and `class` for these videos, while playback defaults like **Autoplay** need a Source. The [embed host allowlist](docs:get-started/configuration#restrict-embed-hosts-in-production) also applies to these URLs.
 
 Provider pages list accepted URL formats and any limitations. For example, a player URL may be accepted even when a private provider-dashboard URL is not.

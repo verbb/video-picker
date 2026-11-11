@@ -36,6 +36,9 @@ class Video extends Model
     public ?int $height = null;
     public array $raw = [];
 
+    /** Resolved through the generic embed path because no source handles the URL's provider. */
+    public bool $generic = false;
+
     /**
      * Field-level embed intent defaults (autoplay/muted/loop/controls).
      * Merged under call-site options; not part of persisted video cache identity.
@@ -96,6 +99,8 @@ class Video extends Model
             $video['providerColor'] = $source->getPrimaryColor();
             // Brand SVG for the compact title-row icon (CP field preview).
             $video['providerIcon'] = $source->getIcon();
+        } elseif ($this->generic && is_string($this->raw['providerName'] ?? null)) {
+            $video['providerName'] = $this->raw['providerName'];
         }
 
         return $video;
@@ -186,6 +191,10 @@ class Video extends Model
         $source = $this->getSource();
 
         if (!$source) {
+            if ($this->generic) {
+                return VideoPicker::$plugin->getVideos()->getGenericVideoEmbedHtml($this, $options);
+            }
+
             return null;
         }
 
@@ -197,6 +206,10 @@ class Video extends Model
         $source = $this->getSource();
 
         if (!$source) {
+            if ($this->generic) {
+                return VideoPicker::$plugin->getVideos()->getGenericVideoEmbedUrl($this, $options);
+            }
+
             return null;
         }
 

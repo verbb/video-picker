@@ -151,9 +151,9 @@ class VideoPickerField extends Field implements ThumbableFieldInterface, Preview
             return '';
         }
 
-        $videoData = $value->getVideoData();
-
-        $thumbUrl = $videoData['thumbnail'] ?? '';
+        // Read the thumbnail directly. Building embed markup here would fetch remote
+        // pages for generic embeds on every element index row.
+        $thumbUrl = $value->getThumbnail() ?? '';
 
         if (!$thumbUrl) {
             return '';
