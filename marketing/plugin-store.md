@@ -8,10 +8,10 @@ Browse a connected source, search beyond the current collection where the provid
 - Choose which sources a field can use, whether authors may paste URLs or search public videos, and which duration or sorting limits apply.
 - Configure autoplay, muted playback, looping and controls for the field, with privacy-enhanced YouTube embeds when required.
 - Access video metadata, embed URLs and responsive embed HTML in Twig or through GraphQL.
-- Reuse provider listings, video metadata and resolved records while retaining the last successful details through temporary provider failures.
+- Cache provider listings and video details, keeping the last good details when a provider is temporarily unavailable.
 - Show selected videos with useful thumbnails and links in supported element cards.
-- Use the responsive explorer and preview with improved keyboard navigation and clearer loading, privacy and availability states.
-- Configure several provider sources for different channels or clients, then decide which sources are available to each field.
+- Use the responsive explorer and preview with keyboard navigation and clear loading, privacy and availability states.
+- Configure several provider sources for different channels or clients.
 - Register another provider or extend existing source behaviour through plugin events.
 
 ## Sources

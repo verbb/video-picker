@@ -18,7 +18,7 @@ Connect a source and explore liked videos, uploads and collections. Search more 
 <!-- feature-grid-end -->
 
 <!-- feature-section media-size="large" media-shadow="false" -->
-## A useful field at a glance
+## See the selected video in the field
 
 Once a video is selected, its thumbnail and metadata remain visible in the field. Editors can confirm the saved choice without reopening the explorer when they return to the entry later.
 
@@ -26,7 +26,7 @@ Once a video is selected, its thumbnail and metadata remain visible in the field
 <!-- feature-section-end -->
 
 <!-- feature-section media-size="large" -->
-## Your video platform, connected
+## Connect your video platform
 
 Bring Bunny Stream, Cloudflare Stream, Dailymotion, Mux, Sprout Video, Vimeo, Wistia or YouTube into the same editorial workflow. Configure multiple accounts for different channels or clients without changing how authors find and select a video.
 
