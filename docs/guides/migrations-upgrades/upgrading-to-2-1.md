@@ -20,7 +20,7 @@ The update merges duplicate cache rows for the same URL, retaining the most rece
 
 If a custom provider previously extended `verbb\videopicker\base\Source` and used its OAuth methods, change its parent to `verbb\videopicker\base\OAuthSource`. Keep `getOAuthProviderClass()` on OAuth providers. API-key integrations can extend `CredentialsSource`; the base `SourceInterface` no longer requires an OAuth provider class.
 
-Check custom explorer methods against the [Source reference](docs:developers/source): browse responses contain `videos` and an optional `nextPage`, and request options are limited to `id`, `q` and `nextPage`. Implementations should use `getVideosPerPage()` to respect the field's page-size override.
+Check custom explorer methods against the [Source reference](docs:reference/source): browse responses contain `videos` and an optional `nextPage`, and request options are limited to `id`, `q` and `nextPage`. Implementations should use `getVideosPerPage()` to respect the field's page-size override.
 
 ## Templates and Embed Configuration
 

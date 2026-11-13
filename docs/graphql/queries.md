@@ -1,5 +1,14 @@
-# GraphQL
-You can fetch Video Picker field content through Craft's GraphQL API. Add the entry section and Video Picker field to the schema used by your access token. Replace `blog_blog_Entry` and `videoPickerField` below with the generated entry type and field handle from your project.
+# Queries
+
+Video Picker doesn’t add its own GraphQL queries. A Video Picker field adds its value to Craft’s element types, so you query it through Craft’s own queries, such as `entries`, the same way as any other custom field. The field returns a `{fieldHandle}_Video` object, or `null` when no video is selected.
+
+## Set Up the Schema
+
+In **GraphQL → Schemas**, edit the schema used by your access token and allow it to read the section that contains your Video Picker field. [Craft’s GraphQL documentation](https://craftcms.com/docs/5.x/development/graphql.html) explains schemas, tokens and endpoints.
+
+## Query a Video
+
+Replace `blog_blog_Entry` and `videoPickerField` below with the generated entry type and field handle from your project.
 
 ```graphql
 {
@@ -67,29 +76,40 @@ A populated field returns data in this shape:
 }
 ```
 
-## The `{fieldHandle}_Video` Type
+`thumbnails` is a JSON scalar, so request it without a nested selection. Each thumbnail has a `url` and may include `width` and `height`. [Interfaces & Types](docs:graphql/interfaces-types) lists every field you can select.
 
-Each Video Picker field exposes an object type named from its handle, such as `videoPickerField_Video`. Select the following fields directly within that field’s selection. All fields are nullable; available metadata depends on the provider and stored video.
+## Embed a Video
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `id` | `String` | The video identifier supplied by its provider. |
-| `url` | `String` | The video’s source URL. |
-| `sourceHandle` | `String` | The configured Video Picker source handle. |
-| `date` | `DateTime` | The video’s publication date. |
-| `duration` | `Int` | Duration in seconds. |
-| `formattedDuration` | `String` | Duration formatted for display. |
-| `plays` | `Float` | The provider’s play count, when available, including counts above the 32-bit integer limit. |
-| `authorName` | `String` | The author’s display name. |
-| `authorUrl` | `String` | The author’s URL. |
-| `authorUsername` | `String` | The author’s username. |
-| `thumbnails` | `ArrayType` | Thumbnail metadata as structured JSON, including URLs and dimensions. |
-| `title` | `String` | The video title. |
-| `description` | `String` | The video description. |
-| `private` | `Boolean` | Whether the provider marks the video as private. |
-| `width` | `Int` | Video width in pixels. |
-| `height` | `Int` | Video height in pixels. |
-| `embedHtml` | `String` | Embed HTML using the field’s embed defaults. |
-| `embedUrl` | `String` | Embed URL using the field’s embed defaults. |
+Request `embedHtml` for a ready-made iframe, or `embedUrl` to build your own player markup. Both use the embed defaults configured on the Video Picker field, and neither accepts arguments, so change the field’s embed settings to change the player.
 
-`thumbnails` is a JSON scalar, so request it without a nested selection. Neither `embedHtml` nor `embedUrl` accepts arguments; configure embed defaults on the Video Picker field.
+```graphql
+{
+  entries(section: "blog", limit: 1) {
+    ... on blog_blog_Entry {
+      videoPickerField {
+        title
+        embedUrl
+        embedHtml
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "data": {
+    "entries": [
+      {
+        "videoPickerField": {
+          "title": "lofi hip hop radio 📚 beats to relax/study to",
+          "embedUrl": "https://www.youtube.com/embed/jfKfPfyJRdk?wmode=transparent",
+          "embedHtml": "<iframe src=\"https://www.youtube.com/embed/jfKfPfyJRdk?wmode=transparent\" title=\"External video from youTube\" frameborder=\"0\" allowfullscreen=\"true\" allow=\"autoplay; encrypted-media\"></iframe>"
+        }
+      }
+    ]
+  }
+}
+```
+
+This example uses a source with the handle `youTube`. Attributes set in the field’s embed defaults are added to the iframe or replace these ones.

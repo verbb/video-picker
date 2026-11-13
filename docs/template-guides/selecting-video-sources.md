@@ -18,4 +18,4 @@ The provider video ID format differs by Source. Use a saved Video Picker field o
 
 For a template that lets visitors choose a provider, start with `craft.videoPicker.getAllEnabledSources()` and show only Sources for which `isUsable()` is true. A Source with saved settings may still need its OAuth connection renewed.
 
-The [Source reference](docs:developers/source#finding-sources) explains the other lookup methods. Use Source names and handles for presentation; keep credentials and raw settings out of public output.
+The [Source reference](docs:reference/source#finding-sources) explains the other lookup methods. Use Source names and handles for presentation; keep credentials and raw settings out of public output.

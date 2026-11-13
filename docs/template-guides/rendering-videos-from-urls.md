@@ -4,7 +4,7 @@ Use this workflow when a trusted video URL is stored outside a Video Picker fiel
 
 ## Resolve a Video Object
 
-For a URL recognised by a configured Source, `getVideoByUrl()` returns a [Video](docs:developers/video) object. Enable and connect the matching Source before using this example:
+For a URL recognised by a configured Source, `getVideoByUrl()` returns a [Video](docs:reference/video) object. Enable and connect the matching Source before using this example:
 
 ```twig
 {% set video = entry.videoUrl
@@ -46,6 +46,25 @@ Check `getEmbedData()` before generating the player:
 
 `getEmbedData()` returns an array containing `error` when discovery fails, including rejected or unsupported URLs. Successful discovery can also lack embeddable `code`. The check above handles both cases without exposing the error details to visitors.
 
-Do not use a truthy `getEmbedHtml()` or `getEmbedUrl()` result as the failure check: those helpers can produce a blank iframe or a `data:` URL when discovery fails. After the metadata check succeeds, use `getEmbedHtml()` for the complete markup or `getEmbedUrl()` if you need to build the iframe yourself. Apply `raw` only to embed markup from the providers you trust.
+Check the metadata rather than the result of `getEmbedHtml()`. When discovery fails it returns an empty string, but when a provider supplies a widget instead of an iframe it wraps that markup in a sandboxed iframe, so a non-empty result doesn't prove a working player. Apply `raw` only to embed markup from the providers you trust.
 
-Test a supported URL, an empty value and a URL outside your allowlist. The supported video should play; the rejected URL should show the fallback without an iframe. [Cache](docs:feature-tour/cache) explains how to refresh previously discovered metadata.
+## Building Your Own Iframe
+
+To write the iframe markup yourself, for example to wrap it in your own responsive container, use `craft.videoPicker.getEmbedUrl(url, params)` to get the player URL on its own. It takes the video URL and an optional hash of query parameters, which are added to the player URL as they are, so use the provider's own parameter names. It returns `null` when discovery fails or the provider's player isn't an iframe, so check the result before outputting it:
+
+```twig
+{% set videoUrl = entry.videoUrl %}
+{% set playerUrl = videoUrl ? craft.videoPicker.getEmbedUrl(videoUrl, { rel: 0 }) : null %}
+
+{% if playerUrl %}
+    <div class="video-wrapper">
+        <iframe src="{{ playerUrl }}" title="{{ entry.title }}" loading="lazy" allowfullscreen></iframe>
+    </div>
+{% elseif videoUrl %}
+    <p>The video is unavailable.</p>
+{% endif %}
+```
+
+For a YouTube URL, this outputs the YouTube player URL with `rel=0` added. Unlike `getEmbedHtml()`, the parameters aren't iframe attributes, so set the size and other attributes on your own `<iframe>` tag. The same embed host allowlist applies, because the URL comes from the same discovery.
+
+Test a supported URL, an empty value and a URL outside your allowlist. The supported video should play, and the rejected URL should show the fallback without an iframe. [Cache](docs:feature-tour/cache) explains how to refresh previously discovered metadata.

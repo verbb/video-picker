@@ -1,6 +1,6 @@
 # Rendering Videos
 
-A populated Video Picker field returns a [Video](docs:developers/video) object. Use its details to build a video card, or follow [Embedding Videos](docs:template-guides/embedding-videos) to show a player.
+A populated Video Picker field returns a [Video](docs:reference/video) object. Use its details to build a video card, or follow [Embedding Videos](docs:template-guides/embedding-videos) to show a player.
 
 ## Render a Field Selection
 
@@ -29,7 +29,7 @@ This example assumes an entry field with the handle `featuredVideo`. Place it in
 
 The image has an empty `alt` because the linked title names the same destination. A missing thumbnail leaves a text link, and an empty field or failed video lookup omits the card. Save an entry with a video and check the page, then test an entry with no selection.
 
-Keep Twig's escaping enabled for titles, descriptions and URLs. The [Video reference](docs:developers/video) lists the available metadata and explains which values can be absent.
+Keep Twig's escaping enabled for titles, descriptions and URLs. The [Video reference](docs:reference/video) lists the available metadata and explains which values can be absent.
 
 ## Render a Supported URL
 

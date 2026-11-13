@@ -46,11 +46,24 @@
         "title": "Developers",
         "collapsable": false,
         "children": [
-            "developers/source",
-            "developers/source-provider",
-            "developers/video",
             "developers/events",
-            "developers/graphql"
+            "developers/custom-sources"
+        ]
+    },
+    {
+        "title": "GraphQL",
+        "collapsable": false,
+        "children": [
+            "graphql/queries",
+            "graphql/interfaces-types"
+        ]
+    },
+    {
+        "title": "Reference",
+        "collapsable": false,
+        "children": [
+            "reference/source",
+            "reference/video"
         ]
     },
     {
