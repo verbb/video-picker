@@ -12,6 +12,6 @@ OAuth Sources need a client ID, client secret and connection handshake. Credenti
 
 On each Source you can limit which Video Picker fields are allowed to browse it (**Available Fields**). Select **All** to allow every field, choose individual fields to limit access, or clear every checkbox to allow none. The field must still use a Source that is enabled and connected.
 
-Editors need **Explore videos** to browse an allowed Source or resolve a pasted URL through the field. Give **Sources** permission only to users who manage provider credentials and connections.
+Editors need **Explore videos** to browse an allowed Source or resolve a pasted URL through the field. Give **Sources** permission only to users who manage provider credentials and connections. See [Permissions](docs:feature-tour/permissions) for what each permission allows.
 
 Once an editor has made a selection, follow [Rendering Videos](docs:template-guides/rendering-videos). Custom integrations can [select Sources in Twig](docs:template-guides/selecting-video-sources).

@@ -14,7 +14,8 @@
         "children": [
             "feature-tour/sources",
             "feature-tour/videos",
-            "feature-tour/cache"
+            "feature-tour/cache",
+            "feature-tour/permissions"
         ]
     },
     {

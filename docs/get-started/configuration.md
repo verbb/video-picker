@@ -12,28 +12,7 @@ return [
 ];
 ```
 
-All other settings keep their defaults. Add any further settings you want to change to the same array. The options below explain the available settings and their defaults.
-
-Values in `config/video-picker.php` override the corresponding values saved in the control panel. To manage a setting through the control panel again, remove its override from the file.
-
-## Environment Overrides
-
-Craft can apply different settings to each environment. Use `*` for shared values and a key matching `CRAFT_ENVIRONMENT` for an environment-specific override. For example:
-
-```php
-<?php
-
-return [
-    '*' => [
-        'videosPerPage' => 12,
-    ],
-    'dev' => [
-        'videosPerPage' => 24,
-    ],
-];
-```
-
-This replaces the simple array above. The `dev` values apply only when `CRAFT_ENVIRONMENT` is `dev`; other environments use the shared values. Merge your own overrides into the appropriate array.
+All other settings keep their defaults. Add any further settings you want to change to the same array. The options below explain the available settings and their defaults. You can also manage many of these settings in the control panel under **Video Picker → Settings**.
 
 ## Configuration Options
 
@@ -161,7 +140,6 @@ Define any [settings](https://github.com/oscarotero/Embed#settings) to pass to t
 Hostnames that generic embed helpers may fetch. Enter a hostname such as `youtube.com`, without a scheme, path or `www` requirement. Subdomains are included. An empty list permits any public HTTP or HTTPS host; private, reserved and loopback addresses remain blocked.
 :::
 
-
 ## Restrict Embed Hosts in Production
 
 Generic embed helpers fetch metadata from the supplied URL on your server. If URLs can originate from editors or other untrusted input, set `embedAllowedDomains` to the providers your site supports. Include every hostname that may appear before or after a provider redirect.
@@ -178,10 +156,9 @@ return [
 
 Test pasted URLs from every supported provider after enabling the allowlist. A rejected URL produces an `error` result from `getEmbedData()`. Follow the [generic embed example](docs:template-guides/rendering-videos-from-urls#resolve-generic-embed-data) to check it before outputting a player.
 
-
 ## OAuth Source Credentials
 
-Supply OAuth client credentials in `config/video-picker.php` when you want to preconfigure OAuth sources. The key for each item must match the source handle. Keep secrets in environment variables rather than committing them to project config. Credential-based sources are configured in the Control Panel because their API tokens are not stored in project config.
+Supply OAuth client credentials in `config/video-picker.php` when you want to preconfigure OAuth sources. The key for each item must match the source handle. Keep secrets in environment variables. Credential-based sources, which use API tokens, are configured in the control panel instead.
 
 ```php
 <?php
@@ -215,6 +192,3 @@ return [
 ```
 
 Pass environment-variable references as literal strings. Video Picker resolves them when the provider uses the credentials, while preserving the references as configuration rather than replacing them with their secret values when the configuration file loads.
-
-## Control Panel
-Visit **Settings → Video Picker** to manage **General Settings**, cache durations under **Cache Settings**, and image quality and allowed domains under **Embed Settings**. The advanced client, header and detector arrays can only be set in the configuration file.
