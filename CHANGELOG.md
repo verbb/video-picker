@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.2.0 - 2026-11-24
 
 ### Added
 - Added a getting-started screen to the Sources page when no sources exist, with buttons to create a source or a Video Picker field.
