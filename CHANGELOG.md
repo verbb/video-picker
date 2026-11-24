@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Now requires Verbb Auth 1.0.45+.
+
+### Fixed
+- Fixed a moderate-severity information disclosure vulnerability.
+
 ## 1.0.8 - 2026-10-17
 
 ### Fixed
