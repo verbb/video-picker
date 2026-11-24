@@ -7,6 +7,7 @@
 
 ### Changed
 - The video explorer now explains when a collection has no videos the field can use, and when a search finds nothing, with a button to clear the search.
+- Now requires Verbb Auth 2.0.62+.
 
 ### Fixed
 - Fixed a moderate-severity information disclosure vulnerability.
