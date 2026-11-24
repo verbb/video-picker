@@ -1,27 +1,27 @@
 {
-  "_videoPickerPkComponents-CaxiC2uX.js": {
-    "file": "assets/videoPickerPkComponents-CaxiC2uX.js",
+  "_videoPickerPkComponents-BPhH2-9D.js": {
+    "file": "assets/videoPickerPkComponents-BPhH2-9D.js",
     "name": "videoPickerPkComponents"
   },
   "field/src/js/plugin-kit-register.ts": {
-    "file": "assets/pluginKit-DsBdFaIz.js",
+    "file": "assets/pluginKit-D7ReHcfX.js",
     "name": "pluginKit",
     "src": "field/src/js/plugin-kit-register.ts",
     "isEntry": true,
     "imports": [
-      "_videoPickerPkComponents-CaxiC2uX.js"
+      "_videoPickerPkComponents-BPhH2-9D.js"
     ],
     "css": [
-      "assets/pluginKit-Cvzm7hAh.css"
+      "assets/pluginKit-CkJ7A1HB.css"
     ]
   },
   "field/src/js/video-picker.ts": {
-    "file": "assets/video-picker-Pyv5WFHE.js",
+    "file": "assets/video-picker-BZaN02CH.js",
     "name": "video-picker",
     "src": "field/src/js/video-picker.ts",
     "isEntry": true,
     "imports": [
-      "_videoPickerPkComponents-CaxiC2uX.js"
+      "_videoPickerPkComponents-BPhH2-9D.js"
     ],
     "css": [
       "assets/video-picker-TrSG_L_g.css"

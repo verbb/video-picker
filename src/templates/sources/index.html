@@ -10,16 +10,39 @@
 {% set title = 'Sources' | t('video-picker') %}
 {% set selectedSubnavItem = 'sources' %}
 
+{# Nothing to list yet: the page is one empty state on the page background, without the table or the footer. #}
+{% set firstRun = sources is empty %}
+{% if firstRun %}
+    {% set bareContent = true %}
+    {% set hidePluginFooter = true %}
+{% endif %}
+
 {% block actionButton %}
-    <a class="btn submit add icon" href="{{ url('video-picker/sources/new') }}">{{ 'New source' | t('video-picker') }}</a>
+    {# The empty state carries the same button while it shows. #}
+    {% if not firstRun %}
+        <a class="btn submit add icon" href="{{ url('video-picker/sources/new') }}">{{ 'New source' | t('video-picker') }}</a>
+    {% endif %}
 {% endblock %}
 
 {% block blockContent %}
 
-<div id="sources-vue-admin-table"></div>
+{% if firstRun %}
+    {# Pasted public URLs resolve through the generic embed lookup, so a field is a real first path without a source. #}
+    <pk-state-panel layout="page" heading="{{ 'Connect your first video source' | t('video-picker') }}" heading-level="2">
+        {% include 'video-picker/_includes/spots/sources' %}
+        {{ 'A source lets editors browse a provider’s video library, while public URLs pasted into a field already work without one.' | t('video-picker') }}
+        <a slot="actions" class="btn submit add icon" href="{{ url('video-picker/sources/new') }}">{{ 'New source' | t('video-picker') }}</a>
+        {% if currentUser.admin and craft.app.config.general.allowAdminChanges %}
+            <a slot="actions" class="btn" href="{{ url('settings/fields/new', { type: 'verbb\\videopicker\\fields\\VideoPickerField' }) }}">{{ 'New field' | t('video-picker') }}</a>
+        {% endif %}
+    </pk-state-panel>
+{% else %}
+    <div id="sources-vue-admin-table"></div>
+{% endif %}
 
 {% endblock %}
 
+{% if not firstRun %}
 {% set tableData = [] %}
 
 {% for source in sources %}
@@ -79,3 +102,4 @@
         tableData: {{ tableData | json_encode | raw }},
     });
 {% endjs %}
+{% endif %}

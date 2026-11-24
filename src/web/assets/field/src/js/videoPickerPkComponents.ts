@@ -8,4 +8,5 @@ export const VIDEO_PICKER_PK_COMPONENTS = [
     'pk-option',
     'pk-dialog',
     'pk-spinner',
+    'pk-state-panel',
 ] as const;

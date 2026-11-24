@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Added a getting-started screen to the Sources page when no sources exist, with buttons to create a source or a Video Picker field.
+
+### Changed
+- The video explorer now explains when a collection has no videos the field can use, and when a search finds nothing, with a button to clear the search.
+
 ## 2.1.9 - 2026-11-14
 
 ### Fixed

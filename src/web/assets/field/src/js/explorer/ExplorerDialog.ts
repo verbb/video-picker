@@ -646,6 +646,19 @@ export class ExplorerDialog {
         this.searchVideos();
     }
 
+    /** Empty the search box and go back to browsing the active collection. */
+    private clearSearch(): void {
+        this.debouncedSearch.cancel();
+        this.query = '';
+
+        if (this.searchInput) {
+            this.searchInput.value = '';
+            this.searchInput.focus();
+        }
+
+        this.searchVideos();
+    }
+
     private maybeLoadMore(): void {
         if (!this.nextPage || this.loadingMore || !this.mainEl) {
             return;
@@ -989,6 +1002,11 @@ export class ExplorerDialog {
                         this.commitSelect();
                     },
                     onPlay: (video) => this.options.onPlay(video),
+                }, {
+                    sourceName: this.currentSource?.name,
+                    collectionName: this.currentCollection?.name,
+                    query: this.searching ? this.query : '',
+                    onClearSearch: () => this.clearSearch(),
                 }),
             );
 

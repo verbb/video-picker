@@ -257,19 +257,57 @@ export const createVideoCard = (
     return card;
 };
 
+/** What the grid shows when there are no videos, so an empty collection reads differently from a search with no results. */
+export type VideoGridEmptyState = {
+    sourceName?: string;
+    collectionName?: string;
+    /** The search that returned nothing. Leave blank when browsing a collection. */
+    query?: string;
+    onClearSearch?: () => void;
+};
+
+const createEmptyState = (empty: VideoGridEmptyState): HTMLElement => {
+    const panel = document.createElement('pk-state-panel');
+    panel.className = 'vp-videos-empty';
+    panel.setAttribute('heading-level', '3');
+
+    const source = empty.sourceName ?? '';
+    const query = empty.query?.trim() ?? '';
+
+    if (query) {
+        panel.setAttribute('heading', Craft.t('video-picker', 'No matching videos'));
+        panel.setAttribute('icon', 'magnifying-glass');
+        panel.append(Craft.t('video-picker', 'Nothing on {source} matches “{query}”. Try other words, or clear the search to browse.', { source, query }));
+
+        if (empty.onClearSearch) {
+            const clear = document.createElement('pk-button');
+            clear.setAttribute('slot', 'actions');
+            clear.setAttribute('variant', 'default');
+            clear.textContent = Craft.t('video-picker', 'Clear search');
+            clear.addEventListener('click', () => empty.onClearSearch?.());
+            panel.appendChild(clear);
+        }
+
+        return panel;
+    }
+
+    // Field settings such as Public Videos Only can hide everything in a collection, so the text doesn't claim it's empty.
+    panel.setAttribute('heading', Craft.t('video-picker', 'No videos here yet'));
+    panel.append(empty.collectionName
+        ? Craft.t('video-picker', '{collection} on {source} has no videos this field can use.', { collection: empty.collectionName, source })
+        : Craft.t('video-picker', '{source} has no videos this field can use.', { source }));
+
+    return panel;
+};
+
 export const createVideoGrid = (
     videos: VideoData[],
     selectedId: string | number | null | undefined,
     handlers: VideoCardHandlers,
+    empty: VideoGridEmptyState = {},
 ): HTMLElement => {
     if (!videos.length) {
-        const empty = document.createElement('div');
-        const hint = document.createElement('span');
-        hint.className = 'vp-hint-text';
-        hint.textContent = Craft.t('video-picker', 'No videos available.');
-        empty.appendChild(hint);
-
-        return empty;
+        return createEmptyState(empty);
     }
 
     const grid = document.createElement('div');

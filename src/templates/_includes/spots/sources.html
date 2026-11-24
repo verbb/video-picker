@@ -1,0 +1,13 @@
+{#- Video Picker's spot illustration for Sources, drawn into a page empty state's icon slot. Coloured by video-picker.scss.
+    Symmetrical around the centre, so it sits evenly in the rings: a provider's library as three video frames fanned from
+    one point, tinted behind and with the play button and progress in the brand colour on the frame in front. -#}
+<svg slot="icon" class="vp-spot" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    {% for angle in [-16, 16] %}
+        <rect class="vp-spot__fill" x="14" y="17" width="36" height="28" rx="3" transform="rotate({{ angle }} 32 72)"/>
+    {% endfor %}
+    <rect class="vp-spot__paper" x="14" y="17" width="36" height="28" rx="3"/>
+    <circle class="vp-spot__play" cx="32" cy="29" r="6.5"/>
+    <polygon class="vp-spot__arrow" points="30,25.6 30,32.4 35.4,29"/>
+    <line class="vp-spot__line" x1="19" y1="40" x2="45" y2="40"/>
+    <line class="vp-spot__progress" x1="19" y1="40" x2="27" y2="40"/>
+</svg>

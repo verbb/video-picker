@@ -36,6 +36,40 @@
     }
 }
 
+// A page with nothing to show yet: Plugin Kit's page empty state, straight on the page background.
+.vp-bare-content #content.content-pane {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.vp-bare-content #content > pk-state-panel[layout='page'] {
+    flex: 1 1 auto;
+}
+
+// Video Picker's spot illustrations in those states: a duotone in Video Picker's brand colour (#f25757, from icon.svg),
+// a darker line on white with soft tinted fills and the play button in the brand colour itself.
+.vp-spot {
+    --vp-spot-line: #c23f3f;
+    --vp-spot-tint: #fde8e8;
+    --vp-spot-brand: #f25757;
+    overflow: visible;
+
+    :is(.vp-spot__paper, .vp-spot__fill, .vp-spot__line, .vp-spot__progress) {
+        stroke: var(--vp-spot-line);
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .vp-spot__paper { fill: var(--white, #fff); }
+    .vp-spot__fill { fill: var(--vp-spot-tint); }
+    .vp-spot__line { fill: none; }
+    .vp-spot__progress { stroke: var(--vp-spot-brand); stroke-width: 2.5; }
+    .vp-spot__play { fill: var(--vp-spot-brand); }
+    .vp-spot__arrow { fill: var(--white, #fff); }
+}
+
 // ==========================================================================
 // Sources Single / Settings
 // ==========================================================================

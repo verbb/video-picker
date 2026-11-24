@@ -10,6 +10,7 @@ import { PkInput } from '@verbb/plugin-kit-web/components/input/pk-input.js';
 import { PkOption } from '@verbb/plugin-kit-web/components/select/pk-option.js';
 import { PkSelect } from '@verbb/plugin-kit-web/components/select/pk-select.js';
 import { PkSpinner } from '@verbb/plugin-kit-web/components/spinner/pk-spinner.js';
+import { PkStatePanel } from '@verbb/plugin-kit-web/components/state-panel/pk-state-panel.js';
 
 // Opt-in glyphs for `<pk-icon icon="…">` (JS camelCase keys → kebab lookup names).
 import {
@@ -65,6 +66,7 @@ const VIDEO_PICKER_PK_CTORS = [
     PkOption,
     PkSelect,
     PkSpinner,
+    PkStatePanel,
 ] as const;
 
 let registered = false;
