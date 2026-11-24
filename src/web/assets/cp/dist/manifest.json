@@ -1,13 +1,9 @@
 {
-  "../../../../../../../plugin-kit/plugin-kit/plugin-kit-web/dist/components/state-panel/pk-state-panel.js": {
+  "../../../../node_modules/@verbb/plugin-kit-web/dist/components/state-panel/pk-state-panel.js": {
     "file": "assets/pk-state-panel-C-nAVds1.js",
     "name": "pk-state-panel",
-    "src": "../../../../../../../plugin-kit/plugin-kit/plugin-kit-web/dist/components/state-panel/pk-state-panel.js",
+    "src": "../../../../node_modules/@verbb/plugin-kit-web/dist/components/state-panel/pk-state-panel.js",
     "isDynamicEntry": true
-  },
-  "../../../../../../../plugin-kit/plugin-kit/plugin-kit-web/dist/plugin-kit.css": {
-    "file": "assets/plugin-kit-CkJ7A1HB.css",
-    "src": "../../../../../../../plugin-kit/plugin-kit/plugin-kit-web/dist/plugin-kit.css"
   },
   "src/safeCustomElementDefine.js": {
     "file": "assets/safeCustomElementDefine-nWMjP1WF.js",
@@ -16,16 +12,16 @@
     "isDynamicEntry": true
   },
   "src/video-picker-cp.js": {
-    "file": "assets/video-picker-cp-yPNG5LwE.js",
+    "file": "assets/video-picker-cp-CuMn95mq.js",
     "name": "video-picker-cp",
     "src": "src/video-picker-cp.js",
     "isEntry": true,
     "dynamicImports": [
       "src/safeCustomElementDefine.js",
-      "../../../../../../../plugin-kit/plugin-kit/plugin-kit-web/dist/components/state-panel/pk-state-panel.js"
+      "../../../../node_modules/@verbb/plugin-kit-web/dist/components/state-panel/pk-state-panel.js"
     ],
     "css": [
-      "assets/video-picker-cp-PKDPClBz.css"
+      "assets/video-picker-cp-C1k1oImr.css"
     ]
   }
 }
