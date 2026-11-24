@@ -1,7 +1,7 @@
 {#- Video Picker's spot illustration for Sources, drawn into a page empty state's icon slot. Coloured by video-picker.scss.
     Symmetrical around the centre, so it sits evenly in the rings: a provider's library as three video frames fanned from
     one point, tinted behind and with the play button and progress in the brand colour on the frame in front. -#}
-<svg slot="icon" class="vp-spot" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+<svg slot="icon" class="vp-spot" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
     {% for angle in [-16, 16] %}
         <rect class="vp-spot__fill" x="14" y="17" width="36" height="28" rx="3" transform="rotate({{ angle }} 32 72)"/>
     {% endfor %}
