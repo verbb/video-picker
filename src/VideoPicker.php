@@ -39,7 +39,7 @@ class VideoPicker extends Plugin
     // =========================================================================
 
     public bool $hasCpSettings = true;
-    public string $schemaVersion = '1.1.3';
+    public string $schemaVersion = '1.1.4';
 
 
     // Public Methods

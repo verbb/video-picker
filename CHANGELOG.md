@@ -9,6 +9,7 @@
 - The video explorer now explains when a collection has no videos the field can use, and when a search finds nothing, with a button to clear the search.
 
 ### Fixed
+- Fixed a moderate-severity information disclosure vulnerability.
 - Fixed Vimeo videos with a custom URL failing to save with an “Unable to find the video” error. ([#27](https://github.com/verbb/video-picker/issues/27))
 
 ## 2.1.9 - 2026-11-14
