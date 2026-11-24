@@ -317,7 +317,7 @@ class Vimeo extends OAuthSource
         $video->id = (int)substr($data['uri'], strlen('/videos/'));
         $video->plays = $data['stats']['plays'] ?? 0;
         $video->title = $data['name'] ?? null;
-        $video->url = $data['link'] ?? null;
+        $video->url = $this->_videoUrl($data, (string)$video->id);
         $video->width = $data['width'] ?? null;
         $video->height = $data['height'] ?? null;
         $video->duration = $data['duration'] ?? null;
@@ -335,6 +335,24 @@ class Vimeo extends OAuthSource
         }
 
         return $video;
+    }
+
+    /**
+     * Fields store this URL and resolve it again on load, so it must be one this source
+     * can parse back to the same video. Custom video URLs (vimeo.com/<user>/<name>) carry
+     * no ID, so they fall back to the ID URL, keeping an unlisted hash from the API URI.
+     */
+    private function _videoUrl(array $data, string $id): ?string
+    {
+        $link = $data['link'] ?? null;
+
+        if (!$id || (is_string($link) && $this->getVideoIdFromUrl($link) === $id)) {
+            return $link;
+        }
+
+        $hash = preg_match('~^/videos/\d+:([a-zA-Z0-9]+)$~', (string)($data['uri'] ?? ''), $matches) ? $matches[1] : null;
+
+        return 'https://vimeo.com/' . $id . ($hash ? '/' . $hash : '');
     }
 
     private function _getCollectionsFolders(array $params = []): array
