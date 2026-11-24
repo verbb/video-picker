@@ -10,7 +10,8 @@
 
 ### Fixed
 - Fixed a moderate-severity information disclosure vulnerability.
-- Fixed Vimeo videos with a custom URL failing to save with an “Unable to find the video” error. ([#27](https://github.com/verbb/video-picker/issues/27))
+- Fixed Vimeo videos with a custom URL failing to save with an “Unable to find the video” error, including custom URLs pasted into the field or saved by an earlier version. ([#27](https://github.com/verbb/video-picker/issues/27))
+- Fixed Video Picker fields rejecting short links and other URLs that lead to a provider with a source. These now resolve through that source.
 
 ## 2.1.9 - 2026-11-14
 

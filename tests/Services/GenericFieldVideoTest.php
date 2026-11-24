@@ -194,7 +194,7 @@ it('keeps provider URLs restricted to their enabled source', function() {
     }
 });
 
-it('rejects short links that resolve to a provider with an enabled source', function(array $overrides) {
+it('rejects short links that resolve to a provider the field has no usable source for', function(array $overrides) {
     $suffix = bin2hex(random_bytes(4));
     $url = 'https://short.example.com/' . $suffix;
     $field = new VideoPickerField(['name' => 'Short link', 'handle' => 'shortLink' . $suffix]);

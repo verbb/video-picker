@@ -83,7 +83,7 @@ class Videos extends Component
             // A provider with an enabled source stays restricted to that source. Only URLs
             // that no source handles at all fall back to a public generic embed.
             if ($this->_isUnhandledUrl($videoUrl)) {
-                return $this->_videosByUrl[$memoKey] = $this->_getGenericVideoByUrl($videoUrl, $clearCache);
+                return $this->_videosByUrl[$memoKey] = $this->_getGenericVideoByUrl($videoUrl, $clearCache, $field);
             }
 
             return $this->_videosByUrl[$memoKey] = null;
@@ -736,7 +736,7 @@ class Videos extends Component
      * Resolve a URL no source handles through the generic embed path, keeping the
      * snapshot in the shared video cache with the same expiry as provider videos.
      */
-    private function _getGenericVideoByUrl(string $videoUrl, bool $clearCache): Video
+    private function _getGenericVideoByUrl(string $videoUrl, bool $clearCache, VideoPickerField $field): Video
     {
         // The video cache keys rows by URL in a 255-character column.
         if (mb_strlen($videoUrl) > 255) {
@@ -762,7 +762,14 @@ class Videos extends Component
             return $previous;
         }
 
-        $fresh = $this->_fetchGenericVideo($videoUrl, $clearCache || $previous !== null);
+        $fresh = $this->_fetchGenericVideo($videoUrl, $clearCache || $previous !== null, $sourceUrl);
+
+        // Aliases such as custom Vimeo URLs and short links resolve through the source for
+        // the URL they land on, so that source's field restrictions still apply. The result
+        // is cached under the source's own URL, which is also what the field stores.
+        if ($sourceUrl !== null) {
+            return $this->getVideoByUrl($sourceUrl, $clearCache, $field) ?? $fresh;
+        }
 
         if (!$fresh->hasErrors()) {
             $this->saveVideo($fresh);
@@ -784,8 +791,14 @@ class Videos extends Component
         return $previous;
     }
 
-    private function _fetchGenericVideo(string $videoUrl, bool $bypassCache): Video
+    /**
+     * When the URL lands on a provider with an enabled source, `$sourceUrl` receives the URL
+     * that source handles and the returned video carries an error instead of a generic embed.
+     */
+    private function _fetchGenericVideo(string $videoUrl, bool $bypassCache, ?string &$sourceUrl = null): Video
     {
+        $sourceUrl = null;
+
         /* @var Settings $settings */
         $settings = VideoPicker::$plugin->getSettings();
         $cacheKey = $this->_embedCacheKey($videoUrl, $settings);
@@ -806,13 +819,17 @@ class Videos extends Component
         $embedAttributes = isset($data['error']) ? null : $this->_playableEmbedAttributes($data);
 
         // Short links, aliases and redirects that land on a provider with an enabled
-        // source must go through that source and its field restrictions instead.
-        $resolvesToSource = $embedAttributes && (
-            !$this->_isUnhandledUrl($embedAttributes['src'])
-            || (is_string($data['url'] ?? null) && !$this->_isUnhandledUrl($data['url']))
-        );
+        // source must go through that source and its field restrictions instead. Prefer
+        // the final page URL, then the provider's player.
+        foreach ($embedAttributes ? [$data['url'] ?? null, $embedAttributes['src']] : [] as $candidate) {
+            if (is_string($candidate) && !$this->_isUnhandledUrl($candidate)) {
+                $sourceUrl = $candidate;
 
-        if (!$embedAttributes || $resolvesToSource) {
+                break;
+            }
+        }
+
+        if (!$embedAttributes || $sourceUrl !== null) {
             $video = new Video(['url' => $videoUrl]);
             $video->addError('url', Craft::t('video-picker', 'Unable to find the video.'));
 
