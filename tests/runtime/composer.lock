@@ -11005,16 +11005,16 @@
         },
         {
             "name": "verbb/auth",
-            "version": "2.0.48",
+            "version": "2.0.62",
             "source": {
                 "type": "git",
                 "url": "https://github.com/verbb/auth.git",
-                "reference": "4abddb1348e1670e8ed8fa44429f6f4d1d8527bf"
+                "reference": "81bb069858253c0885f229dd3ac05683e10aa338"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/verbb/auth/zipball/4abddb1348e1670e8ed8fa44429f6f4d1d8527bf",
-                "reference": "4abddb1348e1670e8ed8fa44429f6f4d1d8527bf",
+                "url": "https://api.github.com/repos/verbb/auth/zipball/81bb069858253c0885f229dd3ac05683e10aa338",
+                "reference": "81bb069858253c0885f229dd3ac05683e10aa338",
                 "shasum": ""
             },
             "require": {
@@ -11059,7 +11059,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-28T14:14:12+00:00"
+            "time": "2026-11-24T11:11:48+00:00",
+            "published-time": "2026-11-24T11:11:54+00:00"
         },
         {
             "name": "verbb/base",
@@ -11113,18 +11114,18 @@
         },
         {
             "name": "verbb/video-picker",
-            "version": "2.1.6",
+            "version": "2.2.0",
             "dist": {
                 "type": "path",
                 "url": "../../..",
-                "reference": "987f2a758e9f775e1b987555b2f9e20ba8447777"
+                "reference": "54bced65c40923d3de400f2e0a3c6665230238f1"
             },
             "require": {
                 "craftcms/cms": "^5.0.0",
                 "embed/embed": "^4.0.0",
                 "nystudio107/craft-plugin-vite": "^5.0.0",
                 "php": "^8.2",
-                "verbb/auth": "^2.0.48",
+                "verbb/auth": "^2.0.62",
                 "verbb/base": "^3.0.20"
             },
             "require-dev": {
@@ -12130,5 +12131,5 @@
         "php": "8.2.0",
         "php-64bit": "8.2.0"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.11.0"
 }
