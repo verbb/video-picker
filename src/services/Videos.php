@@ -402,8 +402,8 @@ class Videos extends Component
                 $embed = new \Embed\Embed($crawler);
                 $embed->setSettings($settings->embedDetectorsSettings);
 
-                // Override the image detector. Restores Embed v3 behaviour.
-                $embed->getExtractorFactory()->addDetector('image', EmbedImagesExtractor::class);
+                // Image metadata as an array, restoring Embed v3 behaviour.
+                $embed->getExtractorFactory()->addDetector(EmbedImagesExtractor::NAME, EmbedImagesExtractor::class);
 
                 $info = $embed->get($url);
 
@@ -412,7 +412,7 @@ class Videos extends Component
                     EmbedUrl::assertAllowed((string)$info->url, $settings->embedAllowedDomains);
                 }
 
-                $image = $info->image ?? [];
+                $image = $info->{EmbedImagesExtractor::NAME} ?? [];
 
                 $data = Json::decode(Json::encode([
                     'title' => $info->title,
