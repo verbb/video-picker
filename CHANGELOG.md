@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fixed embed data for Vimeo and YouTube URLs failing to load when Embed 4.7+ is installed. ([#27](https://github.com/verbb/video-picker/issues/27))
+
 ## 1.0.9 - 2026-11-24
 
 ### Changed

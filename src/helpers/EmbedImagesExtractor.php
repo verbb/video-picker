@@ -5,7 +5,6 @@ use verbb\videopicker\VideoPicker;
 use verbb\videopicker\models\Settings;
 
 use Embed\Detectors\Detector;
-use Embed\Detectors\Image;
 
 use GuzzleHttp\Client;
 
@@ -13,6 +12,14 @@ use Psr\Http\Message\UriInterface;
 
 class EmbedImagesExtractor extends Detector
 {
+    // Constants
+    // =========================================================================
+
+    // Registered under its own name, because Embed's site adapters (Vimeo and YouTube
+    // since Embed 4.7) replace any custom detector registered as `image`.
+    public const NAME = 'videoPickerImage';
+
+
     // Public Methods
     // =========================================================================
 
@@ -23,10 +30,9 @@ class EmbedImagesExtractor extends Detector
 
         // There are performance concerns, as it requires us to fetch each image, so ensure it's opt-in.
         if (!$settings->resolveHiResEmbedImage) {
-            // But always return an array, to ensure it's treated the one way. Fallback to the default
-            $image = (new Image($this->extractor))->detect();
-
-            return ['image' => $image];
+            // But always return an array, to ensure it's treated the one way. Fall back to Embed's
+            // image, including any site adapter's own detector such as Vimeo's full-size thumbnail.
+            return ['image' => $this->extractor->image];
         }
 
         $oembed = $this->extractor->getOEmbed();
