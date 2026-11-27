@@ -4,6 +4,7 @@ namespace verbb\videopicker\controllers;
 use verbb\videopicker\VideoPicker;
 use verbb\videopicker\helpers\Plugin as PluginHelper;
 use verbb\videopicker\helpers\SourceSecurity;
+use verbb\videopicker\base\CredentialSourceInterface;
 use verbb\videopicker\base\SourceInterface;
 use verbb\videopicker\fields\VideoPickerField;
 
@@ -17,6 +18,9 @@ use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
 use Throwable;
+
+use verbb\base\helpers\EnvironmentSettings;
+use verbb\base\models\EnvironmentSettingsViolation;
 
 class SourcesController extends Controller
 {
@@ -152,6 +156,13 @@ class SourcesController extends Controller
             return $this->asModelFailure($responseSource, Craft::t('video-picker', 'Couldn’t save source.'), 'source');
         }
 
+        // Delegated managers can't change credentials or references at all, so only credential managers need this.
+        if ($canManageSourceCredentials && ($violation = $this->_environmentSettingsViolation((string)$type, $sourceToSave, $storedSource, [$storedSource?->handle, $sourceToSave->handle]))) {
+            $responseSource->addError($violation->getAttribute() ?? 'type', $this->_environmentSettingsMessage($violation));
+
+            return $this->asModelFailure($responseSource, Craft::t('video-picker', 'Couldn’t save source.'), 'source');
+        }
+
         $settingsForPersistence = null;
 
         if ($storedSource && !$canManageSourceCredentials) {
@@ -203,6 +214,14 @@ class SourcesController extends Controller
                 'cache' => $source->cache,
                 'uid' => $source->uid,
             ]);
+
+            $storedSource = VideoPicker::$plugin->getSources()->getStoredSourceById($sourceId);
+
+            // The check uses this unsaved source, so check what was posted before it connects. `createSource()` only
+            // applied the posted handle's config overrides, so only those keys replace posted values here.
+            if ($violation = $this->_environmentSettingsViolation($type, $source, $storedSource, [$source->handle])) {
+                return $this->asFailure($this->_environmentSettingsMessage($violation));
+            }
         }
 
         if (!$source::supportsConnection() || $source::supportsOAuthConnection()) {
@@ -283,5 +302,42 @@ class SourcesController extends Controller
         }
 
         return SourceSecurity::validateDelegatedChange($source, $original);
+    }
+
+    /**
+     * Credential managers who aren't admins can type credentials, but only admins can point a setting at an
+     * environment variable, because resolved values reach embed URLs, CP labels and OAuth authorize URLs. Posted
+     * settings are compared with the database values, not config overrides, since overrides are never saved from
+     * the form.
+     */
+    private function _environmentSettingsViolation(string $type, SourceInterface $source, ?SourceInterface $storedSource, array $overrideHandles): ?EnvironmentSettingsViolation
+    {
+        $posted = $this->request->getParam("types.$type");
+        $posted = is_array($posted) ? $posted : [];
+
+        // Config overrides replace posted values for their keys, so a reference the form shows from config isn't one
+        // the user added.
+        foreach (array_unique(array_filter($overrideHandles)) as $handle) {
+            $posted = array_diff_key($posted, VideoPicker::$plugin->getSources()->getSourceOverrides($handle));
+        }
+
+        $stored = $storedSource?->getSettings() ?? [];
+
+        $credentials = $storedSource instanceof CredentialSourceInterface
+            ? $storedSource->getCredentialAttributes()
+            : array_keys(array_filter($stored, fn($value) => EnvironmentSettings::containsReference($value)));
+
+        // A new provider only carries over credentials it shares a setting name with.
+        $credentials = array_values(array_intersect($credentials, array_keys($source->getSettings())));
+        $providerChanged = $storedSource !== null && get_class($storedSource) !== get_class($source);
+
+        return EnvironmentSettings::violation($posted, $stored, $credentials, false, $providerChanged);
+    }
+
+    private function _environmentSettingsMessage(EnvironmentSettingsViolation $violation): string
+    {
+        return $violation->reason === EnvironmentSettingsViolation::REFERENCE
+            ? Craft::t('video-picker', 'Only admins can use environment variables here.')
+            : Craft::t('video-picker', 'Enter the credentials again after changing where this connects.');
     }
 }

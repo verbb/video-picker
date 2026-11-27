@@ -204,7 +204,7 @@ describe('Delegated source settings', function() {
         ]);
     });
 
-    it('allows credential managers to use environment-backed OAuth credentials', function() {
+    it('leaves credential managers to the environment variable check instead of the delegated rules', function() {
         NonAdminUser::loginWithPermissions(['videoPicker-sources', VideoPicker::MANAGE_SOURCE_CREDENTIALS_PERMISSION]);
         $source = new YouTube([
             'clientId' => '$VIDEO_CLIENT_ID',

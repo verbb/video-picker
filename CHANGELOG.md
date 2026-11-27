@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Fixed
+- Fixed a high-severity information disclosure vulnerability.
 - Fixed Vimeo and YouTube URLs failing to load through the generic embed lookup when Embed 4.7+ is installed, which broke Vimeo custom URLs with an “Unable to find the video” error and left the `getEmbedHtml()` and `getEmbedUrl()` Twig helpers empty. ([#27](https://github.com/verbb/video-picker/issues/27), [#28](https://github.com/verbb/video-picker/issues/28))
 
 ## 2.2.0 - 2026-11-24
