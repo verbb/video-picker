@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Fixed
-- Fixed Vimeo custom URLs, and other Vimeo and YouTube URLs resolved through the generic embed lookup, failing with an “Unable to find the video” error when Embed 4.7+ is installed. ([#27](https://github.com/verbb/video-picker/issues/27))
+- Fixed Vimeo and YouTube URLs failing to load through the generic embed lookup when Embed 4.7+ is installed, which broke Vimeo custom URLs with an “Unable to find the video” error and left the `getEmbedHtml()` and `getEmbedUrl()` Twig helpers empty. ([#27](https://github.com/verbb/video-picker/issues/27), [#28](https://github.com/verbb/video-picker/issues/28))
 
 ## 2.2.0 - 2026-11-24
 
