@@ -11059,21 +11059,20 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-24T11:11:48+00:00",
-            "published-time": "2026-11-24T11:11:54+00:00"
+            "time": "2026-11-24T11:11:48+00:00"
         },
         {
             "name": "verbb/base",
-            "version": "3.0.20",
+            "version": "3.0.23",
             "source": {
                 "type": "git",
                 "url": "https://github.com/verbb/verbb-base.git",
-                "reference": "0b60c166a79e2762aa968e062dc84ca6c0a9406e"
+                "reference": "7d4dbb3eb3e380cc3576ab8932dcc8daab12b67c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/verbb/verbb-base/zipball/0b60c166a79e2762aa968e062dc84ca6c0a9406e",
-                "reference": "0b60c166a79e2762aa968e062dc84ca6c0a9406e",
+                "url": "https://api.github.com/repos/verbb/verbb-base/zipball/7d4dbb3eb3e380cc3576ab8932dcc8daab12b67c",
+                "reference": "7d4dbb3eb3e380cc3576ab8932dcc8daab12b67c",
                 "shasum": ""
             },
             "require": {
@@ -11110,7 +11109,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-04T21:22:12+00:00"
+            "time": "2026-11-27T12:37:31+00:00"
         },
         {
             "name": "verbb/video-picker",
@@ -11118,7 +11117,7 @@
             "dist": {
                 "type": "path",
                 "url": "../../..",
-                "reference": "54bced65c40923d3de400f2e0a3c6665230238f1"
+                "reference": "3d25f446f8dd0a7c6bef4ac9fee915a8371f9811"
             },
             "require": {
                 "craftcms/cms": "^5.0.0",
@@ -11126,7 +11125,7 @@
                 "nystudio107/craft-plugin-vite": "^5.0.0",
                 "php": "^8.2",
                 "verbb/auth": "^2.0.62",
-                "verbb/base": "^3.0.20"
+                "verbb/base": "^3.0.23"
             },
             "require-dev": {
                 "craftcms/cms": "^5.9",
@@ -12131,5 +12130,5 @@
         "php": "8.2.0",
         "php-64bit": "8.2.0"
     },
-    "plugin-api-version": "2.11.0"
+    "plugin-api-version": "2.9.0"
 }
