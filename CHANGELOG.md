@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Fixed
-- Fixed embed data for Vimeo and YouTube URLs failing to load when Embed 4.7+ is installed. ([#27](https://github.com/verbb/video-picker/issues/27))
+- Fixed embed data for Vimeo and YouTube URLs failing to load when Embed 4.7+ is installed, which left the `getEmbedHtml()` and `getEmbedUrl()` Twig helpers empty. ([#27](https://github.com/verbb/video-picker/issues/27), [#28](https://github.com/verbb/video-picker/issues/28))
 
 ## 1.0.9 - 2026-11-24
 
